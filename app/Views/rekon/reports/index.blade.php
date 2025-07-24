@@ -376,7 +376,7 @@
         <div class="card">
             <div class="card-body text-center">
                 <div class="btn-group btn-group-lg">
-                    <a href="{{ site_url('rekon/process') }}" class="btn btn-outline-primary">
+                    <a href="{{ site_url('rekon') }}" class="btn btn-outline-primary">
                         <i class="fal fa-plus"></i> Proses Baru
                     </a>
                     <button class="btn btn-success" onclick="downloadReport('excel')">

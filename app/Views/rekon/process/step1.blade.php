@@ -160,7 +160,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ site_url('rekon/process') }}" class="btn btn-secondary">
+                    <a href="{{ site_url('rekon') }}" class="btn btn-secondary">
                         <i class="fal fa-arrow-left"></i> Kembali ke Daftar
                     </a>
                     
@@ -287,7 +287,7 @@ function uploadFile(type) {
     
     // AJAX Upload
     $.ajax({
-        url: '{{ site_url("rekon/process/upload-files") }}',
+        url: '{{ site_url("rekon/step1/upload") }}',
         method: 'POST',
         data: formData,
         processData: false,
@@ -382,7 +382,7 @@ function validateAndProceed() {
     
     // AJAX untuk validasi
     $.ajax({
-        url: '{{ site_url("rekon/process/validate-files") }}',
+        url: '{{ site_url("rekon/step1/validate") }}',
         method: 'POST',
         data: {
             tanggal_rekon: '{{ $tanggalRekon }}',
@@ -407,7 +407,7 @@ function validateAndProceed() {
 function callDataUploadProcess() {
     // AJAX untuk proses data upload
     $.ajax({
-        url: '{{ site_url("rekon/process/process-data") }}',
+        url: '{{ site_url("rekon/step1/process") }}',
         method: 'POST',
         data: {
             tanggal_rekon: '{{ $tanggalRekon }}',
@@ -417,7 +417,7 @@ function callDataUploadProcess() {
             if (response.success) {
                 alert('Proses data upload berhasil! Mengarahkan ke halaman selanjutnya...');
                 setTimeout(() => {
-                    window.location.href = '{{ site_url("rekon/process/step2") }}';
+                    window.location.href = '{{ site_url("rekon/step2") }}';
                 }, 2000);
             } else {
                 alert('Gagal proses data upload: ' + (response.message || 'Unknown error'));

@@ -83,19 +83,19 @@
                         @if ($rekon_process || $upload_data)
                         
                             @if ($rekon_process)
-                                <li class="@if (str_contains($route, 'rekon/process')) active open @endif">
+                                <li class="@if (str_contains($route, 'rekon')) active open @endif">
                                     <a href="javascript:void(0);" title="User Management" data-filter-tags="user management">
                                         <i class="fal fa-calendar-alt"></i>
                                         <span class="nav-link-text">Persiapan</span>
                                     </a>
                                     <ul>
-                                        <li class="@if ($route == 'rekon/process') active @endif">
-                                            <a href="{{ site_url('rekon/process') }}">
+                                        <li class="@if ($route == 'rekon') active @endif">
+                                            <a href="{{ site_url('rekon') }}">
                                                 <span class="nav-link-text text-left">Pilih Tanggal</span>
                                             </a>
                                         </li>
-                                        <li class="@if ($route == 'rekon/process/step2') active @endif">
-                                            <a href="{{ site_url('/rekon/process/step2') }}">
+                                        <li class="@if ($route == 'rekon/step2') active @endif">
+                                            <a href="{{ site_url('/rekon/step2') }}">
                                                 <span class="nav-link-text text-left">Review Data</span>
                                             </a> 
                                         </li>

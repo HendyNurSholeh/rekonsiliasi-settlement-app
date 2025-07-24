@@ -43,7 +43,7 @@
                 </div>
                 @endif
 
-                <form id="processForm" action="{{ site_url('rekon/process/create') }}" method="POST">
+                <form id="processForm" action="{{ site_url('rekon/create') }}" method="POST">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                     <input type="hidden" id="reset_confirmed" name="reset_confirmed" value="false" />
                     
@@ -208,7 +208,7 @@ function checkDateExists(date) {
     const csrfValue = $('#processForm input[name^="csrf_"]').val();
     
     $.ajax({
-        url: '{{ site_url("rekon/process/checkDate") }}',
+        url: '{{ site_url("rekon/checkDate") }}',
         method: 'POST',
         data: {
             tanggal: date,

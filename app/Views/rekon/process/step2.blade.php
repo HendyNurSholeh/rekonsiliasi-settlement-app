@@ -348,7 +348,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ site_url('rekon/process/step1') }}" class="btn btn-outline-secondary">
+                    <a href="{{ site_url('rekon/step1') }}" class="btn btn-outline-secondary">
                         <i class="fal fa-arrow-left"></i> Kembali ke Upload
                     </a>
                     
@@ -359,7 +359,7 @@
                         </span>
                     </div>
                     
-                    <a href="{{ site_url('rekon/process/step3') }}" class="btn btn-success btn-lg">
+                    <a href="{{ site_url('rekon/step3') }}" class="btn btn-success btn-lg">
                         <i class="fal fa-rocket"></i> Mulai Rekonsiliasi
                     </a>
                 </div>

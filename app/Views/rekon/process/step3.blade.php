@@ -159,7 +159,7 @@
                     <a href="{{ site_url('rekon/reports/' . date('Y-m-d', strtotime($tanggalRekon))) }}" class="btn btn-primary btn-lg">
                         <i class="fal fa-file-alt"></i> Lihat Laporan
                     </a>
-                    <a href="{{ site_url('rekon/process') }}" class="btn btn-outline-primary btn-lg ml-2">
+                    <a href="{{ site_url('rekon') }}" class="btn btn-outline-primary btn-lg ml-2">
                         <i class="fal fa-plus"></i> Proses Baru
                     </a>
                 </div>
@@ -174,7 +174,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ site_url('rekon/process/step2') }}" class="btn btn-outline-secondary">
+                    <a href="{{ site_url('rekon/step2') }}" class="btn btn-outline-secondary">
                         <i class="fal fa-arrow-left"></i> Kembali ke Validasi
                     </a>
                     
@@ -355,7 +355,7 @@ function simulateReconciliationProcess() {
 function completeReconciliation() {
     // Call actual reconciliation API
     $.ajax({
-        url: '{{ site_url("rekon/process/processReconciliation") }}',
+        url: '{{ site_url("rekon/step3/process") }}',
         type: 'POST',
         data: {
             '<?= csrf_token() ?>': '<?= csrf_hash() ?>'

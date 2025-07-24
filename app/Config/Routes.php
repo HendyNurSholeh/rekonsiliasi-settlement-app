@@ -45,33 +45,38 @@ $routes->post('/profile', 'User\Profile::index');
 // ? Dashboard
 $routes->get('/dashboard', 'Dashboard::index', ['as' => 'dashboard']);
 
-// ? Rekonsiliasi Settlement Routes
+// ? Rekonsiliasi Settlement Routes - 4 Controller Terpisah
 $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($routes) {
-    $routes->get('process', 'RekonProcess::index', ['as' => 'rekon.process']);
-    $routes->post('process/create', 'RekonProcess::create', ['as' => 'rekon.process.create']);
-    $routes->post('process/checkDate', 'RekonProcess::checkDate', ['as' => 'rekon.process.checkDate']);
-    $routes->post('process/upload-files', 'RekonProcess::uploadFiles', ['as' => 'rekon.process.uploadFiles']);
-    $routes->post('process/validate-files', 'RekonProcess::validateFiles', ['as' => 'rekon.process.validateFiles']);
-    $routes->post('process/process-data', 'RekonProcess::processDataUpload', ['as' => 'rekon.process.processData']);
-    $routes->post('process/check-upload-status', 'RekonProcess::checkUploadStatus', ['as' => 'rekon.process.checkUploadStatus']);
-    $routes->get('process/step1', 'RekonProcess::step1', ['as' => 'rekon.process.step1']);
-    $routes->get('process/step2', 'RekonProcess::step2', ['as' => 'rekon.process.step2']);
-    $routes->get('process/step3', 'RekonProcess::step3', ['as' => 'rekon.process.step3']);
-    $routes->post('process/processReconciliation', 'RekonProcess::processReconciliation', ['as' => 'rekon.process.processReconciliation']);
+    // Setup Controller - untuk index.blade.php
+    $routes->get('/', 'RekonSetupController::index', ['as' => 'rekon.index']);
+    $routes->post('create', 'RekonSetupController::create', ['as' => 'rekon.create']);
+    $routes->post('checkDate', 'RekonSetupController::checkDate', ['as' => 'rekon.checkDate']);
+    $routes->post('resetProcess', 'RekonSetupController::resetProcess', ['as' => 'rekon.resetProcess']);
     
-    // Report Routes
+    // Step 1 Controller - untuk step1.blade.php (Upload Files)
+    $routes->get('step1', 'RekonStep1Controller::index', ['as' => 'rekon.step1']);
+    $routes->post('step1/upload', 'RekonStep1Controller::uploadFiles', ['as' => 'rekon.step1.upload']);
+    $routes->post('step1/validate', 'RekonStep1Controller::validateFiles', ['as' => 'rekon.step1.validate']);
+    $routes->post('step1/process', 'RekonStep1Controller::processDataUpload', ['as' => 'rekon.step1.process']);
+    $routes->post('step1/status', 'RekonStep1Controller::checkUploadStatus', ['as' => 'rekon.step1.status']);
+    
+    // Step 2 Controller - untuk step2.blade.php (Validasi Data)
+    $routes->get('step2', 'RekonStep2Controller::index', ['as' => 'rekon.step2']);
+    $routes->post('step2/validate', 'RekonStep2Controller::processValidation', ['as' => 'rekon.step2.validate']);
+    $routes->get('step2/preview', 'RekonStep2Controller::getDataPreview', ['as' => 'rekon.step2.preview']);
+    $routes->get('step2/stats', 'RekonStep2Controller::getUploadStats', ['as' => 'rekon.step2.stats']);
+    
+    // Step 3 Controller - untuk step3.blade.php (Proses Rekonsiliasi)
+    $routes->get('step3', 'RekonStep3Controller::index', ['as' => 'rekon.step3']);
+    $routes->post('step3/process', 'RekonStep3Controller::processReconciliation', ['as' => 'rekon.step3.process']);
+    $routes->get('step3/progress', 'RekonStep3Controller::getReconciliationProgress', ['as' => 'rekon.step3.progress']);
+    $routes->post('step3/reports', 'RekonStep3Controller::generateReports', ['as' => 'rekon.step3.reports']);
+    $routes->get('step3/download', 'RekonStep3Controller::downloadReport', ['as' => 'rekon.step3.download']);
+    
+    // Report Routes (existing)
     $routes->get('reports', 'RekonReport::index', ['as' => 'rekon.reports']);
     $routes->get('reports/(:segment)', 'RekonReport::index/$1', ['as' => 'rekon.reports.date']);
     $routes->get('reports/download/(:segment)/(:segment)', 'RekonReport::downloadExcel/$1/$2', ['as' => 'rekon.reports.download']);
-});
-
-// ? Upload Data Routes  
-$routes->group('upload', ['namespace' => 'App\Controllers\Upload'], function($routes) {
-    $routes->get('agregator', 'UploadData::agregator', ['as' => 'upload.agregator']);
-    $routes->get('settlement-pajak', 'UploadData::settlementPajak', ['as' => 'upload.settlement-pajak']);
-    $routes->get('settlement-edu', 'UploadData::settlementEdu', ['as' => 'upload.settlement-edu']);
-    $routes->get('mgate', 'UploadData::mgate', ['as' => 'upload.mgate']);
-    $routes->post('process', 'UploadData::processUpload', ['as' => 'upload.process']);
 });
 
 // ? Branch
