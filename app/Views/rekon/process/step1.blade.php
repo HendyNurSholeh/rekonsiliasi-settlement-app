@@ -8,42 +8,30 @@
     </h1>
 </div>
 
-<!-- Progress Steps -->
-{{-- <div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body py-2">
-                <div class="d-flex align-items-center">
-                    <div class="step-progress d-flex align-items-center w-100">
-                        <div class="step active">
-                            <div class="step-number">1</div>
-                            <div class="step-title">Upload Files</div>
-                        </div>
-                        <div class="step-line"></div>
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <div class="step-title">Validasi Data</div>
-                        </div>
-                        <div class="step-line"></div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div class="step-title">Rekonsiliasi</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div> --}}
+<!-- Success/Error Messages -->
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fal fa-check-circle"></i> {{ session('success') }}
+    <button type="button" class="close" data-dismiss="alert">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif
+
+@if(session('error'))
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fal fa-exclamation-circle"></i> {{ session('error') }}
+    <button type="button" class="close" data-dismiss="alert">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif
 
 <div class="row">
     <div class="col-12">
         <div class="alert alert-info">
             <i class="fal fa-info-circle"></i>
-            <strong>Tanggal Settlement:</strong> {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
-            <span class="float-right">
-                <strong>Process ID:</strong> #PRK-{{ date('ymd', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}-001
-            </span>
+            <strong>Tanggal Settlement:</strong> {{ date('d/m/Y', strtotime($tanggalRekon)) }}
         </div>
     </div>
 </div>
@@ -63,8 +51,11 @@
                     Upload file data transaksi detail dari agregator untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
                 </p>
                 <form id="form-agn-detail" enctype="multipart/form-data">
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
+                    <input type="hidden" name="file_type" value="agn_detail" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-detail" name="file" accept=".csv,.xlsx,.xls">
+                        <input type="file" class="custom-file-input" id="file-agn-detail" name="file" accept=".csv,.xlsx,.xls" required>
                         <label class="custom-file-label" for="file-agn-detail">Pilih file...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('agn_detail')">
@@ -77,23 +68,29 @@
 
     <!-- Upload Data Settlement Education -->
     <div class="col-lg-3 col-md-6">
-        <div class="card border-success">
-            <div class="card-header bg-success-200">
+        <div class="card border-warning">
+            <div class="card-header bg-warning-200">
                 <h5 class="card-title">
-                    <i class="fal fa-check-circle text-success"></i>
+                    <i class="fal fa-upload text-warning"></i>
                     Settlement Education
                 </h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-success">
-                    <i class="fal fa-check"></i> 
-                    <strong>2,456</strong> records uploaded
-                </div>
-                <div class="text-center">
-                    <button class="btn btn-outline-success btn-sm" onclick="reuploadFile('agn_settle_edu')">
-                        <i class="fal fa-redo"></i> Re-upload
+                <p class="text-muted small mb-3">
+                    Upload file settlement education untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                </p>
+                <form id="form-agn-settle-edu" enctype="multipart/form-data">
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
+                    <input type="hidden" name="file_type" value="settle_edu" />
+                    <div class="custom-file">
+                        <input type="file" class="custom-file-input" id="file-agn-settle-edu" name="file" accept=".csv,.xlsx,.xls" required>
+                        <label class="custom-file-label" for="file-agn-settle-edu">Pilih file...</label>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_edu')">
+                        <i class="fal fa-upload"></i> Upload
                     </button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -112,11 +109,14 @@
                     Upload file data settlement pajak untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
                 </p>
                 <form id="form-agn-settle-pajak" enctype="multipart/form-data">
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
+                    <input type="hidden" name="file_type" value="settle_pajak" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-settle-pajak" name="file" accept=".csv,.xlsx,.xls">
+                        <input type="file" class="custom-file-input" id="file-agn-settle-pajak" name="file" accept=".csv,.xlsx,.xls" required>
                         <label class="custom-file-label" for="file-agn-settle-pajak">Pilih file...</label>
                     </div>
-                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('agn_settle_pajak')">
+                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_pajak')">
                         <i class="fal fa-upload"></i> Upload
                     </button>
                 </form>
@@ -135,14 +135,17 @@
             </div>
             <div class="card-body">
                 <p class="text-muted small mb-3">
-                    Upload file transaksi M-Gate (Payment Gateway) untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                    Upload file transaksi M-Gate (Payment Gateway) untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }} <span class="text-danger">*Wajib</span>
                 </p>
                 <form id="form-agn-trx-mgate" enctype="multipart/form-data">
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
+                    <input type="hidden" name="file_type" value="mgate" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-trx-mgate" name="file" accept=".csv,.xlsx,.xls">
+                        <input type="file" class="custom-file-input" id="file-agn-trx-mgate" name="file" accept=".csv,.xlsx,.xls" required>
                         <label class="custom-file-label" for="file-agn-trx-mgate">Pilih file...</label>
                     </div>
-                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('agn_trx_mgate')">
+                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('mgate')">
                         <i class="fal fa-upload"></i> Upload
                     </button>
                 </form>
@@ -164,16 +167,13 @@
                     <div class="upload-summary">
                         <span class="text-muted">Status Upload:</span>
                         <span class="ml-2">
-                            <strong class="text-warning">1/4 files</strong>
+                            <strong class="text-warning" id="upload-count">0/4 files</strong>
                         </span>
                     </div>
                     
-                    <div class="demo-buttons">
-                        <button class="btn btn-outline-info mr-2" onclick="simulateAllUploads()">
-                            <i class="fal fa-magic"></i> Simulasi Upload Semua (Demo)
-                        </button>
-                        <button class="btn btn-outline-primary" disabled id="btn-next-step">
-                            <i class="fal fa-lock"></i> Upload Semua File Dulu
+                    <div class="action-buttons">
+                        <button class="btn btn-success mr-2" onclick="validateAndProceed()" disabled id="btn-validate">
+                            <i class="fal fa-check-circle"></i> Validasi & Lanjutkan
                         </button>
                     </div>
                 </div>
@@ -185,54 +185,36 @@
 
 @push('styles')
 <style>
-.step-progress {
+.upload-checklist .checklist-item {
     display: flex;
     align-items: center;
-    justify-content: center;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
 }
 
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+.upload-checklist .checklist-item i {
+    margin-right: 0.75rem;
+    font-size: 1rem;
 }
 
-.step-number {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #e9ecef;
-    color: #6c757d;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-.step.active .step-number {
-    background: #007bff;
-    color: white;
-}
-
-.step-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: #6c757d;
-}
-
-.step.active .step-title {
-    color: #007bff;
-    font-weight: bold;
-}
-
-.step-line {
+.upload-checklist .checklist-item span {
     flex: 1;
-    height: 2px;
-    background: #e9ecef;
-    margin: 0 20px;
-    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.upload-checklist .checklist-item small {
+    margin-left: 0.5rem;
+}
+
+.upload-checklist .checklist-item.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.custom-file-label::after {
+    content: "Browse";
 }
 </style>
 @endpush
@@ -240,11 +222,44 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
+    // Variabel untuk tracking upload
+    let uploadedFiles = [];
+    const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
+    
     // Custom file input labels
     $('.custom-file-input').on('change', function() {
         var fileName = $(this).val().split('\\').pop();
         $(this).siblings('.custom-file-label').addClass('selected').html(fileName);
+        
+        // Validasi file
+        validateFile(this);
     });
+    
+    // Fungsi validasi file
+    function validateFile(input) {
+        const file = input.files[0];
+        if (!file) return false;
+        
+        // Cek ukuran file (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File terlalu besar! Maksimal 10MB');
+            $(input).val('');
+            return false;
+        }
+        
+        // Cek format file
+        const allowedTypes = ['.xlsx', '.xls', '.csv'];
+        const fileName = file.name.toLowerCase();
+        const isValidType = allowedTypes.some(type => fileName.endsWith(type));
+        
+        if (!isValidType) {
+            alert('Format file tidak valid! Hanya menerima file Excel (.xlsx, .xls) atau CSV (.csv)');
+            $(input).val('');
+            return false;
+        }
+        
+        return true;
+    }
 });
 
 function uploadFile(type) {
@@ -253,7 +268,12 @@ function uploadFile(type) {
     var fileInput = $(fileInputId)[0];
     
     if (!fileInput.files[0]) {
-        toastr.error('Pilih file terlebih dahulu');
+        alert('Pilih file terlebih dahulu');
+        return;
+    }
+    
+    // Konfirmasi upload
+    if (!confirm('Yakin ingin upload file ini?')) {
         return;
     }
     
@@ -262,94 +282,153 @@ function uploadFile(type) {
     var originalHtml = btn.html();
     btn.prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Uploading...');
     
-    // Simulate upload
-    setTimeout(() => {
-        // Update card to show uploaded
-        var card = $(formId).closest('.card');
-        card.removeClass('border-warning').addClass('border-success');
-        card.find('.card-header').removeClass('bg-warning-200').addClass('bg-success-200');
-        card.find('.card-title i').removeClass('fa-upload text-warning').addClass('fa-check-circle text-success');
-        
-        // Update card body
-        $(formId).parent().html(`
-            <div class="alert alert-success">
-                <i class="fal fa-check"></i> 
-                <strong>5,234</strong> records uploaded (Demo)
-            </div>
-            <div class="text-center">
-                <button class="btn btn-outline-success btn-sm" onclick="reuploadFile('${type}')">
-                    <i class="fal fa-redo"></i> Re-upload
-                </button>
-            </div>
-        `);
-        
-        toastr.success('File berhasil diupload!');
-        
-        // Check if all files are uploaded
-        checkUploadStatus();
-    }, 1500);
+    // Ambil data form
+    var formData = new FormData($(formId)[0]);
+    
+    // AJAX Upload
+    $.ajax({
+        url: '{{ site_url("rekon/process/upload-files") }}',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                // Update card menjadi success
+                var card = $(formId).closest('.card');
+                card.removeClass('border-warning').addClass('border-success');
+                card.find('.card-header').removeClass('bg-warning-200').addClass('bg-success-200');
+                card.find('.card-title i').removeClass('fa-upload text-warning').addClass('fa-check-circle text-success');
+                
+                // Update card body
+                $(formId).parent().html(`
+                    <div class="alert alert-success">
+                        <i class="fal fa-check"></i> 
+                        <strong>File berhasil diupload!</strong><br>
+                        <small>${response.message || 'Upload completed successfully'}</small>
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-outline-success btn-sm" onclick="reuploadFile('${type}')">
+                            <i class="fal fa-redo"></i> Re-upload
+                        </button>
+                    </div>
+                `);
+                
+                alert('File berhasil diupload!');
+                
+                // Tambahkan ke daftar uploaded files
+                if (!uploadedFiles.includes(type)) {
+                    uploadedFiles.push(type);
+                }
+                
+                // Update status upload
+                updateUploadStatus();
+            } else {
+                alert('Gagal upload file: ' + (response.message || 'Unknown error'));
+                btn.prop('disabled', false).html(originalHtml);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Error saat upload file: ' + error);
+            btn.prop('disabled', false).html(originalHtml);
+        }
+    });
 }
 
-function checkUploadStatus() {
-    var uploadedCount = $('.border-success').length;
-    var totalFiles = 4;
+function updateUploadStatus() {
+    const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
+    const uploadedRequired = uploadedFiles.filter(file => requiredFiles.includes(file));
+    const totalRequired = requiredFiles.length;
     
-    $('.upload-summary strong').text(uploadedCount + '/' + totalFiles + ' files');
+    // Update counter
+    $('#upload-count').text(uploadedRequired.length + '/' + totalRequired + ' files');
     
-    if (uploadedCount === totalFiles) {
-        $('.upload-summary strong').removeClass('text-warning').addClass('text-success');
-        $('#btn-next-step').removeClass('btn-outline-primary').addClass('btn-success')
-                          .prop('disabled', false)
-                          .html('<i class="fal fa-arrow-right"></i> Lanjut ke Validasi')
-                          .attr('onclick', "window.location.href='{{ site_url('rekon/process/step2') }}'");
+    // Jika semua file wajib sudah diupload
+    if (uploadedRequired.length === totalRequired) {
+        $('#upload-count').removeClass('text-warning').addClass('text-success');
+        $('#btn-validate').prop('disabled', false);
+        alert('Semua file wajib telah diupload! Silakan klik "Validasi & Lanjutkan"');
     } else {
-        $('.upload-summary strong').removeClass('text-success').addClass('text-warning');
+        $('#upload-count').removeClass('text-success').addClass('text-warning');
+        $('#btn-validate').prop('disabled', true);
     }
 }
 
 function reuploadFile(type) {
-    if (confirm('Yakin ingin upload ulang? Data sebelumnya akan dihapus.')) {
-        // Reset upload status for this type
+    if (confirm('Yakin ingin upload ulang? File sebelumnya akan diganti.')) {
+        // Reset upload status untuk tipe ini
+        uploadedFiles = uploadedFiles.filter(file => file !== type);
+        
+        // Reload halaman untuk reset form
         window.location.reload();
     }
 }
 
-function simulateAllUploads() {
-    // Show loading animation
-    toastr.info('Mensimulasikan upload semua file...');
+function validateAndProceed() {
+    const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
+    const uploadedRequired = uploadedFiles.filter(file => requiredFiles.includes(file));
     
-    // Disable demo button
-    $('[onclick="simulateAllUploads()"]').prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Uploading...');
+    if (uploadedRequired.length < requiredFiles.length) {
+        alert('Harap upload semua file yang wajib terlebih dahulu!');
+        return;
+    }
     
-    // Simulate upload process for remaining files
-    setTimeout(() => {
-        // Update cards to show all uploaded
-        $('.card.border-warning').removeClass('border-warning').addClass('border-success');
-        $('.card-header.bg-warning-200').removeClass('bg-warning-200').addClass('bg-success-200');
-        $('.fa-upload.text-warning').removeClass('fa-upload text-warning').addClass('fa-check-circle text-success');
-        
-        // Update card bodies to show success
-        $('#form-agn-detail, #form-agn-settle-pajak, #form-agn-trx-mgate').parent().html(`
-            <div class="alert alert-success">
-                <i class="fal fa-check"></i> 
-                <strong>File berhasil diupload</strong> (Demo)
-            </div>
-            <div class="text-center">
-                <button class="btn btn-outline-success btn-sm" onclick="reuploadFile('demo')">
-                    <i class="fal fa-redo"></i> Re-upload
-                </button>
-            </div>
-        `);
-        
-        // Update status and enable next button
-        $('.upload-summary strong').removeClass('text-warning').addClass('text-success').text('4/4 files');
-        $('#btn-next-step').removeClass('btn-outline-primary').addClass('btn-success')
-                          .prop('disabled', false)
-                          .html('<i class="fal fa-arrow-right"></i> Lanjut ke Validasi')
-                          .attr('onclick', "window.location.href='{{ site_url('rekon/process/step2') }}'");
-        
-        toastr.success('Semua file berhasil diupload!');
-    }, 2000);
+    if (!confirm('Yakin ingin melanjutkan ke proses validasi?')) {
+        return;
+    }
+    
+    // Disable button dan show loading
+    $('#btn-validate').prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Memvalidasi...');
+    
+    // AJAX untuk validasi
+    $.ajax({
+        url: '{{ site_url("rekon/process/validate-files") }}',
+        method: 'POST',
+        data: {
+            tanggal_rekon: '{{ $tanggalRekon }}',
+            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+        },
+        success: function(response) {
+            if (response.success && response.validation_passed) {
+                alert('Validasi berhasil! Melanjutkan ke proses data upload...');
+                callDataUploadProcess();
+            } else {
+                alert('Validasi gagal: ' + (response.message || 'Unknown error'));
+                $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
+            }
+        },
+        error: function() {
+            alert('Error saat validasi files');
+            $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
+        }
+    });
+}
+
+function callDataUploadProcess() {
+    // AJAX untuk proses data upload
+    $.ajax({
+        url: '{{ site_url("rekon/process/process-data") }}',
+        method: 'POST',
+        data: {
+            tanggal_rekon: '{{ $tanggalRekon }}',
+            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('Proses data upload berhasil! Mengarahkan ke halaman selanjutnya...');
+                setTimeout(() => {
+                    window.location.href = '{{ site_url("rekon/process/step2") }}';
+                }, 2000);
+            } else {
+                alert('Gagal proses data upload: ' + (response.message || 'Unknown error'));
+                $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
+            }
+        },
+        error: function() {
+            alert('Error saat proses data upload');
+            $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
+        }
+    });
 }
 </script>
 @endpush

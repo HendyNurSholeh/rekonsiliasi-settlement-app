@@ -24,33 +24,9 @@ class ProsesModel extends Model
     protected $updatedField  = '';
     protected $deletedField  = '';
 
-    // Validation
-    protected $validationRules      = [
-        'TGL_REKON' => 'required|valid_date|is_unique[t_proses.TGL_REKON]',
-        'STATUS' => 'required|in_list[0,1]'
-    ];
-    protected $validationMessages   = [
-        'TGL_REKON' => [
-            'is_unique' => 'Proses rekonsiliasi untuk tanggal ini sudah ada'
-        ]
-    ];
-    protected $skipValidation       = false;
-    protected $cleanValidationRules = true;
-
     // Status constants
     const STATUS_PENDING = 0;
     const STATUS_COMPLETED = 1;
-
-    /**
-     * Create new reconciliation process
-     */
-    public function createProcess($tanggalRekon)
-    {
-        return $this->insert([
-            'TGL_REKON' => $tanggalRekon,
-            'STATUS' => self::STATUS_PENDING
-        ]);
-    }
 
     /**
      * Get process by date
@@ -61,134 +37,150 @@ class ProsesModel extends Model
     }
 
     /**
-     * Update process status
+     * Check if date has existing process (simplified)
      */
-    public function updateStatus($id, $status)
+    public function checkExistingProcess($tanggalRekon)
     {
-        return $this->update($id, ['STATUS' => $status]);
-    }
-
-    /**
-     * Complete process
-     */
-    public function completeProcess($id)
-    {
-        return $this->updateStatus($id, self::STATUS_COMPLETED);
-    }
-
-    /**
-     * Get pending processes
-     */
-    public function getPendingProcesses()
-    {
-        return $this->where('STATUS', self::STATUS_PENDING)
-                    ->orderBy('TGL_REKON', 'DESC')
-                    ->findAll();
-    }
-
-    /**
-     * Get completed processes
-     */
-    public function getCompletedProcesses()
-    {
-        return $this->where('STATUS', self::STATUS_COMPLETED)
-                    ->orderBy('TGL_REKON', 'DESC')
-                    ->findAll();
-    }
-
-    /**
-     * Get all processes with status info
-     */
-    public function getAllWithStatusInfo()
-    {
-        return $this->select('
-            ID,
-            TGL_REKON,
-            STATUS,
-            CASE 
-                WHEN STATUS = 0 THEN "Pending"
-                WHEN STATUS = 1 THEN "Completed"
-                ELSE "Unknown"
-            END as status_label
-        ')
-        ->orderBy('TGL_REKON', 'DESC')
-        ->findAll();
-    }
-
-    /**
-     * Check if process exists for date
-     */
-    public function processExistsForDate($tanggalRekon)
-    {
-        return $this->where('TGL_REKON', $tanggalRekon)->countAllResults() > 0;
-    }
-
-    /**
-     * Get latest process
-     */
-    public function getLatestProcess()
-    {
-        return $this->orderBy('TGL_REKON', 'DESC')->first();
-    }
-
-    /**
-     * Get processes by date range
-     */
-    public function getByDateRange($startDate, $endDate)
-    {
-        return $this->where('TGL_REKON >=', $startDate)
-                    ->where('TGL_REKON <=', $endDate)
-                    ->orderBy('TGL_REKON', 'DESC')
-                    ->findAll();
-    }
-
-    /**
-     * Get process statistics
-     */
-    public function getStatistics()
-    {
-        return $this->select('
-            COUNT(*) as total_processes,
-            COUNT(CASE WHEN STATUS = 0 THEN 1 END) as pending_count,
-            COUNT(CASE WHEN STATUS = 1 THEN 1 END) as completed_count,
-            MAX(TGL_REKON) as latest_process_date,
-            MIN(TGL_REKON) as earliest_process_date
-        ')
-        ->first();
-    }
-
-    /**
-     * Delete old processes (older than specified days)
-     */
-    public function deleteOldProcesses($daysOld = 90)
-    {
-        $cutoffDate = date('Y-m-d', strtotime("-{$daysOld} days"));
-        return $this->where('TGL_REKON <', $cutoffDate)->delete();
-    }
-
-    /**
-     * Get process with reconciliation summary
-     */
-    public function getProcessWithSummary($id)
-    {
-        $process = $this->find($id);
-        if (!$process) {
-            return null;
-        }
-
-        // You can add additional queries here to get summary data
-        // from related tables for this specific reconciliation date
+        $existing = $this->getByDate($tanggalRekon);
         
-        return $process;
+        if ($existing) {
+            return [
+                'exists' => true,
+                'process' => $existing
+            ];
+        }
+        
+        return [
+            'exists' => false,
+            'process' => null
+        ];
     }
 
     /**
-     * Mark process as failed (you might want to add a status for this)
+     * Call p_proses_persiapan stored procedure
      */
-    public function markAsFailed($id)
+    public function callProcessPersiapan($tanggalRekon, $isReset = false)
     {
-        // If you add a FAILED status (e.g., STATUS = 2), you can use this method
-        // For now, we'll keep it as pending
-        return $this->updateStatus($id, self::STATUS_PENDING);
+        try {
+            $db = \Config\Database::connect();
+            $formattedDate = date('Y-m-d', strtotime($tanggalRekon));
+            
+            // Call stored procedure p_proses_persiapan with only 1 parameter
+            $query = "CALL p_proses_persiapan(?)";
+            $result = $db->query($query, [$formattedDate]);
+            
+            if ($result) {
+                // Since this stored procedure doesn't return result set, we check if it executed successfully
+                return [
+                    'success' => true,
+                    'message' => $isReset ? 'Proses berhasil direset dan data temporary dibersihkan' : 'Proses rekonsiliasi berhasil dibuat',
+                    'data' => [
+                        'tanggal_rekon' => $formattedDate,
+                        'is_reset' => $isReset
+                    ]
+                ];
+            }
+            
+            return [
+                'success' => false,
+                'message' => 'Gagal menjalankan stored procedure',
+                'data' => null
+            ];
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in callProcessPersiapan: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'data' => null
+            ];
+        }
+    }
+
+    /**
+     * Reset process: Call p_reset_date first, then p_proses_persiapan
+     * This is the proper reset flow as designed by senior
+     */
+    public function resetProcess($tanggalRekon)
+    {
+        try {
+            $db = \Config\Database::connect();
+            $formattedDate = date('Y-m-d', strtotime($tanggalRekon));
+            
+            // Step 1: Reset/clean data for specific date using p_reset_date
+            $resetResult = $this->callResetDate($formattedDate);
+            if (!$resetResult['success']) {
+                return [
+                    'success' => false,
+                    'message' => 'Gagal membersihkan data: ' . $resetResult['message']
+                ];
+            }
+            
+            // Step 2: Create new process preparation using p_proses_persiapan
+            $prepResult = $this->callProcessPersiapan($formattedDate, true);
+            if (!$prepResult['success']) {
+                return [
+                    'success' => false,
+                    'message' => 'Data berhasil dibersihkan, tapi gagal membuat proses baru: ' . $prepResult['message']
+                ];
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Proses berhasil direset dan dibuat ulang untuk tanggal ' . date('d/m/Y', strtotime($tanggalRekon))
+            ];
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in resetProcess: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Error saat reset proses: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Call p_reset_date stored procedure
+     * Clean data for specific date from all related tables
+     */
+    private function callResetDate($tanggalRekon)
+    {
+        try {
+            $db = \Config\Database::connect();
+            $formattedDate = date('Y-m-d', strtotime($tanggalRekon));
+            
+            // Call stored procedure p_reset_date
+            $query = "CALL p_reset_date(?)";
+            $result = $db->query($query, [$formattedDate]);
+            
+            if ($result) {
+                return [
+                    'success' => true,
+                    'message' => 'Data untuk tanggal ' . $formattedDate . ' berhasil dibersihkan',
+                    'details' => [
+                        'tanggal_reset' => $formattedDate,
+                        'tables_cleaned' => [
+                            't_agn_detail', 't_agn_settle_edu', 't_agn_settle_pajak', 
+                            't_agn_trx_mgate', 't_proses', 'temp_tables'
+                        ]
+                    ]
+                ];
+            }
+            
+            return [
+                'success' => false,
+                'message' => 'Gagal menjalankan stored procedure p_reset_date'
+            ];
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in callResetDate: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Error saat reset data: ' . $e->getMessage()
+            ];
+        }
     }
 }
