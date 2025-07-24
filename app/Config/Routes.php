@@ -1,0 +1,208 @@
+<?php
+
+namespace Config;
+
+// Create a new instance of our RouteCollection class.
+$routes = Services::routes();
+
+/*
+ * --------------------------------------------------------------------
+ * Router Setup
+ * --------------------------------------------------------------------
+ */
+$routes->setDefaultNamespace('App\Controllers');
+$routes->setDefaultController('Home');
+$routes->setDefaultMethod('index');
+$routes->setTranslateURIDashes(false);
+$routes->set404Override();
+// The Auto Routing (Legacy) is very dangerous. It is easy to create vulnerable apps
+// where controller filters or CSRF protection are bypassed.
+// If you don't want to define all routes, please use the Auto Routing (Improved).
+// Set `$autoRoutesImproved` to true in `app/Config/Feature.php` and set the following to true.
+// $routes->setAutoRoute(false);
+
+/*
+ * --------------------------------------------------------------------
+ * Route Definitions
+ * --------------------------------------------------------------------
+ */
+
+// We get a performance increase by specifying the default
+// route since we don't have to scan directories.
+
+// ? Auth
+$routes->addRedirect('/', '/login');
+$routes->get('/login', 'Auth\Login::index', ['as' => 'login']);
+$routes->post('/login', 'Auth\Login::index');
+$routes->get('/logout', 'Auth\Login::logout', ['as' => 'logout']);
+
+$routes->get('/refresh/captcha', 'Auth\Login::refreshCaptcha', ['as' => 'refresh.captcha']);
+
+// ? Profile
+$routes->get('/profile', 'User\Profile::index', ['as' => 'user.profile']);
+$routes->post('/profile', 'User\Profile::index');
+
+// ? Dashboard
+$routes->get('/dashboard', 'Dashboard::index', ['as' => 'dashboard']);
+
+// ? Rekonsiliasi Settlement Routes
+$routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($routes) {
+    $routes->get('process', 'RekonProcess::index', ['as' => 'rekon.process']);
+    $routes->post('process/create', 'RekonProcess::create', ['as' => 'rekon.process.create']);
+    $routes->get('process/step1', 'RekonProcess::step1', ['as' => 'rekon.process.step1']);
+    $routes->get('process/step2', 'RekonProcess::step2', ['as' => 'rekon.process.step2']);
+    $routes->get('process/step3', 'RekonProcess::step3', ['as' => 'rekon.process.step3']);
+    $routes->post('process/processReconciliation', 'RekonProcess::processReconciliation', ['as' => 'rekon.process.processReconciliation']);
+    
+    // Report Routes
+    $routes->get('reports', 'RekonReport::index', ['as' => 'rekon.reports']);
+    $routes->get('reports/(:segment)', 'RekonReport::index/$1', ['as' => 'rekon.reports.date']);
+    $routes->get('reports/download/(:segment)/(:segment)', 'RekonReport::downloadExcel/$1/$2', ['as' => 'rekon.reports.download']);
+});
+
+// ? Upload Data Routes  
+$routes->group('upload', ['namespace' => 'App\Controllers\Upload'], function($routes) {
+    $routes->get('agregator', 'UploadData::agregator', ['as' => 'upload.agregator']);
+    $routes->get('settlement-pajak', 'UploadData::settlementPajak', ['as' => 'upload.settlement-pajak']);
+    $routes->get('settlement-edu', 'UploadData::settlementEdu', ['as' => 'upload.settlement-edu']);
+    $routes->get('mgate', 'UploadData::mgate', ['as' => 'upload.mgate']);
+    $routes->post('process', 'UploadData::processUpload', ['as' => 'upload.process']);
+});
+
+// ? Branch
+$routes->get('/unit-kerja', 'User\UnitKerjaController::index', ['as' => 'unit-kerja.index']);
+// ? Branch API
+$routes->post('/optionsDivOnly/unitKerjaAPI', 'User\UnitKerjaController::optionsDivOnly');
+$routes->post('/optionsCabOnly/unitKerjaAPI', 'User\UnitKerjaController::optionsCabOnly');
+$routes->post('/options/unitKerjaAPI', 'User\UnitKerjaController::options');
+$routes->get('/dataTables/unitKerjaAPI', 'User\UnitKerjaController::dataTables');
+$routes->post('/post/unitKerjaAPI', 'User\UnitKerjaController::post');
+$routes->post('/edit/unitKerjaAPI', 'User\UnitKerjaController::edit');
+$routes->post('/delete/unitKerjaAPI', 'User\UnitKerjaController::delete');
+
+// ? Role
+$routes->get('/role', 'User\RoleController::index', ['as' => 'role.index']);
+// ? Role API
+$routes->post('/options/roleAPI', 'User\RoleController::options');
+$routes->get('/dataTables/roleAPI', 'User\RoleController::dataTables');
+$routes->post('/post/roleAPI', 'User\RoleController::post');
+$routes->post('/edit/roleAPI', 'User\RoleController::edit');
+$routes->post('/delete/roleAPI', 'User\RoleController::delete');
+$routes->get('/permission/roleAPI/(:num)', 'User\RoleController::getPermissions/$1');
+$routes->put('/assignPermission/roleAPI', 'User\RoleController::assignPermission');
+
+
+// ? Currency Conversions
+$routes->get('/currency-conversion', 'User\CurrencyConversionController::index', ['as' => 'currencyConversion.index']);
+// ? Role Currency Conversions
+$routes->get('/dataTables/currencyConversionAPI', 'User\CurrencyConversionController::dataTables');
+$routes->post('/post/currencyConversionAPI', 'User\CurrencyConversionController::post');
+$routes->post('/delete/currencyConversionAPI', 'User\CurrencyConversionController::delete');
+$routes->post('/edit/currencyConversionAPI', 'User\CurrencyConversionController::edit');
+$routes->post('/options/currencyConversionAPI', 'User\CurrencyConversionController::options');
+$routes->get('/getCurrencyRateToUsd/currencyConversionAPI', 'User\CurrencyConversionController::getCurrencyRateToUsd');
+
+// ? Underlying
+$routes->get('/underlying', 'User\UnderlyingController::index', ['as' => 'underlying.index']);
+// ? Role Underlying
+$routes->get('/dataTables/underlyingAPI', 'User\UnderlyingController::dataTables');
+$routes->get('/getAllCurrencyConversions/underlyingAPI', 'User\UnderlyingController::getAllCurrencyConversions');
+$routes->get('/getCurrencyRateToUsd/underlyingAPI', 'User\UnderlyingController::getCurrencyRateToUsd');
+$routes->post('/post/underlyingAPI', 'User\UnderlyingController::post');
+$routes->post('/edit/underlyingAPI', 'User\UnderlyingController::edit');
+$routes->post('/delete/underlyingAPI', 'User\UnderlyingController::delete');
+
+// ? Transaction
+$routes->get('/transaction/([A-Za-z0-9\-_]+)', 'User\TransactionController::index/$1', ['as' => 'transaction.index']);
+// ? Role Transaction
+$routes->get('/dataTables/transactionAPI', 'User\TransactionController::dataTables');
+$routes->post('/post/transactionAPI', 'User\TransactionController::post');
+$routes->post('/edit/transactionAPI', 'User\TransactionController::edit');
+$routes->post('/delete/transactionAPI', 'User\TransactionController::delete');
+$routes->post('/getNasabah', 'User\TransactionController::getNasabah');
+
+// ? Permission	
+$routes->get('/permission', 'User\PermissionController::index', ['as' => 'permission.index']);
+// ? Permission API
+$routes->post('/options/permissionAPI', 'User\PermissionController::options');
+$routes->get('/dataTables/permissionAPI', 'User\PermissionController::dataTables');
+$routes->post('/post/permissionAPI', 'User\PermissionController::post');
+$routes->post('/edit/permissionAPI', 'User\PermissionController::edit');
+$routes->post('/delete/permissionAPI', 'User\PermissionController::delete');
+
+// ? User
+$routes->get('/user', 'User\UserController::index', ['as' => 'user.index']);
+
+// ? User API
+$routes->get('/dataTables/userAPI', 'User\UserController::dataTables');
+$routes->post('/post/userAPI', 'User\UserController::post');
+$routes->post('/edit/userAPI', 'User\UserController::edit');
+$routes->post('/updateStatus/userAPI', 'User\UserController::updateStatus');
+$routes->post('/delete/userAPI', 'User\UserController::delete');
+$routes->post('/resetPassword/userAPI', 'User\UserController::resetPassword');
+
+// ? Log Viewer
+$routes->get('/log/error', 'Log\LogError::index', ['as' => 'log.error']);
+$routes->get('/log/activity', 'Log\LogActivityController::index', ['as' => 'log.activity']);
+// ? Log Activity API
+$routes->get('/dataTables/logActivityAPI', 'Log\LogActivityController::dataTables');
+$routes->get('/show/logActivityAPI/(:num)', 'Log\LogActivityController::showLog/$1');
+
+// ? Ticket
+$routes->get('/ticket', 'User\TicketController::index', ['as' => 'ticket.index']);
+// ? Ticket API
+$routes->get('/dataTables/ticketAPI', 'User\TicketController::dataTables');
+$routes->post('/post/ticketAPI', 'User\TicketController::post');
+$routes->post('/edit/ticketAPI', 'User\TicketController::edit'); // <-- THIS LINE IS REQUIRED FOR MAKE OFFER
+$routes->post('/delete/ticketAPI', 'User\TicketController::delete');
+$routes->get('/show/ticketAPI/(:num)', 'User\TicketController::show/$1');
+$routes->post('/sendMessage/ticketAPI', 'User\TicketController::sendMessage');
+$routes->get('/fetchMessages/ticketAPI/(:num)', 'User\TicketController::fetchMessages/$1');
+$routes->get('/ticketChat/(:any)', 'User\TicketController::showChat/$1');
+$routes->post('/chatMessage/ticketAPI', 'User\TicketController::chatMessage');
+$routes->get('/testChatMessage', 'User\TicketController::chatMessage');
+$routes->post('/closeTicket/ticketAPI', 'User\TicketController::closeTicket');
+$routes->post('/acceptOffer/ticketAPI', 'User\TicketController::acceptOffer');
+$routes->get('/getAccountList/ticketAPI', 'User\TicketController::getAccountList'); // <-- add this line
+$routes->get('/getVTicketWithUnitByTicketId', 'User\TicketController::getVTicketWithUnitByTicketId');
+$routes->get('/ticket/export-pdf/(:any)', 'User\TicketController::exportPdf/$1');
+
+// Add this line for stats/ticketAPI
+$routes->get('/stats/ticketAPI', 'User\TicketController::stats');
+
+$routes->get('/options/documentTypeAPI', 'User\DocumentTypeController::options');
+
+// ? Transaksi Valas (Non-Underlying)
+$routes->get('/transaksi_valas', 'User\TransaksiValasController::index', ['as' => 'transaksi_valas.index']);
+$routes->get('/dataTables/valasAPI', 'User\TransaksiValasController::dataTables');
+$routes->post('/post/valasAPI', 'User\TransaksiValasController::post');
+$routes->post('/edit/valasAPI', 'User\TransaksiValasController::edit');
+$routes->post('/delete/valasAPI', 'User\TransaksiValasController::delete');
+$routes->get('/getMonthlyTotal/valasAPI', 'User\TransaksiValasController::getMonthlyTotalAPI');
+$routes->get('/transaksi_valas/print/(:num)', 'User\TransaksiValasController::print/$1', ['as' => 'transaksi_valas.print']);
+
+// Monitoring Transaksi
+$routes->get('/monitoring_transaksi', 'User\MonitoringTransaksiController::index', ['as' => 'monitoring_transaksi.index']);
+$routes->get('/dataTables/monitoringTransaksiAPI', 'User\MonitoringTransaksiController::dataTables');
+$routes->get('/monitoring_transaksi/print', 'User\MonitoringTransaksiController::print', ['as' => 'monitoring_transaksi.print']);
+
+// API: Get all currency conversions
+$routes->get('/api/currency-conversions', 'User\CurrencyConversionController::getAll');
+$routes->get('/api/jenis-transaksi', 'User\UnderlyingController::jenisTransaksi');
+
+/*
+ * --------------------------------------------------------------------
+ * Additional Routing
+ * --------------------------------------------------------------------
+ *
+ * There will often be times that you need additional routing and you
+ * need it to be able to override any defaults in this file. Environment
+ * based routes is one such time. require() additional route files here
+ * to make that happen.
+ *
+ * You will have access to the $routes object within that file without
+ * needing to reload it.
+ */
+if (is_file(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
+	require APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php';
+}

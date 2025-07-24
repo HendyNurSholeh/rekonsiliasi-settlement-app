@@ -1,0 +1,78 @@
+/* Custom font size override - Choose one option below */
+
+/* OPTION 1: Very Small (11px equivalent) */
+/*
+body {
+    font-size: 0.6875rem !important;
+}
+html {
+    font-size: 16px;
+}
+*/
+
+/* OPTION 2: Small (12px equivalent) - Currently Active */
+body {
+    font-size: 0.75rem !important;
+}
+html {
+    font-size: 16px;
+}
+
+/* OPTION 3: Medium Small (13px equivalent - close to original but slightly smaller) */
+/*
+body {
+    font-size: 0.8125rem !important;
+}
+html {
+    font-size: 15px;
+}
+*/
+
+/* Common styles for all options */
+/* Ensure form elements also get the smaller font */
+input, textarea, select, button {
+    font-size: inherit !important;
+}
+
+/* Adjust table font size */
+.table {
+    font-size: inherit !important;
+}
+
+/* Adjust navigation font size */
+.nav-link-text {
+    font-size: inherit !important;
+}
+
+/* Adjust dropdown menu font size */
+.dropdown-menu {
+    font-size: inherit !important;
+}
+
+/* Adjust modal font size */
+.modal-body {
+    font-size: inherit !important;
+}
+
+/* Adjust card font size */
+.card-body {
+    font-size: inherit !important;
+}
+
+/* Custom styles for navigation subtitle */
+.nav-link-text.small {
+    font-size: 0.65rem !important;
+    color: #888 !important;
+    font-style: italic;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
+/* Custom styles for nav title */
+.nav-title {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    color: #666 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
