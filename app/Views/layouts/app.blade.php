@@ -91,10 +91,10 @@
                                     <ul>
                                         <li class="@if ($route == 'rekon/process') active @endif">
                                             <a href="{{ site_url('rekon/process') }}">
-                                                <span class="nav-link-text text-left">Pilih Tanggal</span>
+                                                <span class="nav-link-text text-left">Proses Rekonsialiasi</span>
                                             </a>
                                         </li>
-                                        <li class="@if ($route == '/rekon/process/step2') active @endif">
+                                        <li class="@if ($route == 'rekon/process/step2') active @endif">
                                             <a href="{{ site_url('/rekon/process/step2') }}">
                                                 <span class="nav-link-text text-left">Review Data</span>
                                             </a>
