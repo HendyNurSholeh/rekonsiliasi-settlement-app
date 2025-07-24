@@ -86,7 +86,7 @@
                                 <li class="@if (str_contains($route, 'rekon/process')) active open @endif">
                                     <a href="javascript:void(0);" title="User Management" data-filter-tags="user management">
                                         <i class="fal fa-calendar-alt"></i>
-                                        <span class="nav-link-text">Buat Proses Rekon</span>
+                                        <span class="nav-link-text">Persiapan</span>
                                     </a>
                                     <ul>
                                         <li class="@if ($route == 'rekon/process') active @endif">
@@ -96,7 +96,7 @@
                                         </li>
                                         <li class="@if ($route == '/rekon/process/step2') active @endif">
                                             <a href="{{ site_url('/rekon/process/step2') }}">
-                                                <span class="nav-link-text text-left">Mulai Proses Rekon</span>
+                                                <span class="nav-link-text text-left">Review Data</span>
                                             </a>
                                         </li>
                                     </ul>
