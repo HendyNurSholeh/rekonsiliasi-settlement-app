@@ -97,7 +97,7 @@
                                         <li class="@if ($route == 'rekon/process/step2') active @endif">
                                             <a href="{{ site_url('/rekon/process/step2') }}">
                                                 <span class="nav-link-text text-left">Review Data</span>
-                                            </a>
+                                            </a> 
                                         </li>
                                     </ul>
                                 </li>
