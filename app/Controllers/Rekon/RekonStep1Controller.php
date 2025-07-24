@@ -37,6 +37,11 @@ class RekonStep1Controller extends BaseController
         // Get date from URL parameter or session
         $tanggalRekon = $this->request->getGet('tanggal') ?? session()->get('current_rekon_date');
         
+        // If no date available, get default from database using ORM
+        if (!$tanggalRekon) {
+            $tanggalRekon = $this->prosesModel->getDefaultDate();
+        }
+        
         if (!$tanggalRekon) {
             return redirect()->to('rekon')->with('error', 'Tanggal rekonsiliasi tidak ditemukan. Silakan buat proses baru.');
         }

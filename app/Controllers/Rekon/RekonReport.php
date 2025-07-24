@@ -4,6 +4,7 @@ namespace App\Controllers\Rekon;
 
 use App\Controllers\BaseController;
 use App\Traits\HasLogActivity;
+use App\Models\ProsesModel;
 use DateTime;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -11,10 +12,18 @@ class RekonReport extends BaseController
 {
     use HasLogActivity;
 
+    protected $prosesModel;
+
+    public function __construct()
+    {
+        $this->prosesModel = new ProsesModel();
+    }
+
     public function index($date = null)
     {
         if (!$date) {
-            $date = date('Y-m-d', strtotime('-1 day'));
+            // Get default date from database where status = 1 using ORM
+            $date = $this->prosesModel->getDefaultDate();
         }
 
         // Validate date format

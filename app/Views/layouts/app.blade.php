@@ -83,7 +83,7 @@
                         @if ($rekon_process || $upload_data)
                         
                             @if ($rekon_process)
-                                <li class="@if (str_contains($route, 'rekon')) active open @endif">
+                                <li class="@if ($route == 'rekon') active open @endif">
                                     <a href="javascript:void(0);" title="User Management" data-filter-tags="user management">
                                         <i class="fal fa-calendar-alt"></i>
                                         <span class="nav-link-text">Persiapan</span>

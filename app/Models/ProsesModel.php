@@ -57,6 +57,31 @@ class ProsesModel extends Model
     }
 
     /**
+     * Get default date from database where status = 1
+     * Using ORM instead of manual query
+     */
+    public function getDefaultDate()
+    {
+        try {
+            $result = $this->where('STATUS', self::STATUS_COMPLETED)
+                          ->orderBy('ID', 'DESC')
+                          ->first();
+            
+            if ($result && isset($result['TGL_REKON'])) {
+                return $result['TGL_REKON'];
+            }
+            
+            // Fallback to yesterday if no records found
+            return date('Y-m-d', strtotime('-1 day'));
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting default date from ProsesModel: ' . $e->getMessage());
+            // Return yesterday as fallback
+            return date('Y-m-d', strtotime('-1 day'));
+        }
+    }
+
+    /**
      * Call p_proses_persiapan stored procedure
      */
     public function callProcessPersiapan($tanggalRekon, $isReset = false)

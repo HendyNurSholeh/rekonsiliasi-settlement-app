@@ -60,13 +60,13 @@
                                    class="form-control" 
                                    id="tanggal_rekon" 
                                    name="tanggal_rekon" 
-                                   value="{{ session('existing_date') ?? date('Y-m-d', strtotime('-1 day')) }}"
+                                   value="{{ session('existing_date') ?? ($defaultDate ?? date('Y-m-d', strtotime('-1 day'))) }}"
                                    max="{{ date('Y-m-d') }}" 
                                    required>
                         </div>
                         <div class="help-block">
                             <i class="fal fa-info-circle text-info"></i> 
-                            Pilih tanggal settlement yang akan direkonsiliasi. Default: <strong>{{ date('d/m/Y', strtotime('-1 day')) }}</strong>
+                            Pilih tanggal settlement yang akan direkonsiliasi. Default: <strong>{{ isset($defaultDate) ? date('d/m/Y', strtotime($defaultDate)) : date('d/m/Y', strtotime('-1 day')) }}</strong>
                         </div>
                         <!-- Date status indicator -->
                         <div id="dateStatus" class="mt-2" style="display: none;"></div>
@@ -281,7 +281,7 @@ function doReset(date) {
 
 function dismissAlert() {
     $('.alert-warning').fadeOut();
-    $('#tanggal_rekon').val('{{ date('Y-m-d', strtotime('-1 day')) }}');
+    $('#tanggal_rekon').val('{{ $defaultDate ?? date('Y-m-d', strtotime('-1 day')) }}');
     $('#dateStatus').hide();
 }
 

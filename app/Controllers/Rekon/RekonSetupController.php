@@ -22,9 +22,13 @@ class RekonSetupController extends BaseController
      */
     public function index()
     {
+        // Get default date from database where status = 1 using ORM
+        $defaultDate = $this->prosesModel->getDefaultDate();
+        
         $data = [
             'title' => 'Setup Proses Rekonsiliasi Settlement',
-            'route' => 'rekon/setup'
+            'route' => 'rekon',
+            'defaultDate' => $defaultDate
         ];
         
         return $this->render('rekon/process/index.blade.php', $data);
