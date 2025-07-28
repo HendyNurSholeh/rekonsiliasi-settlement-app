@@ -231,20 +231,26 @@ const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
 
 // Fungsi untuk refresh CSRF token
 function refreshCSRFToken() {
-    $.ajax({
-        url: '{{ site_url("rekon/get-csrf-token") }}',
-        method: 'GET',
-        async: false, // Synchronous untuk memastikan token ter-update
-        success: function(response) {
-            if (response.csrf_hash) {
-                // Update semua CSRF input di form
-                $('input[name="{{ csrf_token() }}"]').val(response.csrf_hash);
-                console.log('CSRF token refreshed:', response.csrf_hash);
+    return new Promise((resolve, reject) => {
+        $.ajax({
+            url: '{{ site_url("rekon/get-csrf-token") }}',
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.csrf_hash) {
+                    // Update semua CSRF input di form
+                    $('input[name="{{ csrf_token() }}"]').val(response.csrf_hash);
+                    console.log('CSRF token refreshed:', response.csrf_hash);
+                    resolve(response.csrf_hash);
+                } else {
+                    console.warn('Invalid CSRF refresh response');
+                    reject('Invalid response');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.warn('Failed to refresh CSRF token:', error);
+                reject(error);
             }
-        },
-        error: function() {
-            console.warn('Failed to refresh CSRF token');
-        }
+        });
     });
 }
 
@@ -344,96 +350,99 @@ function uploadFile(type) {
     var originalHtml = btn.html();
     btn.prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Uploading...');
     
-    // Ambil data form
-    var formData = new FormData($(formId)[0]);
-    
-    console.log('Form data prepared');
-    
-    // AJAX Upload
-    $.ajax({
-        url: '{{ site_url("rekon/step1/upload") }}',
-        method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            // Refresh CSRF token setelah response
-            refreshCSRFToken();
-            
-            if (response.success) {
-                // Update card menjadi success
-                var card = $(formId).closest('.card');
-                card.removeClass('border-warning').addClass('border-success');
-                card.find('.card-header').removeClass('bg-warning-200').addClass('bg-success-200');
-                card.find('.card-title i').removeClass('fa-upload text-warning').addClass('fa-check-circle text-success');
-                
-                // Update card body
-                $(formId).parent().html(`
-                    <div class="alert alert-success">
-                        <i class="fal fa-check"></i> 
-                        <strong>File berhasil diupload!</strong><br>
-                        <small>${response.message || 'Upload selesai dengan sukses'}</small>
-                    </div>
-                    <div class="text-center">
-                        <button class="btn btn-outline-success btn-sm" onclick="reuploadFile('${type}')">
-                            <i class="fal fa-redo"></i> Upload Ulang
-                        </button>
-                    </div>
-                `);
-                
-                alert('File berhasil diupload dan divalidasi!');
-                
-                // Tambahkan ke daftar uploaded files
-                if (!uploadedFiles.includes(type)) {
-                    uploadedFiles.push(type);
+    // Refresh CSRF token sebelum upload
+    refreshCSRFToken().then(function() {
+        // Ambil data form dengan CSRF token yang fresh
+        var formData = new FormData($(formId)[0]);
+        
+        console.log('Form data prepared with fresh CSRF token');
+        
+        // AJAX Upload
+        $.ajax({
+            url: '{{ site_url("rekon/step1/upload") }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    // Update card menjadi success
+                    var card = $(formId).closest('.card');
+                    card.removeClass('border-warning').addClass('border-success');
+                    card.find('.card-header').removeClass('bg-warning-200').addClass('bg-success-200');
+                    card.find('.card-title i').removeClass('fa-upload text-warning').addClass('fa-check-circle text-success');
+                    
+                    // Update card body
+                    $(formId).parent().html(`
+                        <div class="alert alert-success">
+                            <i class="fal fa-check"></i> 
+                            <strong>File berhasil diupload!</strong><br>
+                            <small>${response.message || 'Upload selesai dengan sukses'}</small>
+                        </div>
+                        <div class="text-center">
+                            <button class="btn btn-outline-success btn-sm" onclick="reuploadFile('${type}')">
+                                <i class="fal fa-redo"></i> Upload Ulang
+                            </button>
+                        </div>
+                    `);
+                    
+                    alert('File berhasil diupload dan divalidasi!');
+                    
+                    // Tambahkan ke daftar uploaded files
+                    if (!uploadedFiles.includes(type)) {
+                        uploadedFiles.push(type);
+                    }
+                    
+                    // Update status upload
+                    updateUploadStatus();
+                } else {
+                    var errorMsg = response.message || 'Terjadi kesalahan saat upload file';
+                    
+                    // Tampilkan detail error jika ada
+                    if (response.errors && response.errors.length > 0) {
+                        errorMsg += '\n\nDetail error:\n' + response.errors.join('\n');
+                    }
+                    
+                    // Tampilkan debug info jika ada (untuk development)
+                    if (response.debug_info) {
+                        errorMsg += '\n\nDebug Info:\nFile: ' + response.debug_info.file + '\nLine: ' + response.debug_info.line;
+                    }
+                    
+                    alert('Upload gagal: ' + errorMsg);
+                    btn.prop('disabled', false).html(originalHtml);
                 }
+            },
+            error: function(xhr, status, error) {
+                var errorMsg = 'Terjadi kesalahan saat upload file';
                 
-                // Update status upload
-                updateUploadStatus();
-            } else {
-                var errorMsg = response.message || 'Terjadi kesalahan saat upload file';
-                
-                // Tampilkan detail error jika ada
-                if (response.errors && response.errors.length > 0) {
-                    errorMsg += '\n\nDetail error:\n' + response.errors.join('\n');
-                }
-                
-                // Tampilkan debug info jika ada (untuk development)
-                if (response.debug_info) {
-                    errorMsg += '\n\nDebug Info:\nFile: ' + response.debug_info.file + '\nLine: ' + response.debug_info.line;
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    
+                    // Tampilkan debug info jika ada
+                    if (xhr.responseJSON.debug_info) {
+                        errorMsg += '\n\nDebug Info:\nFile: ' + xhr.responseJSON.debug_info.file + '\nLine: ' + xhr.responseJSON.debug_info.line;
+                    }
+                    
+                    // Tampilkan error detail jika ada
+                    if (xhr.responseJSON.errors && xhr.responseJSON.errors.length > 0) {
+                        errorMsg += '\n\nDetail error:\n' + xhr.responseJSON.errors.join('\n');
+                    }
+                } else if (xhr.status === 419) {
+                    errorMsg = 'CSRF token expired. Silakan refresh halaman dan coba lagi.';
+                } else {
+                    errorMsg += '\n\nHTTP Status: ' + xhr.status + '\nError: ' + error;
                 }
                 
                 alert('Upload gagal: ' + errorMsg);
                 btn.prop('disabled', false).html(originalHtml);
             }
-        },
-        error: function(xhr, status, error) {
-            // Refresh CSRF token setelah error response
-            refreshCSRFToken();
-            
-            var errorMsg = 'Terjadi kesalahan saat upload file';
-            
-            if (xhr.responseJSON) {
-                if (xhr.responseJSON.message) {
-                    errorMsg = xhr.responseJSON.message;
-                }
-                
-                // Tampilkan debug info jika ada
-                if (xhr.responseJSON.debug_info) {
-                    errorMsg += '\n\nDebug Info:\nFile: ' + xhr.responseJSON.debug_info.file + '\nLine: ' + xhr.responseJSON.debug_info.line;
-                }
-                
-                // Tampilkan error detail jika ada
-                if (xhr.responseJSON.errors && xhr.responseJSON.errors.length > 0) {
-                    errorMsg += '\n\nDetail error:\n' + xhr.responseJSON.errors.join('\n');
-                }
-            } else {
-                errorMsg += '\n\nHTTP Status: ' + xhr.status + '\nError: ' + error;
-            }
-            
-            alert('Upload gagal: ' + errorMsg);
-            btn.prop('disabled', false).html(originalHtml);
-        }
+        });
+    }).catch(function(error) {
+        console.error('Failed to refresh CSRF token:', error);
+        alert('Gagal refresh CSRF token. Silakan refresh halaman dan coba lagi.');
+        btn.prop('disabled', false).html(originalHtml);
     });
 }
 
@@ -475,30 +484,59 @@ function validateAndProceed() {
         return;
     }
     
-    if (!confirm('Yakin ingin melanjutkan ke proses validasi?')) {
+    if (!confirm('Yakin ingin melanjutkan ke proses validasi dan penyimpanan data?')) {
         return;
     }
     
     // Disable button dan show loading
     $('#btn-validate').prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Memvalidasi...');
     
-    // AJAX untuk validasi
+    // Refresh CSRF token sebelum proses dengan async/await pattern
+    refreshCSRFToken().then(function() {
+        // Langsung panggil proses data upload (skip validasi terpisah)
+        callDataUploadProcess();
+    }).catch(function(error) {
+        console.error('Failed to refresh CSRF token:', error);
+        alert('Gagal refresh CSRF token. Silakan refresh halaman dan coba lagi.');
+        $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
+    });
+}
+
+function callDataUploadProcess() {
+    // Pastikan CSRF token fresh
+    refreshCSRFToken();
+    
+    // Update button text
+    $('#btn-validate').html('<i class="fal fa-spinner fa-spin"></i> Memproses Data...');
+    
+    // AJAX untuk proses data upload dengan stored procedure
     $.ajax({
-        url: '{{ site_url("rekon/step1/validate") }}',
+        url: '{{ site_url("rekon/step1/process") }}',
         method: 'POST',
         data: {
             tanggal_rekon: '{{ $tanggalRekon }}',
-            '{{ csrf_token() }}': '{{ csrf_hash() }}'
+            '{{ csrf_token() }}': $('input[name="{{ csrf_token() }}"]').val()
         },
+        timeout: 300000, // 5 menit timeout untuk proses yang lama
         success: function(response) {
             // Refresh CSRF token setelah response
             refreshCSRFToken();
             
-            if (response.success && response.validation_passed) {
-                alert('Validasi berhasil! Melanjutkan ke proses penyimpanan data...');
-                callDataUploadProcess();
+            if (response.success) {
+                alert('Proses penyimpanan data berhasil! Data telah disimpan ke database.');
+                
+                // Update button ke status sukses
+                $('#btn-validate').removeClass('btn-success').addClass('btn-primary')
+                    .prop('disabled', false)
+                    .html('<i class="fal fa-check-circle"></i> Proses Selesai');
+                
+                // Optional: redirect ke step 2 setelah delay
+                // setTimeout(() => {
+                //     window.location.href = '{{ site_url("rekon/step2") }}?tanggal={{ $tanggalRekon }}';
+                // }, 3000);
+                
             } else {
-                var errorMsg = 'Validasi file gagal';
+                var errorMsg = 'Proses penyimpanan data gagal';
                 if (response.message) {
                     errorMsg = response.message;
                 }
@@ -513,51 +551,22 @@ function validateAndProceed() {
             // Refresh CSRF token setelah error
             refreshCSRFToken();
             
-            var errorMsg = 'Terjadi kesalahan saat validasi';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMsg = xhr.responseJSON.message;
-            }
-            alert(errorMsg);
-            $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
-        }
-    });
-}
-
-function callDataUploadProcess() {
-    // AJAX untuk proses data upload
-    $.ajax({
-        url: '{{ site_url("rekon/step1/process") }}',
-        method: 'POST',
-        data: {
-            tanggal_rekon: '{{ $tanggalRekon }}',
-            '{{ csrf_token() }}': '{{ csrf_hash() }}'
-        },
-        success: function(response) {
-            // Refresh CSRF token setelah response
-            refreshCSRFToken();
-            
-            if (response.success) {
-                alert('Proses penyimpanan data berhasil! Mengarahkan ke halaman selanjutnya...');
-                setTimeout(() => {
-                    window.location.href = '{{ site_url("rekon/step2") }}';
-                }, 2000);
-            } else {
-                var errorMsg = 'Proses penyimpanan data gagal';
-                if (response.message) {
-                    errorMsg = response.message;
-                }
-                alert(errorMsg);
-                $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
-            }
-        },
-        error: function(xhr) {
-            // Refresh CSRF token setelah error
-            refreshCSRFToken();
-            
             var errorMsg = 'Terjadi kesalahan saat memproses data';
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                errorMsg = xhr.responseJSON.message;
+            
+            if (xhr.responseJSON) {
+                if (xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                // Debug info untuk development
+                if (xhr.responseJSON.debug_info) {
+                    console.error('Debug Info:', xhr.responseJSON.debug_info);
+                }
+            } else if (xhr.status === 419) {
+                errorMsg = 'CSRF token expired. Silakan refresh halaman dan coba lagi.';
+            } else {
+                errorMsg += '\n\nHTTP Status: ' + xhr.status + '\nError: ' + xhr.statusText;
             }
+            
             alert(errorMsg);
             $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
         }

@@ -287,7 +287,7 @@ class RekonStep1Controller extends BaseController
     }
 
     /**
-     * Process data upload - call stored procedure
+     * Process data upload - call stored procedure p_proses_dataupload
      */
     public function processDataUpload()
     {
@@ -301,34 +301,76 @@ class RekonStep1Controller extends BaseController
         }
 
         try {
-            // Simple approach - just log the action and return success
-            // Stored procedure will be handled by senior later
-            log_message('info', "Process data upload called for date: {$tanggalRekon}");
-
+            // Get database instance
+            $db = \Config\Database::connect();
+            
+            // Log the start of process
+            log_message('info', "Starting p_proses_dataupload for date: {$tanggalRekon}");
+            
+            // Call stored procedure p_proses_dataupload
+            $sql = "CALL p_proses_dataupload(?)";
+            $query = $db->query($sql, [$tanggalRekon]);
+            
+            // Initialize results
+            $results = [];
+            
+            // Get results if any
+            if ($query) {
+                $results = $query->getResultArray();
+                $query->freeResult();
+            }
+            
+            // Log activity
             $this->logActivity([
                 'log_name' => 'PROCESS_DATA_UPLOAD',
-                'description' => "Proses data upload untuk tanggal {$tanggalRekon}",
-                'event' => 'DATA_UPLOAD_PROCESS',
-                'subject' => 'Settlement Process'
+                'description' => "Stored procedure p_proses_dataupload berhasil dijalankan untuk tanggal {$tanggalRekon}",
+                'event' => 'DATA_UPLOAD_PROCESS_SUCCESS',
+                'subject' => 'Settlement Process',
+                'properties' => json_encode([
+                    'tanggal_rekon' => $tanggalRekon,
+                    'procedure' => 'p_proses_dataupload',
+                    'results_count' => count($results)
+                ])
             ]);
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Proses data upload berhasil dijalankan',
-                'data' => []
+                'message' => 'Proses data upload berhasil dijalankan menggunakan stored procedure p_proses_dataupload',
+                'data' => [
+                    'tanggal_rekon' => $tanggalRekon,
+                    'procedure_executed' => 'p_proses_dataupload',
+                    'results_count' => count($results),
+                    'executed_at' => date('Y-m-d H:i:s')
+                ]
             ]);
 
         } catch (\Exception $e) {
+            // Log error activity
             $this->logActivity([
                 'log_name' => 'PROCESS_DATA_UPLOAD',
-                'description' => "Error proses data upload: " . $e->getMessage(),
-                'event' => 'DATA_UPLOAD_ERROR',
-                'subject' => 'Settlement Process'
+                'description' => "Error menjalankan stored procedure p_proses_dataupload: " . $e->getMessage(),
+                'event' => 'DATA_UPLOAD_PROCESS_ERROR',
+                'subject' => 'Settlement Process',
+                'properties' => json_encode([
+                    'tanggal_rekon' => $tanggalRekon,
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ])
             ]);
+
+            log_message('error', 'Error executing p_proses_dataupload: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Error menjalankan proses data upload: ' . $e->getMessage(),
+                'debug_info' => [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'procedure' => 'p_proses_dataupload',
+                    'tanggal_rekon' => $tanggalRekon
+                ]
             ]);
         }
     }
