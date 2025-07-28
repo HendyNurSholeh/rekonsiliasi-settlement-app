@@ -7,8 +7,8 @@ use CodeIgniter\Model;
 class AgnSettleEduModel extends Model
 {
     protected $table            = 't_agn_settle_edu';
-    protected $primaryKey       = '';
-    protected $useAutoIncrement = false;
+    protected $primaryKey       = "id";
+    protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = false;

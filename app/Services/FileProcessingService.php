@@ -134,6 +134,13 @@ class FileProcessingService
             if ($fileType === 'agn_detail') {
                 $deleted = $model->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
                 log_message('info', 'Deleted existing records: ' . $deleted);
+            } elseif ($fileType === 'settle_edu') {
+                // Use Query Builder for table without primary key
+                $deleted = $db->table('t_agn_settle_edu')->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
+                log_message('info', 'Deleted existing records: ' . $deleted);
+            } elseif (in_array($fileType, ['settle_pajak', 'mgate'])) {
+                $deleted = $model->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
+                log_message('info', 'Deleted existing records: ' . $deleted);
             } else {
                 $deleted = $model->where('tanggal_rekon', $tanggalRekon)->delete();
                 log_message('info', 'Deleted existing records: ' . $deleted);
@@ -170,7 +177,12 @@ class FileProcessingService
                     
                     // Insert in batches
                     if (count($batchData) >= $batchSize) {
-                        $model->insertBatch($batchData);
+                        // Use Query Builder directly for tables without primary key
+                        if ($fileType === 'settle_edu') {
+                            $db->table('t_agn_settle_edu')->insertBatch($batchData);
+                        } else {
+                            $model->insertBatch($batchData);
+                        }
                         $insertedRows += count($batchData);
                         log_message('info', 'Inserted batch of ' . count($batchData) . ' records. Total so far: ' . $insertedRows);
                         $batchData = [];
@@ -182,7 +194,12 @@ class FileProcessingService
 
             // Insert remaining data
             if (!empty($batchData)) {
-                $model->insertBatch($batchData);
+                // Use Query Builder directly for tables without primary key
+                if ($fileType === 'settle_edu') {
+                    $db->table('t_agn_settle_edu')->insertBatch($batchData);
+                } else {
+                    $model->insertBatch($batchData);
+                }
                 $insertedRows += count($batchData);
                 log_message('info', 'Inserted final batch of ' . count($batchData) . ' records');
             }
@@ -254,16 +271,17 @@ class FileProcessingService
     private function mapEducationData($data, $headers, $tanggalRekon)
     {
         $mapping = [
-            'tanggal_rekon' => $tanggalRekon,
-            'tanggal' => $this->getDataByHeader($data, $headers, 'TANGGAL'),
-            'kode_produk' => $this->getDataByHeader($data, $headers, 'KODE PRODUK'),
-            'nama_produk' => $this->getDataByHeader($data, $headers, 'NAMA_PRODUK'),
-            'kode_jurusan' => $this->getDataByHeader($data, $headers, 'KODE_JURUSAN'),
-            'kode_biaya' => $this->getDataByHeader($data, $headers, 'KODE_BIAYA'),
-            'nama_biaya' => $this->getDataByHeader($data, $headers, 'NAMA_BIAYA'),
-            'norek' => $this->getDataByHeader($data, $headers, 'NOREK'),
-            'amount' => $this->parseAmount($this->getDataByHeader($data, $headers, 'AMOUNT')),
-            'kode_produk_provider' => $this->getDataByHeader($data, $headers, 'KODE_PRODUK_PRIVIDER')
+            'TANGGAL' => $this->getDataByHeader($data, $headers, 'TANGGAL'),
+            'KODE_PRODUK' => $this->getDataByHeader($data, $headers, 'KODE PRODUK'),
+            'NAMA_PRODUK' => $this->getDataByHeader($data, $headers, 'NAMA_PRODUK'),
+            'KODE_JURUSAN' => $this->getDataByHeader($data, $headers, 'KODE_JURUSAN'),
+            'KODE_BIAYA' => $this->getDataByHeader($data, $headers, 'KODE_BIAYA'),
+            'NAMA_BIAYA' => $this->getDataByHeader($data, $headers, 'NAMA_BIAYA'),
+            'NOREK' => $this->getDataByHeader($data, $headers, 'NOREK'),
+            'AMOUNT' => $this->parseAmount($this->getDataByHeader($data, $headers, 'AMOUNT')),
+            'KODE_PRODUK_PRIVIDER' => $this->getDataByHeader($data, $headers, 'KODE_PRODUK_PRIVIDER'),
+            'v_TGL_PROSES' => date('Y-m-d H:i:s'),
+            'v_TGL_FILE_REKON' => $tanggalRekon
         ];
 
         return $mapping;
