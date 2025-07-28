@@ -15,7 +15,7 @@ class FileValidator
         'settle_edu' => [
             'extension' => 'txt',
             'delimiter' => ';',
-            'required_columns' => ['TANGGAL', 'KODE PRODUK', 'NAMA_PRODUK', 'KODE_JURUSAN', 'KODE_BIAYA', 'NAMA_BIAYA', 'NOREK', 'AMOUNT'],
+            'required_columns' => ['TANGGAL', 'KODE PRODUK', 'NAMA_PRODUK', 'KODE_JURUSAN', 'KODE_BIAYA', 'NAMA_BIAYA', 'NOREK', 'AMOUNT', 'KODE_PRODUK_PRIVIDER'],
             'date_column' => 'TANGGAL',
             'amount_column' => 'AMOUNT',
             'max_file_size' => 10 * 1024 * 1024, // 10MB
@@ -141,7 +141,20 @@ class FileValidator
         
         // Validate header
         $headerLine = fgets($handle);
-        $headers = str_getcsv(trim($headerLine), $config['delimiter']);
+        $headers = explode($config['delimiter'], trim($headerLine));
+        
+        // Clean headers - remove BOM, trim spaces, and empty headers (from trailing delimiters)
+        $headers = array_map(function($header) {
+            return trim(str_replace("\xEF\xBB\xBF", '', $header));
+        }, $headers);
+        
+        // Remove empty headers (from trailing delimiters like "TERMINALID;")
+        $headers = array_filter($headers, function($header) {
+            return !empty($header);
+        });
+        
+        // Re-index
+        $headers = array_values($headers);
         
         // Check required columns
         $missingColumns = [];

@@ -53,6 +53,9 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->post('checkDate', 'RekonSetupController::checkDate', ['as' => 'rekon.checkDate']);
     $routes->post('resetProcess', 'RekonSetupController::resetProcess', ['as' => 'rekon.resetProcess']);
     
+    // CSRF Token Refresh
+    $routes->get('get-csrf-token', 'RekonStep1Controller::getCSRFToken', ['as' => 'rekon.csrf-token']);
+    
     // Step 1 Controller - untuk step1.blade.php (Upload Files)
     $routes->get('step1', 'RekonStep1Controller::index', ['as' => 'rekon.step1']);
     $routes->post('step1/upload', 'RekonStep1Controller::uploadFiles', ['as' => 'rekon.step1.upload']);

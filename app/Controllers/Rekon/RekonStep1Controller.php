@@ -424,4 +424,28 @@ class RekonStep1Controller extends BaseController
         // For now, just return valid
         return ['valid' => true, 'message' => 'Validasi tanggal berhasil'];
     }
+
+    /**
+     * Get fresh CSRF token
+     */
+    public function getCSRFToken()
+    {
+        try {
+            // Regenerate CSRF token
+            $csrf = service('security');
+            $csrf->generateHash(); // Generate new hash
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'csrf_hash' => $csrf->getHash(),
+                'csrf_token' => $csrf->getTokenName()
+            ]);
+            
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error getting CSRF token: ' . $e->getMessage()
+            ]);
+        }
+    }
 }

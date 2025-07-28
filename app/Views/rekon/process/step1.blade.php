@@ -52,7 +52,7 @@
                     <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter ;</span>
                 </p>
                 <form id="form-agn-detail" enctype="multipart/form-data">
-                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="agn_detail" />
                     <div class="custom-file">
@@ -81,13 +81,13 @@
                     Upload file settlement education untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
                     <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter ;</span>
                 </p>
-                <form id="form-agn-settle-edu" enctype="multipart/form-data">
-                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                <form id="form-settle-edu" enctype="multipart/form-data">
+                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="settle_edu" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-settle-edu" name="file" accept=".txt" required>
-                        <label class="custom-file-label" for="file-agn-settle-edu">Pilih file .txt...</label>
+                        <input type="file" class="custom-file-input" id="file-settle-edu" name="file" accept=".txt" required>
+                        <label class="custom-file-label" for="file-settle-edu">Pilih file .txt...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_edu')">
                         <i class="fal fa-upload"></i> Upload
@@ -111,13 +111,13 @@
                     Upload file data settlement pajak untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
                     <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter |</span>
                 </p>    
-                <form id="form-agn-settle-pajak" enctype="multipart/form-data">
-                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                <form id="form-settle-pajak" enctype="multipart/form-data">
+                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="settle_pajak" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-settle-pajak" name="file" accept=".txt" required>
-                        <label class="custom-file-label" for="file-agn-settle-pajak">Pilih file .txt...</label>
+                        <input type="file" class="custom-file-input" id="file-settle-pajak" name="file" accept=".txt" required>
+                        <label class="custom-file-label" for="file-settle-pajak">Pilih file .txt...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_pajak')">
                         <i class="fal fa-upload"></i> Upload
@@ -141,13 +141,13 @@
                     Upload file transaksi M-Gate (Payment Gateway) untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }} <span class="text-danger">*Wajib</span>
                     <br><span class="text-info"><strong>Format:</strong> .csv dengan delimiter ;</span>
                 </p>
-                <form id="form-agn-trx-mgate" enctype="multipart/form-data">
-                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
+                <form id="form-mgate" enctype="multipart/form-data">
+                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="mgate" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-trx-mgate" name="file" accept=".csv" required>
-                        <label class="custom-file-label" for="file-agn-trx-mgate">Pilih file .csv...</label>
+                        <input type="file" class="custom-file-input" id="file-mgate" name="file" accept=".csv" required>
+                        <label class="custom-file-label" for="file-mgate">Pilih file .csv...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('mgate')">
                         <i class="fal fa-upload"></i> Upload
@@ -225,10 +225,30 @@
 
 @push('scripts')
 <script>
+// Variabel global untuk tracking upload
+let uploadedFiles = [];
+const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
+
+// Fungsi untuk refresh CSRF token
+function refreshCSRFToken() {
+    $.ajax({
+        url: '{{ site_url("rekon/get-csrf-token") }}',
+        method: 'GET',
+        async: false, // Synchronous untuk memastikan token ter-update
+        success: function(response) {
+            if (response.csrf_hash) {
+                // Update semua CSRF input di form
+                $('input[name="{{ csrf_token() }}"]').val(response.csrf_hash);
+                console.log('CSRF token refreshed:', response.csrf_hash);
+            }
+        },
+        error: function() {
+            console.warn('Failed to refresh CSRF token');
+        }
+    });
+}
+
 $(document).ready(function() {
-    // Variabel untuk tracking upload
-    let uploadedFiles = [];
-    const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
     
     // Custom file input labels
     $('.custom-file-input').on('change', function() {
@@ -257,7 +277,7 @@ $(document).ready(function() {
         let isValidType = false;
         let errorMessage = '';
         
-        if (inputId === 'file-agn-trx-mgate') {
+        if (inputId === 'file-mgate') {
             // M-Gate harus CSV
             isValidType = fileName.endsWith('.csv');
             errorMessage = 'Format file tidak valid! M-Gate harus file CSV (.csv)';
@@ -278,9 +298,36 @@ $(document).ready(function() {
 });
 
 function uploadFile(type) {
-    var formId = '#form-' + type.replace('_', '-');
-    var fileInputId = '#file-' + type.replace('_', '-');
+    console.log('Uploading file for type:', type);
+    
+    // Map file type to correct form and input IDs
+    var formIdMap = {
+        'agn_detail': 'form-agn-detail',
+        'settle_edu': 'form-settle-edu',
+        'settle_pajak': 'form-settle-pajak',
+        'mgate': 'form-mgate'
+    };
+    
+    var fileInputIdMap = {
+        'agn_detail': 'file-agn-detail',
+        'settle_edu': 'file-settle-edu',
+        'settle_pajak': 'file-settle-pajak',
+        'mgate': 'file-mgate'
+    };
+    
+    var formId = '#' + formIdMap[type];
+    var fileInputId = '#' + fileInputIdMap[type];
+    
+    console.log('Form ID:', formId);
+    console.log('File Input ID:', fileInputId);
+    
     var fileInput = $(fileInputId)[0];
+    
+    if (!fileInput) {
+        alert('Form tidak ditemukan untuk tipe: ' + type);
+        console.error('File input not found:', fileInputId);
+        return;
+    }
     
     if (!fileInput.files[0]) {
         alert('Pilih file terlebih dahulu');
@@ -300,6 +347,8 @@ function uploadFile(type) {
     // Ambil data form
     var formData = new FormData($(formId)[0]);
     
+    console.log('Form data prepared');
+    
     // AJAX Upload
     $.ajax({
         url: '{{ site_url("rekon/step1/upload") }}',
@@ -308,6 +357,9 @@ function uploadFile(type) {
         processData: false,
         contentType: false,
         success: function(response) {
+            // Refresh CSRF token setelah response
+            refreshCSRFToken();
+            
             if (response.success) {
                 // Update card menjadi success
                 var card = $(formId).closest('.card');
@@ -356,6 +408,9 @@ function uploadFile(type) {
             }
         },
         error: function(xhr, status, error) {
+            // Refresh CSRF token setelah error response
+            refreshCSRFToken();
+            
             var errorMsg = 'Terjadi kesalahan saat upload file';
             
             if (xhr.responseJSON) {
@@ -433,9 +488,12 @@ function validateAndProceed() {
         method: 'POST',
         data: {
             tanggal_rekon: '{{ $tanggalRekon }}',
-            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            '{{ csrf_token() }}': '{{ csrf_hash() }}'
         },
         success: function(response) {
+            // Refresh CSRF token setelah response
+            refreshCSRFToken();
+            
             if (response.success && response.validation_passed) {
                 alert('Validasi berhasil! Melanjutkan ke proses penyimpanan data...');
                 callDataUploadProcess();
@@ -452,6 +510,9 @@ function validateAndProceed() {
             }
         },
         error: function(xhr) {
+            // Refresh CSRF token setelah error
+            refreshCSRFToken();
+            
             var errorMsg = 'Terjadi kesalahan saat validasi';
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMsg = xhr.responseJSON.message;
@@ -469,9 +530,12 @@ function callDataUploadProcess() {
         method: 'POST',
         data: {
             tanggal_rekon: '{{ $tanggalRekon }}',
-            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            '{{ csrf_token() }}': '{{ csrf_hash() }}'
         },
         success: function(response) {
+            // Refresh CSRF token setelah response
+            refreshCSRFToken();
+            
             if (response.success) {
                 alert('Proses penyimpanan data berhasil! Mengarahkan ke halaman selanjutnya...');
                 setTimeout(() => {
@@ -487,6 +551,9 @@ function callDataUploadProcess() {
             }
         },
         error: function(xhr) {
+            // Refresh CSRF token setelah error
+            refreshCSRFToken();
+            
             var errorMsg = 'Terjadi kesalahan saat memproses data';
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMsg = xhr.responseJSON.message;
