@@ -7,7 +7,7 @@ use CodeIgniter\Model;
 class AgnSettleEduModel extends Model
 {
     protected $table            = 't_agn_settle_edu';
-    protected $primaryKey       = "id";
+    protected $primaryKey       = "ID";
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;

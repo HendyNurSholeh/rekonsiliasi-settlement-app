@@ -7,8 +7,8 @@ use CodeIgniter\Model;
 class AgnSettlePajakModel extends Model
 {
     protected $table            = 't_agn_settle_pajak';
-    protected $primaryKey       = '';
-    protected $useAutoIncrement = false;
+    protected $primaryKey       = 'ID';
+    protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = false;

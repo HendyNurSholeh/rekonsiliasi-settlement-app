@@ -180,6 +180,8 @@ class FileProcessingService
                         // Use Query Builder directly for tables without primary key
                         if ($fileType === 'settle_edu') {
                             $db->table('t_agn_settle_edu')->insertBatch($batchData);
+                        } elseif ($fileType === 'settle_pajak') {
+                            $db->table('t_agn_settle_pajak')->insertBatch($batchData);
                         } else {
                             $model->insertBatch($batchData);
                         }
@@ -197,6 +199,8 @@ class FileProcessingService
                 // Use Query Builder directly for tables without primary key
                 if ($fileType === 'settle_edu') {
                     $db->table('t_agn_settle_edu')->insertBatch($batchData);
+                } elseif ($fileType === 'settle_pajak') {
+                    $db->table('t_agn_settle_pajak')->insertBatch($batchData);
                 } else {
                     $model->insertBatch($batchData);
                 }
@@ -293,19 +297,20 @@ class FileProcessingService
     private function mapPajakData($data, $headers, $tanggalRekon)
     {
         $mapping = [
-            'tanggal_rekon' => $tanggalRekon,
-            'tanggal' => $this->getDataByHeader($data, $headers, 'TANGGAL'),
-            'kode_produk' => $this->getDataByHeader($data, $headers, 'KODE PRODUK'),
-            'nama_produk' => $this->getDataByHeader($data, $headers, 'NAMA_PRODUK'),
-            'kode_jurusan' => $this->getDataByHeader($data, $headers, 'KODE_JURUSAN'),
-            'kode_biaya' => $this->getDataByHeader($data, $headers, 'KODE_BIAYA'),
-            'nama_biaya' => $this->getDataByHeader($data, $headers, 'NAMA_BIAYA'),
-            'jenis' => $this->getDataByHeader($data, $headers, 'JENIS'),
-            'norek' => $this->getDataByHeader($data, $headers, 'NOREK'),
-            'nama_rekening' => $this->getDataByHeader($data, $headers, 'NAMA_REKENING'),
-            'amount' => $this->parseAmount($this->getDataByHeader($data, $headers, 'AMOUNT')),
-            'narative' => $this->getDataByHeader($data, $headers, 'NARATIVE'),
-            'kode_produk_provider' => $this->getDataByHeader($data, $headers, 'KODE_PRODUK_PROVIDER')
+            'TANGGAL' => $this->getDataByHeader($data, $headers, 'TANGGAL'),
+            'KODE_PRODUK' => $this->getDataByHeader($data, $headers, 'KODE PRODUK'),
+            'NAMA_PRODUK' => $this->getDataByHeader($data, $headers, 'NAMA_PRODUK'),
+            'KODE_JURUSAN' => $this->getDataByHeader($data, $headers, 'KODE_JURUSAN'),
+            'KODE_BIAYA' => $this->getDataByHeader($data, $headers, 'KODE_BIAYA'),
+            'NAMA_BIAYA' => $this->getDataByHeader($data, $headers, 'NAMA_BIAYA'),
+            'JENIS' => $this->getDataByHeader($data, $headers, 'JENIS'),
+            'NOREK' => $this->getDataByHeader($data, $headers, 'NOREK'),
+            'NAMA_REKENING' => $this->getDataByHeader($data, $headers, 'NAMA_REKENING'),
+            'AMOUNT' => $this->parseAmount($this->getDataByHeader($data, $headers, 'AMOUNT')),
+            'NARATIVE' => $this->getDataByHeader($data, $headers, 'NARATIVE'),
+            'KODE_PRODUK_PROVIDER' => $this->getDataByHeader($data, $headers, 'KODE_PRODUK_PROVIDER'),
+            'v_TGL_PROSES' => date('Y-m-d H:i:s'),
+            'v_TGL_FILE_REKON' => $tanggalRekon
         ];
 
         return $mapping;
