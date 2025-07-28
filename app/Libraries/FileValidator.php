@@ -177,13 +177,31 @@ class FileValidator
         $config = $this->fileConfigs[$fileType];
         $handle = fopen($filePath, 'r');
         
-        // Skip header
-        $headers = str_getcsv(fgets($handle), $config['delimiter']);
+        // Get and clean header
+        $headerLine = trim(fgets($handle));
+        $headers = explode($config['delimiter'], $headerLine);
+        
+        // Clean headers - remove BOM and empty headers (from trailing delimiters)
+        $headers = array_map(function($header) {
+            return trim(str_replace("\xEF\xBB\xBF", '', $header));
+        }, $headers);
+        
+        // Remove empty headers (from trailing delimiters like "TERMINALID;")
+        $headers = array_filter($headers, function($header) {
+            return !empty($header);
+        });
+        
+        // Re-index
+        $headers = array_values($headers);
+        
+        $expectedColumnCount = count($headers);
+        log_message('debug', 'Expected column count: ' . $expectedColumnCount . ', Headers: ' . implode(', ', $headers));
         
         $lineNumber = 2;
         $totalRows = 0;
         $invalidDates = 0;
         $invalidAmounts = 0;
+        $columnMismatchErrors = 0;
         $totalAmount = 0;
 
         // Get column indexes
@@ -194,8 +212,16 @@ class FileValidator
             $line = trim($line);
             if (empty($line)) continue;
 
-            $data = str_getcsv($line, $config['delimiter']);
+            $data = explode($config['delimiter'], $line);
             $totalRows++;
+            
+            // STRICT COLUMN COUNT VALIDATION - reject if count doesn't match exactly
+            if (count($data) !== $expectedColumnCount) {
+                $columnMismatchErrors++;
+                if ($columnMismatchErrors <= 5) { // Show max 5 examples
+                    $this->addError("Baris {$lineNumber}: Jumlah kolom tidak sesuai. Ditemukan " . count($data) . " kolom, diharapkan {$expectedColumnCount} kolom.");
+                }
+            }
 
             // Validate date
             if ($dateColIndex !== false && isset($data[$dateColIndex])) {
@@ -236,6 +262,10 @@ class FileValidator
         fclose($handle);
 
         // Summary validation errors
+        if ($columnMismatchErrors > 5) {
+            $this->addError("Dan " . ($columnMismatchErrors - 5) . " baris dengan jumlah kolom salah lainnya");
+        }
+        
         if ($invalidDates > 5) {
             $this->addError("Dan " . ($invalidDates - 5) . " tanggal tidak valid lainnya");
         }
@@ -247,22 +277,27 @@ class FileValidator
         // Store stats
         $this->stats = [
             'total_rows' => $totalRows,
+            'expected_columns' => $expectedColumnCount,
+            'column_mismatch_errors' => $columnMismatchErrors,
             'invalid_dates' => $invalidDates,
             'invalid_amounts' => $invalidAmounts,
             'total_amount' => $totalAmount,
-            'valid_data_percentage' => ($invalidDates === 0 && $invalidAmounts === 0) ? 100 : 0
+            'valid_data_percentage' => ($columnMismatchErrors === 0 && $invalidDates === 0 && $invalidAmounts === 0) ? 100 : 0
         ];
 
         // Fail if ANY errors found (zero tolerance)
-        if ($invalidDates > 0 || $invalidAmounts > 0) {
+        if ($columnMismatchErrors > 0 || $invalidDates > 0 || $invalidAmounts > 0) {
             $errorSummary = [];
+            if ($columnMismatchErrors > 0) {
+                $errorSummary[] = "{$columnMismatchErrors} baris dengan format kolom salah";
+            }
             if ($invalidDates > 0) {
                 $errorSummary[] = "{$invalidDates} tanggal tidak valid";
             }
             if ($invalidAmounts > 0) {
                 $errorSummary[] = "{$invalidAmounts} amount tidak valid";
             }
-            $this->addError("File ditolak karena ditemukan: " . implode(" dan ", $errorSummary) . ". Semua data harus valid.");
+            $this->addError("File ditolak karena ditemukan: " . implode(", ", $errorSummary) . ". Semua data harus valid.");
             return false;
         }
 

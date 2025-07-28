@@ -84,77 +84,81 @@ class FileProcessingService
         $config = $this->fileValidator->getFileConfig($fileType);
         $model = $this->models[$fileType];
         
-        $handle = fopen($filePath, 'r');
+        log_message('info', 'Starting database insertion for file: ' . $filePath);
+        log_message('info', 'File type: ' . $fileType . ', Date: ' . $tanggalRekon);
         
-        // Skip header
-        $headerLine = fgets($handle);
-        $headers = str_getcsv($headerLine, $config['delimiter']);
+        // Read file content
+        $fileContent = file_get_contents($filePath);
+        if ($fileContent === false) {
+            throw new \Exception('Cannot read file: ' . $filePath);
+        }
         
-        // Clean headers - remove any BOM or extra whitespace
+        // Split into lines
+        $lines = explode("\n", $fileContent);
+        if (empty($lines)) {
+            throw new \Exception('File is empty');
+        }
+        
+        log_message('info', 'Total lines in file: ' . count($lines));
+        
+        // Get header from first line
+        $headerLine = trim($lines[0]);
+        $headers = explode($config['delimiter'], $headerLine);
+        
+        // Clean headers - remove BOM and empty headers
         $headers = array_map(function($header) {
             return trim(str_replace("\xEF\xBB\xBF", '', $header));
         }, $headers);
         
-        // Log original headers for debugging
-        log_message('debug', 'Original headers count: ' . count($headers));
-        log_message('debug', 'Original headers: ' . print_r($headers, true));
-        
-        // Remove empty headers (caused by trailing semicolons)
+        // Remove empty headers (from trailing delimiters)
         $headers = array_filter($headers, function($header) {
             return !empty($header);
         });
         
-        // Re-index the array to ensure consecutive indices
+        // Re-index
         $headers = array_values($headers);
         
-        log_message('debug', 'Cleaned headers count: ' . count($headers));
-        log_message('debug', 'Cleaned headers: ' . print_r($headers, true));
+        log_message('info', 'Headers found: ' . implode(', ', $headers));
+        log_message('info', 'Header count: ' . count($headers));
         
         $insertedRows = 0;
-        $errors = [];
         $batchData = [];
-        $batchSize = 100; // Process in batches
+        $batchSize = 100;
 
         // Start transaction
         $db = \Config\Database::connect();
         $db->transStart();
 
         try {
-            // Clear existing data for this date (use appropriate field name based on file type)
+            // Clear existing data for this date
             if ($fileType === 'agn_detail') {
-                $model->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
+                $deleted = $model->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
+                log_message('info', 'Deleted existing records: ' . $deleted);
             } else {
-                $model->where('tanggal_rekon', $tanggalRekon)->delete();
+                $deleted = $model->where('tanggal_rekon', $tanggalRekon)->delete();
+                log_message('info', 'Deleted existing records: ' . $deleted);
             }
 
-            while (($line = fgets($handle)) !== false) {
-                $line = trim($line);
-                if (empty($line)) continue;
+            // Process data lines (skip header)
+            for ($i = 1; $i < count($lines); $i++) {
+                $line = trim($lines[$i]);
+                if (empty($line)) {
+                    log_message('debug', 'Skipping empty line at index: ' . $i);
+                    continue;
+                }
 
-                $data = str_getcsv($line, $config['delimiter']);
+                // Split line by delimiter
+                $data = explode($config['delimiter'], $line);
                 
-                // Debug: Log problematic lines
+                log_message('debug', 'Processing line ' . ($i + 1) . ' with ' . count($data) . ' columns, expected: ' . count($headers));
+                
+                // STRICT VALIDATION: Reject if column count doesn't match exactly
                 if (count($data) !== count($headers)) {
-                    log_message('debug', "Column count mismatch - Headers: " . count($headers) . ", Data: " . count($data) . " for line: " . substr($line, 0, 100));
+                    throw new \Exception("Error pada baris " . ($i + 1) . ": Jumlah kolom tidak sesuai. Ditemukan " . count($data) . " kolom, diharapkan " . count($headers) . " kolom. Data: " . substr($line, 0, 100) . "...");
                 }
                 
-                // Ensure data array has the same length as headers
-                $data = array_pad($data, count($headers), '');
-                
-                // Clean data and ensure all values are strings - CRITICAL FIX
+                // Convert all to strings
                 $data = array_map(function($value) {
-                    // Handle arrays specifically
-                    if (is_array($value)) {
-                        log_message('warning', "Array value found in CSV data: " . print_r($value, true));
-                        return implode(',', array_map('strval', $value));
-                    }
-                    
-                    // Handle null values
-                    if ($value === null) {
-                        return '';
-                    }
-                    
-                    // Convert to string and trim
                     return trim((string) $value);
                 }, $data);
                 
@@ -162,71 +166,25 @@ class FileProcessingService
                 $mappedData = $this->mapFileDataToDbColumns($data, $headers, $fileType, $tanggalRekon);
                 
                 if ($mappedData) {
-                    // Validate mapped data before adding to batch - ensure NO arrays
-                    foreach ($mappedData as $key => $value) {
-                        if (is_array($value)) {
-                            log_message('error', "Array value detected for key {$key}: " . print_r($value, true));
-                            // Convert array to string safely
-                            $mappedData[$key] = is_array($value) ? implode(',', array_map('strval', $value)) : (string) $value;
-                        } else {
-                            // Force conversion to string for all non-numeric fields
-                            if (!is_numeric($value) && !is_float($value)) {
-                                $mappedData[$key] = (string) $value;
-                            }
-                        }
-                    }
-                    
-                    // Double check - ensure absolutely no arrays remain
-                    foreach ($mappedData as $key => $value) {
-                        if (is_array($value)) {
-                            log_message('error', "CRITICAL: Array still exists after conversion for key {$key}");
-                            $mappedData[$key] = '';  // Set to empty string as fallback
-                        }
-                    }
-                    
                     $batchData[] = $mappedData;
                     
                     // Insert in batches
                     if (count($batchData) >= $batchSize) {
-                        try {
-                            $model->insertBatch($batchData);
-                            $insertedRows += count($batchData);
-                            log_message('debug', "Inserted batch of " . count($batchData) . " records");
-                        } catch (\Exception $e) {
-                            log_message('error', 'Batch insert error: ' . $e->getMessage());
-                            // Try inserting individually to identify problematic records
-                            foreach ($batchData as $record) {
-                                try {
-                                    $model->insert($record);
-                                    $insertedRows++;
-                                } catch (\Exception $e2) {
-                                    log_message('error', 'Individual insert error: ' . $e2->getMessage() . ' for record: ' . print_r($record, true));
-                                }
-                            }
-                        }
+                        $model->insertBatch($batchData);
+                        $insertedRows += count($batchData);
+                        log_message('info', 'Inserted batch of ' . count($batchData) . ' records. Total so far: ' . $insertedRows);
                         $batchData = [];
                     }
+                } else {
+                    log_message('warning', 'Failed to map data for line ' . ($i + 1));
                 }
             }
 
             // Insert remaining data
             if (!empty($batchData)) {
-                try {
-                    $model->insertBatch($batchData);
-                    $insertedRows += count($batchData);
-                    log_message('debug', "Inserted final batch of " . count($batchData) . " records");
-                } catch (\Exception $e) {
-                    log_message('error', 'Final batch insert error: ' . $e->getMessage());
-                    // Try inserting individually
-                    foreach ($batchData as $record) {
-                        try {
-                            $model->insert($record);
-                            $insertedRows++;
-                        } catch (\Exception $e2) {
-                            log_message('error', 'Individual insert error: ' . $e2->getMessage() . ' for record: ' . print_r($record, true));
-                        }
-                    }
-                }
+                $model->insertBatch($batchData);
+                $insertedRows += count($batchData);
+                log_message('info', 'Inserted final batch of ' . count($batchData) . ' records');
             }
 
             $db->transComplete();
@@ -235,22 +193,20 @@ class FileProcessingService
                 throw new \Exception('Database transaction failed');
             }
 
-            fclose($handle);
+            log_message('info', 'Successfully inserted ' . $insertedRows . ' rows');
 
             return [
                 'success' => true,
                 'stats' => [
                     'inserted_rows' => $insertedRows,
                     'table' => $model->getTable(),
-                    'date' => $tanggalRekon
+                    'date' => $tanggalRekon,
+                    'total_lines_processed' => count($lines) - 1  // Exclude header
                 ]
             ];
 
         } catch (\Exception $e) {
             $db->transRollback();
-            if (isset($handle) && is_resource($handle)) {
-                fclose($handle);
-            }
             
             log_message('error', 'Database insertion error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
             log_message('error', 'Error trace: ' . $e->getTraceAsString());

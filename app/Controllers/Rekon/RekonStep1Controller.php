@@ -126,7 +126,7 @@ class RekonStep1Controller extends BaseController
             }
 
             // Create upload directory if not exists
-            $uploadPath = WRITEPATH . 'uploads/rekon/' . $tanggalRekon . '/';
+            $uploadPath = WRITEPATH . 'uploads/settlement/' . $tanggalRekon . '/';
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
@@ -134,6 +134,11 @@ class RekonStep1Controller extends BaseController
             // Generate filename based on type and date
             $newFileName = $processType . '_' . $tanggalRekon . '.' . $fileExtension;
             $filePath = $uploadPath . $newFileName;
+
+            // If file already exists, delete it first
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
 
             // Move uploaded file
             if (!$uploadedFile->move($uploadPath, $newFileName)) {
@@ -143,6 +148,9 @@ class RekonStep1Controller extends BaseController
                 ]);
             }
 
+            log_message('info', 'File uploaded successfully to: ' . $filePath);
+            log_message('info', 'Original filename: ' . $uploadedFile->getClientName());
+            log_message('info', 'File size: ' . $uploadedFile->getSize() . ' bytes');
             log_message('info', 'Processing uploaded file: ' . $filePath . ' for type: ' . $processType);
 
             // Process file: validate and insert to database
