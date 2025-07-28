@@ -9,6 +9,7 @@ use App\Models\AgnDetailModel;
 use App\Models\AgnSettleEduModel;
 use App\Models\AgnSettlePajakModel;
 use App\Models\AgnTrxMgateModel;
+use App\Services\FileProcessingService;
 
 class RekonStep1Controller extends BaseController
 {
@@ -19,6 +20,7 @@ class RekonStep1Controller extends BaseController
     protected $agnSettleEduModel;
     protected $agnSettlePajakModel;
     protected $agnTrxMgateModel;
+    protected $fileProcessingService;
 
     public function __construct()
     {
@@ -27,6 +29,7 @@ class RekonStep1Controller extends BaseController
         $this->agnSettleEduModel = new AgnSettleEduModel();
         $this->agnSettlePajakModel = new AgnSettlePajakModel();
         $this->agnTrxMgateModel = new AgnTrxMgateModel();
+        $this->fileProcessingService = new FileProcessingService();
     }
 
     /**
@@ -61,90 +64,157 @@ class RekonStep1Controller extends BaseController
     }
 
     /**
-     * Upload file via AJAX
+     * Upload file via AJAX dengan validasi komprehensif
      */
     public function uploadFiles()
     {
-        $tanggalRekon = $this->request->getPost('tanggal_rekon');
-        $fileType = $this->request->getPost('file_type');
-        
-        if (!$tanggalRekon || !$fileType) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Parameter tidak lengkap'
-            ]);
-        }
-
-        // Validate file type
-        $allowedTypes = ['agn_detail', 'agn_settle_edu', 'agn_settle_pajak', 'agn_trx_mgate'];
-        if (!in_array($fileType, $allowedTypes)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tipe file tidak valid'
-            ]);
-        }
-
-        $uploadedFile = $this->request->getFile('file');
-        
-        if (!$uploadedFile || !$uploadedFile->isValid()) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'File tidak valid atau tidak ada file yang diupload'
-            ]);
-        }
-
-        // Validate file extension
-        $allowedExtensions = ['csv', 'xlsx', 'xls'];
-        $fileExtension = $uploadedFile->getClientExtension();
-        
-        if (!in_array(strtolower($fileExtension), $allowedExtensions)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Format file harus CSV atau Excel (.xlsx/.xls)'
-            ]);
-        }
-
         try {
+            // Ambil parameter dari POST request
+            $tanggalRekon = $this->request->getPost('tanggal_rekon');
+            $fileType = $this->request->getPost('file_type');
+            
+            if (!$tanggalRekon || !$fileType) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Parameter tidak lengkap (tanggal_rekon dan file_type wajib)'
+                ]);
+            }
+
+            // Map file types to processing service types
+            $fileTypeMapping = [
+                'agn_detail' => 'agn_detail',
+                'settle_edu' => 'settle_edu', 
+                'settle_pajak' => 'settle_pajak',
+                'mgate' => 'mgate'
+            ];
+
+            $processType = $fileTypeMapping[$fileType] ?? null;
+            if (!$processType) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tipe file tidak valid: ' . $fileType
+                ]);
+            }
+
+            // Ambil file yang diupload
+            $uploadedFile = $this->request->getFile('file');
+            
+            if (!$uploadedFile || !$uploadedFile->isValid()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'File tidak valid atau tidak ada file yang diupload'
+                ]);
+            }
+
+            // Validasi ukuran file (max 10MB)
+            if ($uploadedFile->getSize() > 10 * 1024 * 1024) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'File terlalu besar! Maksimal 10MB'
+                ]);
+            }
+
+            // Validasi format file berdasarkan tipe
+            $allowedExtensions = $this->getAllowedExtensions($fileType);
+            $fileExtension = strtolower($uploadedFile->getClientExtension());
+            
+            if (!in_array($fileExtension, $allowedExtensions)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Format file tidak valid untuk ' . $fileType . '. Format yang diizinkan: ' . implode(', ', $allowedExtensions)
+                ]);
+            }
+
             // Create upload directory if not exists
-            $uploadPath = WRITEPATH . 'uploads/settlement/' . $tanggalRekon . '/';
+            $uploadPath = WRITEPATH . 'uploads/rekon/' . $tanggalRekon . '/';
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
 
-            // Generate unique filename
-            $newFileName = $fileType . '_' . $tanggalRekon . '.' . $fileExtension;
+            // Generate filename based on type and date
+            $newFileName = $processType . '_' . $tanggalRekon . '.' . $fileExtension;
             $filePath = $uploadPath . $newFileName;
 
             // Move uploaded file
-            if ($uploadedFile->move($uploadPath, $newFileName)) {
-                
-                $this->logActivity([
-                    'log_name' => 'FILE_UPLOAD',
-                    'description' => "Upload file {$fileType} untuk tanggal {$tanggalRekon}",
-                    'event' => 'UPLOAD_SUCCESS',
-                    'subject' => 'Settlement File Upload'
-                ]);
-
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'File berhasil diupload',
-                    'filename' => $newFileName,
-                    'file_path' => $filePath,
-                    'file_size' => $uploadedFile->getSize()
-                ]);
-            } else {
+            if (!$uploadedFile->move($uploadPath, $newFileName)) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Gagal menyimpan file'
+                    'message' => 'Gagal menyimpan file ke server'
+                ]);
+            }
+
+            log_message('info', 'Processing uploaded file: ' . $filePath . ' for type: ' . $processType);
+
+            // Process file: validate and insert to database
+            $result = $this->fileProcessingService->processUploadedFile($filePath, $processType, $tanggalRekon);
+            
+            if ($result['success']) {
+                $this->logActivity([
+                    'log_name' => 'FILE_UPLOAD',
+                    'description' => "Upload dan validasi file {$fileType} berhasil untuk tanggal {$tanggalRekon}",
+                    'event' => 'FILE_UPLOAD_SUCCESS',
+                    'subject' => 'File Processing',
+                    'properties' => json_encode($result['stats'] ?? [])
+                ]);
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'filename' => $newFileName,
+                    'stats' => $result['stats'] ?? [],
+                    'insert_stats' => $result['insert_stats'] ?? [],
+                    'warnings' => $result['warnings'] ?? []
+                ]);
+            } else {
+                // Log validation failures
+                $this->logActivity([
+                    'log_name' => 'FILE_UPLOAD',
+                    'description' => "Upload file {$fileType} gagal validasi: " . $result['message'],
+                    'event' => 'FILE_UPLOAD_FAILED',
+                    'subject' => 'File Processing',
+                    'properties' => json_encode(['errors' => $result['errors'] ?? []])
+                ]);
+
+                // Remove failed file
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $result['message'],
+                    'errors' => $result['errors'] ?? [],
+                    'warnings' => $result['warnings'] ?? []
                 ]);
             }
 
         } catch (\Exception $e) {
+            log_message('error', 'Upload file error details: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\nTrace: " . $e->getTraceAsString());
+            
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Error sistem: ' . $e->getMessage(),
+                'debug_info' => [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]
             ]);
         }
+    }
+
+    /**
+     * Get allowed file extensions for each file type
+     */
+    private function getAllowedExtensions($fileType)
+    {
+        $extensionMapping = [
+            'agn_detail' => ['txt'],
+            'settle_edu' => ['txt'],
+            'settle_pajak' => ['txt'],
+            'mgate' => ['csv']
+        ];
+
+        return $extensionMapping[$fileType] ?? ['txt', 'csv'];
     }
 
     /**
@@ -299,6 +369,37 @@ class RekonStep1Controller extends BaseController
             'success' => true,
             'file_status' => $fileStatus
         ]);
+    }
+
+    /**
+     * Get upload statistics for current date
+     */
+    public function getUploadStats()
+    {
+        $tanggalRekon = session()->get('current_rekon_date');
+        
+        if (!$tanggalRekon) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tanggal rekonsiliasi tidak ditemukan dalam session'
+            ]);
+        }
+
+        try {
+            $stats = $this->fileProcessingService->getUploadStatistics($tanggalRekon);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'stats' => $stats,
+                'date' => $tanggalRekon
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error mendapatkan statistik: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**

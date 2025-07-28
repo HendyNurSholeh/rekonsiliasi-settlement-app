@@ -59,6 +59,7 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->post('step1/validate', 'RekonStep1Controller::validateFiles', ['as' => 'rekon.step1.validate']);
     $routes->post('step1/process', 'RekonStep1Controller::processDataUpload', ['as' => 'rekon.step1.process']);
     $routes->post('step1/status', 'RekonStep1Controller::checkUploadStatus', ['as' => 'rekon.step1.status']);
+    $routes->get('step1/stats', 'RekonStep1Controller::getUploadStats', ['as' => 'rekon.step1.stats']);
     
     // Step 2 Controller - untuk step2.blade.php (Validasi Data)
     $routes->get('step2', 'RekonStep2Controller::index', ['as' => 'rekon.step2']);

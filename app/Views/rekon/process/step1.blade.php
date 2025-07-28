@@ -49,14 +49,15 @@
             <div class="card-body">
                 <p class="text-muted small mb-3">
                     Upload file data transaksi detail dari agregator untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                    <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter ;</span>
                 </p>
                 <form id="form-agn-detail" enctype="multipart/form-data">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="agn_detail" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-detail" name="file" accept=".csv,.xlsx,.xls" required>
-                        <label class="custom-file-label" for="file-agn-detail">Pilih file...</label>
+                        <input type="file" class="custom-file-input" id="file-agn-detail" name="file" accept=".txt" required>
+                        <label class="custom-file-label" for="file-agn-detail">Pilih file .txt...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('agn_detail')">
                         <i class="fal fa-upload"></i> Upload
@@ -78,14 +79,15 @@
             <div class="card-body">
                 <p class="text-muted small mb-3">
                     Upload file settlement education untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                    <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter ;</span>
                 </p>
                 <form id="form-agn-settle-edu" enctype="multipart/form-data">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="settle_edu" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-settle-edu" name="file" accept=".csv,.xlsx,.xls" required>
-                        <label class="custom-file-label" for="file-agn-settle-edu">Pilih file...</label>
+                        <input type="file" class="custom-file-input" id="file-agn-settle-edu" name="file" accept=".txt" required>
+                        <label class="custom-file-label" for="file-agn-settle-edu">Pilih file .txt...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_edu')">
                         <i class="fal fa-upload"></i> Upload
@@ -107,14 +109,15 @@
             <div class="card-body">
                 <p class="text-muted small mb-3">
                     Upload file data settlement pajak untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
-                </p>
+                    <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter |</span>
+                </p>    
                 <form id="form-agn-settle-pajak" enctype="multipart/form-data">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="settle_pajak" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-settle-pajak" name="file" accept=".csv,.xlsx,.xls" required>
-                        <label class="custom-file-label" for="file-agn-settle-pajak">Pilih file...</label>
+                        <input type="file" class="custom-file-input" id="file-agn-settle-pajak" name="file" accept=".txt" required>
+                        <label class="custom-file-label" for="file-agn-settle-pajak">Pilih file .txt...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_pajak')">
                         <i class="fal fa-upload"></i> Upload
@@ -136,14 +139,15 @@
             <div class="card-body">
                 <p class="text-muted small mb-3">
                     Upload file transaksi M-Gate (Payment Gateway) untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }} <span class="text-danger">*Wajib</span>
+                    <br><span class="text-info"><strong>Format:</strong> .csv dengan delimiter ;</span>
                 </p>
                 <form id="form-agn-trx-mgate" enctype="multipart/form-data">
                     <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" />
                     <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
                     <input type="hidden" name="file_type" value="mgate" />
                     <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-trx-mgate" name="file" accept=".csv,.xlsx,.xls" required>
-                        <label class="custom-file-label" for="file-agn-trx-mgate">Pilih file...</label>
+                        <input type="file" class="custom-file-input" id="file-agn-trx-mgate" name="file" accept=".csv" required>
+                        <label class="custom-file-label" for="file-agn-trx-mgate">Pilih file .csv...</label>
                     </div>
                     <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('mgate')">
                         <i class="fal fa-upload"></i> Upload
@@ -247,13 +251,24 @@ $(document).ready(function() {
             return false;
         }
         
-        // Cek format file
-        const allowedTypes = ['.xlsx', '.xls', '.csv'];
+        // Cek format file berdasarkan input ID
         const fileName = file.name.toLowerCase();
-        const isValidType = allowedTypes.some(type => fileName.endsWith(type));
+        const inputId = $(input).attr('id');
+        let isValidType = false;
+        let errorMessage = '';
+        
+        if (inputId === 'file-agn-trx-mgate') {
+            // M-Gate harus CSV
+            isValidType = fileName.endsWith('.csv');
+            errorMessage = 'Format file tidak valid! M-Gate harus file CSV (.csv)';
+        } else {
+            // Yang lain harus TXT
+            isValidType = fileName.endsWith('.txt');
+            errorMessage = 'Format file tidak valid! File harus berformat TXT (.txt)';
+        }
         
         if (!isValidType) {
-            alert('Format file tidak valid! Hanya menerima file Excel (.xlsx, .xls) atau CSV (.csv)');
+            alert(errorMessage);
             $(input).val('');
             return false;
         }
@@ -305,16 +320,16 @@ function uploadFile(type) {
                     <div class="alert alert-success">
                         <i class="fal fa-check"></i> 
                         <strong>File berhasil diupload!</strong><br>
-                        <small>${response.message || 'Upload completed successfully'}</small>
+                        <small>${response.message || 'Upload selesai dengan sukses'}</small>
                     </div>
                     <div class="text-center">
                         <button class="btn btn-outline-success btn-sm" onclick="reuploadFile('${type}')">
-                            <i class="fal fa-redo"></i> Re-upload
+                            <i class="fal fa-redo"></i> Upload Ulang
                         </button>
                     </div>
                 `);
                 
-                alert('File berhasil diupload!');
+                alert('File berhasil diupload dan divalidasi!');
                 
                 // Tambahkan ke daftar uploaded files
                 if (!uploadedFiles.includes(type)) {
@@ -324,12 +339,44 @@ function uploadFile(type) {
                 // Update status upload
                 updateUploadStatus();
             } else {
-                alert('Gagal upload file: ' + (response.message || 'Unknown error'));
+                var errorMsg = response.message || 'Terjadi kesalahan saat upload file';
+                
+                // Tampilkan detail error jika ada
+                if (response.errors && response.errors.length > 0) {
+                    errorMsg += '\n\nDetail error:\n' + response.errors.join('\n');
+                }
+                
+                // Tampilkan debug info jika ada (untuk development)
+                if (response.debug_info) {
+                    errorMsg += '\n\nDebug Info:\nFile: ' + response.debug_info.file + '\nLine: ' + response.debug_info.line;
+                }
+                
+                alert('Upload gagal: ' + errorMsg);
                 btn.prop('disabled', false).html(originalHtml);
             }
         },
         error: function(xhr, status, error) {
-            alert('Error saat upload file: ' + error);
+            var errorMsg = 'Terjadi kesalahan saat upload file';
+            
+            if (xhr.responseJSON) {
+                if (xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                
+                // Tampilkan debug info jika ada
+                if (xhr.responseJSON.debug_info) {
+                    errorMsg += '\n\nDebug Info:\nFile: ' + xhr.responseJSON.debug_info.file + '\nLine: ' + xhr.responseJSON.debug_info.line;
+                }
+                
+                // Tampilkan error detail jika ada
+                if (xhr.responseJSON.errors && xhr.responseJSON.errors.length > 0) {
+                    errorMsg += '\n\nDetail error:\n' + xhr.responseJSON.errors.join('\n');
+                }
+            } else {
+                errorMsg += '\n\nHTTP Status: ' + xhr.status + '\nError: ' + error;
+            }
+            
+            alert('Upload gagal: ' + errorMsg);
             btn.prop('disabled', false).html(originalHtml);
         }
     });
@@ -390,15 +437,26 @@ function validateAndProceed() {
         },
         success: function(response) {
             if (response.success && response.validation_passed) {
-                alert('Validasi berhasil! Melanjutkan ke proses data upload...');
+                alert('Validasi berhasil! Melanjutkan ke proses penyimpanan data...');
                 callDataUploadProcess();
             } else {
-                alert('Validasi gagal: ' + (response.message || 'Unknown error'));
+                var errorMsg = 'Validasi file gagal';
+                if (response.message) {
+                    errorMsg = response.message;
+                }
+                if (response.errors && response.errors.length > 0) {
+                    errorMsg += '\n\nDetail error:\n' + response.errors.join('\n');
+                }
+                alert(errorMsg);
                 $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
             }
         },
-        error: function() {
-            alert('Error saat validasi files');
+        error: function(xhr) {
+            var errorMsg = 'Terjadi kesalahan saat validasi';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message;
+            }
+            alert(errorMsg);
             $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
         }
     });
@@ -415,17 +473,25 @@ function callDataUploadProcess() {
         },
         success: function(response) {
             if (response.success) {
-                alert('Proses data upload berhasil! Mengarahkan ke halaman selanjutnya...');
+                alert('Proses penyimpanan data berhasil! Mengarahkan ke halaman selanjutnya...');
                 setTimeout(() => {
                     window.location.href = '{{ site_url("rekon/step2") }}';
                 }, 2000);
             } else {
-                alert('Gagal proses data upload: ' + (response.message || 'Unknown error'));
+                var errorMsg = 'Proses penyimpanan data gagal';
+                if (response.message) {
+                    errorMsg = response.message;
+                }
+                alert(errorMsg);
                 $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
             }
         },
-        error: function() {
-            alert('Error saat proses data upload');
+        error: function(xhr) {
+            var errorMsg = 'Terjadi kesalahan saat memproses data';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message;
+            }
+            alert(errorMsg);
             $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
         }
     });
