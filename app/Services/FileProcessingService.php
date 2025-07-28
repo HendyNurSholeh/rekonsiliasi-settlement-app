@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Libraries\FileValidator;
-use App\Models\AgnDetailModel;
-use App\Models\AgnSettleEduModel;
-use App\Models\AgnSettlePajakModel;
-use App\Models\AgnTrxMgateModel;
+use App\Models\TampAgnDetailModel;
+use App\Models\TampAgnSettleEduModel;
+use App\Models\TampAgnSettlePajakModel;
+use App\Models\TampAgnTrxMgateModel;
 
 class FileProcessingService
 {
@@ -17,12 +17,12 @@ class FileProcessingService
     {
         $this->fileValidator = new FileValidator();
         
-        // Initialize models
+        // Initialize models - using temporary tables
         $this->models = [
-            'agn_detail' => new AgnDetailModel(),
-            'settle_edu' => new AgnSettleEduModel(),
-            'settle_pajak' => new AgnSettlePajakModel(),
-            'mgate' => new AgnTrxMgateModel()
+            'agn_detail' => new TampAgnDetailModel(),
+            'settle_edu' => new TampAgnSettleEduModel(),
+            'settle_pajak' => new TampAgnSettlePajakModel(),
+            'mgate' => new TampAgnTrxMgateModel()
         ];
     }
 
@@ -136,7 +136,7 @@ class FileProcessingService
                 log_message('info', 'Deleted existing records: ' . $deleted);
             } elseif ($fileType === 'settle_edu') {
                 // Use Query Builder for table without primary key
-                $deleted = $db->table('t_agn_settle_edu')->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
+                $deleted = $db->table('tamp_agn_settle_edu')->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
                 log_message('info', 'Deleted existing records: ' . $deleted);
             } elseif (in_array($fileType, ['settle_pajak', 'mgate'])) {
                 $deleted = $model->where('v_TGL_FILE_REKON', $tanggalRekon)->delete();
@@ -179,11 +179,11 @@ class FileProcessingService
                     if (count($batchData) >= $batchSize) {
                         // Use Query Builder directly for tables without primary key
                         if ($fileType === 'settle_edu') {
-                            $db->table('t_agn_settle_edu')->insertBatch($batchData);
+                            $db->table('tamp_agn_settle_edu')->insertBatch($batchData);
                         } elseif ($fileType === 'settle_pajak') {
-                            $db->table('t_agn_settle_pajak')->insertBatch($batchData);
+                            $db->table('tamp_agn_settle_pajak')->insertBatch($batchData);
                         } elseif ($fileType === 'mgate') {
-                            $db->table('t_agn_trx_mgate')->insertBatch($batchData);
+                            $db->table('tamp_agn_trx_mgate')->insertBatch($batchData);
                         } else {
                             $model->insertBatch($batchData);
                         }
@@ -200,11 +200,11 @@ class FileProcessingService
             if (!empty($batchData)) {
                 // Use Query Builder directly for tables without primary key
                 if ($fileType === 'settle_edu') {
-                    $db->table('t_agn_settle_edu')->insertBatch($batchData);
+                    $db->table('tamp_agn_settle_edu')->insertBatch($batchData);
                 } elseif ($fileType === 'settle_pajak') {
-                    $db->table('t_agn_settle_pajak')->insertBatch($batchData);
+                    $db->table('tamp_agn_settle_pajak')->insertBatch($batchData);
                 } elseif ($fileType === 'mgate') {
-                    $db->table('t_agn_trx_mgate')->insertBatch($batchData);
+                    $db->table('tamp_agn_trx_mgate')->insertBatch($batchData);
                 } else {
                     $model->insertBatch($batchData);
                 }
@@ -499,11 +499,15 @@ class FileProcessingService
 
         foreach ($this->models as $type => $model) {
             if ($type === 'agn_detail') {
-                // AGN Detail uses different field names
+                // AGN Detail uses v_TGL_FILE_REKON field
                 $count = $model->where('v_TGL_FILE_REKON', $tanggalRekon)->countAllResults();
                 $totalAmount = $model->selectSum('RP_AMOUNT')->where('v_TGL_FILE_REKON', $tanggalRekon)->first()['RP_AMOUNT'] ?? 0;
+            } elseif (in_array($type, ['settle_edu', 'settle_pajak', 'mgate'])) {
+                // All other models use v_TGL_FILE_REKON field and AMOUNT field
+                $count = $model->where('v_TGL_FILE_REKON', $tanggalRekon)->countAllResults();
+                $totalAmount = $model->selectSum('AMOUNT')->where('v_TGL_FILE_REKON', $tanggalRekon)->first()['AMOUNT'] ?? 0;
             } else {
-                // Other models use standard field names
+                // Fallback for other models (should not happen with current setup)
                 $count = $model->where('tanggal_rekon', $tanggalRekon)->countAllResults();
                 $totalAmount = $model->selectSum('amount')->where('tanggal_rekon', $tanggalRekon)->first()['amount'] ?? 0;
             }
