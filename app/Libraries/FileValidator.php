@@ -148,10 +148,10 @@ class FileValidator
             return trim(str_replace("\xEF\xBB\xBF", '', $header));
         }, $headers);
         
-        // Remove empty headers (from trailing delimiters like "TERMINALID;")
-        $headers = array_filter($headers, function($header) {
-            return !empty($header);
-        });
+        // Only remove empty headers from the end (trailing delimiters)
+        while (count($headers) > 0 && empty(end($headers))) {
+            array_pop($headers);
+        }
         
         // Re-index
         $headers = array_values($headers);
@@ -194,15 +194,15 @@ class FileValidator
         $headerLine = trim(fgets($handle));
         $headers = explode($config['delimiter'], $headerLine);
         
-        // Clean headers - remove BOM and empty headers (from trailing delimiters)
+        // Clean headers - remove BOM and trim spaces
         $headers = array_map(function($header) {
             return trim(str_replace("\xEF\xBB\xBF", '', $header));
         }, $headers);
         
-        // Remove empty headers (from trailing delimiters like "TERMINALID;")
-        $headers = array_filter($headers, function($header) {
-            return !empty($header);
-        });
+        // Only remove empty headers from the end (trailing delimiters)
+        while (count($headers) > 0 && empty(end($headers))) {
+            array_pop($headers);
+        }
         
         // Re-index
         $headers = array_values($headers);

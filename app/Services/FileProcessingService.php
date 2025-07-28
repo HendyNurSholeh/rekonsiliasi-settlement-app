@@ -105,15 +105,15 @@ class FileProcessingService
         $headerLine = trim($lines[0]);
         $headers = explode($config['delimiter'], $headerLine);
         
-        // Clean headers - remove BOM and empty headers
+        // Clean headers - remove BOM and trim spaces
         $headers = array_map(function($header) {
             return trim(str_replace("\xEF\xBB\xBF", '', $header));
         }, $headers);
         
-        // Remove empty headers (from trailing delimiters)
-        $headers = array_filter($headers, function($header) {
-            return !empty($header);
-        });
+        // Only remove empty headers from the end (trailing delimiters)
+        while (count($headers) > 0 && empty(end($headers))) {
+            array_pop($headers);
+        }
         
         // Re-index
         $headers = array_values($headers);
@@ -182,6 +182,8 @@ class FileProcessingService
                             $db->table('t_agn_settle_edu')->insertBatch($batchData);
                         } elseif ($fileType === 'settle_pajak') {
                             $db->table('t_agn_settle_pajak')->insertBatch($batchData);
+                        } elseif ($fileType === 'mgate') {
+                            $db->table('t_agn_trx_mgate')->insertBatch($batchData);
                         } else {
                             $model->insertBatch($batchData);
                         }
@@ -201,6 +203,8 @@ class FileProcessingService
                     $db->table('t_agn_settle_edu')->insertBatch($batchData);
                 } elseif ($fileType === 'settle_pajak') {
                     $db->table('t_agn_settle_pajak')->insertBatch($batchData);
+                } elseif ($fileType === 'mgate') {
+                    $db->table('t_agn_trx_mgate')->insertBatch($batchData);
                 } else {
                     $model->insertBatch($batchData);
                 }
@@ -323,25 +327,24 @@ class FileProcessingService
     {
         $stmtDate = $this->getDataByHeader($data, $headers, 'stmt_booking_date');
         
-        // Convert YMMDD to Y-M-D
-        if (preg_match('/^(\d{2})(\d{2})(\d{2})$/', $stmtDate, $matches)) {
-            $stmtDate = "20{$matches[1]}-{$matches[2]}-{$matches[3]}";
-        }
-
+        // Convert date if needed - M-Gate uses YYYY-MM-DD format already
+        // No conversion needed for this format
+        
         $mapping = [
-            'tanggal_rekon' => $tanggalRekon,
-            'branch' => $this->getDataByHeader($data, $headers, 'branch'),
-            'stmt_booking_date' => $stmtDate,
-            'ft_bil_product' => $this->getDataByHeader($data, $headers, 'ft_bil_product'),
-            'stmt_date_time' => $this->getDataByHeader($data, $headers, 'stmt_date_time'),
-            'ft_bil_customer' => $this->getDataByHeader($data, $headers, 'ft_bil_customer'),
-            'ft_term_id' => $this->getDataByHeader($data, $headers, 'ft_term_id'),
-            'ft_debit_acct_no' => $this->getDataByHeader($data, $headers, 'ft_debit_acct_no'),
-            'ft_trans_reff' => $this->getDataByHeader($data, $headers, 'ft_trans_reff'),
-            'stmt_our_reference' => $this->getDataByHeader($data, $headers, 'stmt_our_reference'),
-            'recipt_no' => $this->getDataByHeader($data, $headers, 'recipt_no'),
-            'amount' => $this->parseAmount($this->getDataByHeader($data, $headers, 'amount')),
-            'fee' => $this->parseAmount($this->getDataByHeader($data, $headers, 'fee'))
+            'BRANCH' => $this->getDataByHeader($data, $headers, 'branch'),
+            'STMT_BOOKING_DATE' => $stmtDate,
+            'FT_BIL_PRODUCT' => $this->getDataByHeader($data, $headers, 'ft_bil_product'),
+            'STMT_DATE_TIME' => $this->getDataByHeader($data, $headers, 'stmt_date_time'),
+            'FT_BIL_CUSTOMER' => $this->getDataByHeader($data, $headers, 'ft_bil_customer'),
+            'FT_TERM_ID' => $this->getDataByHeader($data, $headers, 'ft_term_id'),
+            'FT_DEBIT_ACCT_NO' => $this->getDataByHeader($data, $headers, 'ft_debit_acct_no'),
+            'FT_TRANS_REFF' => $this->getDataByHeader($data, $headers, 'ft_trans_reff'),
+            'STMT_OUR_REFF' => $this->getDataByHeader($data, $headers, 'stmt_our_reference'),
+            'RECIPT_NO' => $this->getDataByHeader($data, $headers, 'recipt_no'),
+            'AMOUNT' => $this->parseAmount($this->getDataByHeader($data, $headers, 'amount')),
+            'FEE' => $this->parseAmount($this->getDataByHeader($data, $headers, 'fee')),
+            'v_TGL_PROSES' => date('Y-m-d H:i:s'),
+            'v_TGL_FILE_REKON' => $tanggalRekon
         ];
 
         return $mapping;

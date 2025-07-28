@@ -7,17 +7,17 @@ use CodeIgniter\Model;
 class AgnTrxMgateModel extends Model
 {
     protected $table            = 't_agn_trx_mgate';
-    protected $primaryKey       = '';
-    protected $useAutoIncrement = false;
+    protected $primaryKey       = 'ID';
+    protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = false;
 
     protected $allowedFields = [
         'BRANCH', 'STMT_BOOKING_DATE', 'FT_BIL_PRODUCT', 'STMT_DATE_TIME',
-        'FT_BIL_CUSTOMER', 'FT_TERM_ID', 'KET', 'FT_DEBIT_ACCT_NO',
+        'FT_BIL_CUSTOMER', 'FT_TERM_ID', 'FT_DEBIT_ACCT_NO',
         'FT_TRANS_REFF', 'STMT_OUR_REFF', 'RECIPT_NO', 'AMOUNT', 'FEE',
-        'v_STAT_CORE_AGR'
+        'v_TGL_PROSES', 'v_TGL_FILE_REKON'
     ];
 
     // Dates
