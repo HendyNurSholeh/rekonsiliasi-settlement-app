@@ -661,7 +661,7 @@ function showProductMappingModal(mappingData) {
                 <div class="modal-content">
                     <div class="modal-header bg-warning text-dark">
                         <h5 class="modal-title" id="mappingModalLabel">
-                            <i class="fal fa-exclamation-triangle"></i> Detail Mapping Produk (View v_cek_group_produk)
+                            <i class="fal fa-exclamation-triangle"></i> Detail Mapping Produk
                         </h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -740,8 +740,7 @@ function showProductMappingModal(mappingData) {
                                  id="all-data" role="tabpanel">
                                 <div class="alert alert-info">
                                     <i class="fal fa-info-circle"></i>
-                                    <strong>Tabel Lengkap:</strong> Data dari view <code>v_cek_group_produk</code> 
-                                    menampilkan semua produk dan status mapping-nya.
+                                    <strong>Tabel Lengkap:</strong> Data dari semua produk dan status mapping-nya.
                                 </div>
                                 <div class="table-responsive" style="max-height: 500px;">
                                     <table class="table table-sm table-striped">
