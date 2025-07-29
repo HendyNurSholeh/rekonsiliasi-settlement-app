@@ -6,7 +6,7 @@
                 class="page-logo m-0 w-100 align-items-center justify-content-center rounded border-bottom-left-radius-0 border-bottom-right-radius-0 px-4 bg-primary-900">
                 <a href="{{ site_url('login') }}" class="page-logo-link press-scale-down d-flex align-items-center">
                     <img src="{{ base_url('/img/logo.png') }}" alt="SmartAdmin WebApp" aria-roledescription="logo">
-                    <span class="page-logo-text mr-1">Devisa Manager Tools</span>
+                    <span class="page-logo-text mr-1">Settlement Reconciliation System</span>
                 </a>
             </div>
             <div class="card p-4 border-top-left-radius-0 border-top-right-radius-0">
@@ -51,7 +51,7 @@
                 {!! form_close() !!}
 
                 <div class="text-center text-muted mt-4">
-                    <p class="fw-300 mb-0">Underlying</p>
+                    <p class="fw-300 mb-0">Settlement Reconciliation System</p>
                     <p class="fw-500">Bank Kalsel</p>
                 </div>
             </div>
