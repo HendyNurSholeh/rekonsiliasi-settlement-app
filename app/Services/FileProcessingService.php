@@ -159,9 +159,32 @@ class FileProcessingService
                 
                 log_message('debug', 'Processing line ' . ($i + 1) . ' with ' . count($data) . ' columns, expected: ' . count($headers));
                 
-                // STRICT VALIDATION: Reject if column count doesn't match exactly
-                if (count($data) !== count($headers)) {
-                    throw new \Exception("Error pada baris " . ($i + 1) . ": Jumlah kolom tidak sesuai. Ditemukan " . count($data) . " kolom, diharapkan " . count($headers) . " kolom. Data: " . substr($line, 0, 100) . "...");
+                // SPECIAL HANDLING FOR AGN_DETAIL: Allow 36, 37, or 38 columns
+                if ($fileType === 'agn_detail') {
+                    $columnCount = count($data);
+                    $expectedCount = count($headers);
+                    
+                    // Allow 36, 37, or 38 columns for agn_detail
+                    if ($columnCount < 36 || $columnCount > 38) {
+                        throw new \Exception("Error pada baris " . ($i + 1) . ": Jumlah kolom tidak sesuai untuk file agn_detail. Ditemukan " . $columnCount . " kolom, diharapkan 36-38 kolom. Data: " . substr($line, 0, 100) . "...");
+                    }
+                    
+                    // Normalize to 37 columns (standard format)
+                    if ($columnCount === 36) {
+                        // Add empty TERMINALID
+                        $data[] = '';
+                        log_message('info', 'Added empty TERMINALID for line ' . ($i + 1) . ' (36 columns)');
+                    } elseif ($columnCount === 38) {
+                        // Remove the last column (extra column beyond TERMINALID)
+                        array_pop($data);
+                        log_message('info', 'Removed extra column for line ' . ($i + 1) . ' (38 columns)');
+                    }
+                    // 37 columns is already correct, no changes needed
+                } else {
+                    // STRICT VALIDATION for other file types: Reject if column count doesn't match exactly
+                    if (count($data) !== count($headers)) {
+                        throw new \Exception("Error pada baris " . ($i + 1) . ": Jumlah kolom tidak sesuai. Ditemukan " . count($data) . " kolom, diharapkan " . count($headers) . " kolom. Data: " . substr($line, 0, 100) . "...");
+                    }
                 }
                 
                 // Convert all to strings

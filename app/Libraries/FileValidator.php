@@ -228,11 +228,23 @@ class FileValidator
             $data = explode($config['delimiter'], $line);
             $totalRows++;
             
-            // STRICT COLUMN COUNT VALIDATION - reject if count doesn't match exactly
-            if (count($data) !== $expectedColumnCount) {
-                $columnMismatchErrors++;
-                if ($columnMismatchErrors <= 5) { // Show max 5 examples
-                    $this->addError("Baris {$lineNumber}: Jumlah kolom tidak sesuai. Ditemukan " . count($data) . " kolom, diharapkan {$expectedColumnCount} kolom.");
+            // COLUMN COUNT VALIDATION - special handling for agn_detail
+            if ($fileType === 'agn_detail') {
+                // Allow 36, 37, or 38 columns for agn_detail
+                $columnCount = count($data);
+                if ($columnCount < 36 || $columnCount > 38) {
+                    $columnMismatchErrors++;
+                    if ($columnMismatchErrors <= 5) {
+                        $this->addError("Baris {$lineNumber}: Jumlah kolom tidak sesuai untuk agn_detail. Ditemukan " . $columnCount . " kolom, diharapkan 36-38 kolom.");
+                    }
+                }
+            } else {
+                // STRICT COLUMN COUNT VALIDATION for other file types - reject if count doesn't match exactly
+                if (count($data) !== $expectedColumnCount) {
+                    $columnMismatchErrors++;
+                    if ($columnMismatchErrors <= 5) {
+                        $this->addError("Baris {$lineNumber}: Jumlah kolom tidak sesuai. Ditemukan " . count($data) . " kolom, diharapkan {$expectedColumnCount} kolom.");
+                    }
                 }
             }
 
