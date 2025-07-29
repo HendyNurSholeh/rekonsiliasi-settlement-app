@@ -220,6 +220,38 @@
 .custom-file-label::after {
     content: "Browse";
 }
+
+/* Modal styling */
+.modal-lg {
+    max-width: 90%;
+}
+
+.table-responsive {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 0.375rem;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffecb5;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
 </style>
 @endpush
 
@@ -530,6 +562,13 @@ function callDataUploadProcess() {
                     .prop('disabled', false)
                     .html('<i class="fal fa-check-circle"></i> Proses Selesai');
                 
+                // Cek mapping produk jika ada data tidak termapping
+                if (response.mapping_check && response.mapping_check.has_unmapped) {
+                    showProductMappingModal(response.mapping_check);
+                } else if (response.mapping_check) {
+                    showMappingSuccessMessage(response.mapping_check.statistics);
+                }
+                
                 // Optional: redirect ke step 2 setelah delay
                 // setTimeout(() => {
                 //     window.location.href = '{{ site_url("rekon/step2") }}?tanggal={{ $tanggalRekon }}';
@@ -571,6 +610,280 @@ function callDataUploadProcess() {
             $('#btn-validate').prop('disabled', false).html('<i class="fal fa-check-circle"></i> Validasi & Lanjutkan');
         }
     });
+}
+
+// Fungsi untuk menampilkan modal mapping produk
+function showProductMappingModal(mappingData) {
+    const unmappedProducts = mappingData.unmapped_products;
+    const stats = mappingData.statistics;
+    const detailedInfo = mappingData.detailed_info;
+    const allData = mappingData.all_mapping_data;
+    
+    // Create tabs content
+    let unmappedTableRows = '';
+    unmappedProducts.forEach(function(product) {
+        unmappedTableRows += `
+            <tr>
+                <td class="text-center">${product.SOURCE}</td>
+                <td>${product.PRODUK}</td>
+                <td class="text-center">
+                    <span class="badge badge-warning">Not Mapped</span>
+                </td>
+            </tr>
+        `;
+    });
+    
+    // Create all data table
+    let allDataTableRows = '';
+    allData.forEach(function(product) {
+        const status = product.NAMA_GROUP ? 
+            '<span class="badge badge-success">Mapped</span>' : 
+            '<span class="badge badge-warning">Not Mapped</span>';
+        const namaGroup = product.NAMA_GROUP || '<em class="text-muted">-</em>';
+        
+        allDataTableRows += `
+            <tr class="${product.NAMA_GROUP ? '' : 'table-warning'}">
+                <td class="text-center">${product.SOURCE}</td>
+                <td>${product.PRODUK}</td>
+                <td>${namaGroup}</td>
+                <td class="text-center">${status}</td>
+            </tr>
+        `;
+    });
+    
+    // Summary statistics
+    const detailMapped = detailedInfo ? detailedInfo.detail_count - Object.keys(detailedInfo.detail_unmapped || {}).length : 0;
+    const rekapMapped = detailedInfo ? detailedInfo.rekap_count - Object.keys(detailedInfo.rekap_unmapped || {}).length : 0;
+    
+    const modalHtml = `
+        <div class="modal fade" id="mappingModal" tabindex="-1" role="dialog" aria-labelledby="mappingModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title" id="mappingModalLabel">
+                            <i class="fal fa-exclamation-triangle"></i> Detail Mapping Produk (View v_cek_group_produk)
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert ${stats.unmapped_produk > 0 ? 'alert-warning' : 'alert-success'}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Total Produk:</strong> ${stats.total_produk}<br>
+                                    <strong>Sudah Termapping:</strong> ${stats.mapped_produk} (${stats.mapping_percentage}%)<br>
+                                    <strong>Belum Termapping:</strong> ${stats.unmapped_produk}
+                                </div>
+                                <div class="col-md-6">
+                                    ${detailedInfo ? `
+                                        <strong>Detail Source:</strong> ${detailedInfo.detail_count} produk (${detailMapped} mapped)<br>
+                                        <strong>Rekap Source:</strong> ${detailedInfo.rekap_count} produk (${rekapMapped} mapped)
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabs Navigation -->
+                        <ul class="nav nav-tabs" id="mappingTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link ${stats.unmapped_produk > 0 ? 'active' : ''}" 
+                                   id="unmapped-tab" data-toggle="tab" href="#unmapped" role="tab">
+                                    <i class="fal fa-exclamation-triangle text-warning"></i>
+                                    Produk Belum Termapping (${stats.unmapped_produk})
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link ${stats.unmapped_produk === 0 ? 'active' : ''}" 
+                                   id="all-data-tab" data-toggle="tab" href="#all-data" role="tab">
+                                    <i class="fal fa-table"></i>
+                                    Semua Data (${stats.total_produk})
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <!-- Tabs Content -->
+                        <div class="tab-content mt-3" id="mappingTabsContent">
+                            <!-- Unmapped Products Tab -->
+                            <div class="tab-pane fade ${stats.unmapped_produk > 0 ? 'show active' : ''}" 
+                                 id="unmapped" role="tabpanel">
+                                ${stats.unmapped_produk > 0 ? `
+                                    <div class="alert alert-info">
+                                        <i class="fal fa-info-circle"></i>
+                                        <strong>Catatan:</strong> Produk di bawah ini belum memiliki mapping di tabel 
+                                        <code>t_group_settlement</code> dan tidak akan diproses dengan benar.
+                                    </div>
+                                    <div class="table-responsive" style="max-height: 400px;">
+                                        <table class="table table-sm table-striped">
+                                            <thead class="thead-light sticky-top">
+                                                <tr>
+                                                    <th class="text-center">Source</th>
+                                                    <th>Produk</th>
+                                                    <th class="text-center">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${unmappedTableRows}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ` : `
+                                    <div class="alert alert-success">
+                                        <i class="fal fa-check-circle"></i>
+                                        <strong>Excellent!</strong> Semua produk sudah termapping dengan benar.
+                                    </div>
+                                `}
+                            </div>
+                            
+                            <!-- All Data Tab -->
+                            <div class="tab-pane fade ${stats.unmapped_produk === 0 ? 'show active' : ''}" 
+                                 id="all-data" role="tabpanel">
+                                <div class="alert alert-info">
+                                    <i class="fal fa-info-circle"></i>
+                                    <strong>Tabel Lengkap:</strong> Data dari view <code>v_cek_group_produk</code> 
+                                    menampilkan semua produk dan status mapping-nya.
+                                </div>
+                                <div class="table-responsive" style="max-height: 500px;">
+                                    <table class="table table-sm table-striped">
+                                        <thead class="thead-dark sticky-top">
+                                            <tr>
+                                                <th class="text-center">Source</th>
+                                                <th>Produk</th>
+                                                <th>Nama Group</th>
+                                                <th class="text-center">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${allDataTableRows}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn btn-info" onclick="viewMappingInNewTab()">
+                            <i class="fal fa-external-link-alt"></i> Lihat di Tab Baru
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="downloadMappingData()">
+                            <i class="fal fa-download"></i> Download Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    $('#mappingModal').remove();
+    
+    // Add modal to body
+    $('body').append(modalHtml);
+    
+    // Show modal
+    $('#mappingModal').modal('show');
+}
+
+// Fungsi untuk menampilkan pesan sukses mapping
+function showMappingSuccessMessage(stats) {
+    const successAlert = `
+        <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+            <i class="fal fa-check-circle"></i> 
+            <strong>Mapping Produk Berhasil!</strong><br>
+            Semua ${stats.total_produk} produk sudah termapping dengan benar (100%).
+            <br><br>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="viewAllMappingData()">
+                <i class="fal fa-table"></i> Lihat Detail Mapping
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-info ml-2" onclick="viewMappingInNewTab()">
+                <i class="fal fa-external-link-alt"></i> Buka di Tab Baru
+            </button>
+            <button type="button" class="close" data-dismiss="alert">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    `;
+    
+    $('.action-buttons').parent().append(successAlert);
+}
+
+// Fungsi untuk melihat semua data mapping (bahkan ketika semua sudah mapped)
+function viewAllMappingData() {
+    console.log('viewAllMappingData called');
+    
+    // Show loading indicator
+    const loadingAlert = `
+        <div id="mapping-loading" class="alert alert-info">
+            <i class="fal fa-spinner fa-spin"></i> Sedang mengambil data mapping...
+        </div>
+    `;
+    $('.action-buttons').parent().append(loadingAlert);
+    
+    // AJAX call to get complete mapping data
+    $.ajax({
+        url: '{{ site_url("rekon/step1/mapping") }}',
+        method: 'GET',
+        data: {
+            format: 'json',
+            tanggal_rekon: '{{ $tanggalRekon }}'
+        },
+        success: function(response) {
+            console.log('AJAX response received:', response);
+            $('#mapping-loading').remove();
+            
+            if (response.success && response.data) {
+                // Transform the response data to match the modal structure
+                const modalData = {
+                    unmapped_products: response.data.unmapped_data || [],
+                    statistics: response.data.statistics || {},
+                    detailed_info: response.data,
+                    all_mapping_data: response.data.all_data || []
+                };
+                console.log('Modal data prepared:', modalData);
+                showProductMappingModal(modalData);
+            } else {
+                console.error('Invalid response:', response);
+                alert('Gagal mengambil data mapping: ' + (response.message || 'Unknown error'));
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX error:', xhr, status, error);
+            console.error('Response text:', xhr.responseText);
+            $('#mapping-loading').remove();
+            
+            let errorMessage = 'Terjadi kesalahan saat mengambil data mapping';
+            
+            if (xhr.responseJSON) {
+                console.error('Response JSON:', xhr.responseJSON);
+                if (xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                if (xhr.responseJSON.debug_info) {
+                    console.error('Debug info:', xhr.responseJSON.debug_info);
+                    errorMessage += '\n\nDebug info: ' + JSON.stringify(xhr.responseJSON.debug_info, null, 2);
+                }
+            } else if (xhr.status === 404) {
+                errorMessage = 'Endpoint tidak ditemukan. URL: ' + '{{ site_url("rekon/step1/mapping") }}';
+            } else if (xhr.status === 500) {
+                errorMessage = 'Kesalahan server internal. Status: ' + xhr.status;
+            } else {
+                errorMessage += '\nStatus: ' + xhr.status + '\nError: ' + error;
+            }
+            
+            alert(errorMessage);
+        }
+    });
+}
+
+// Fungsi untuk download data mapping
+// Fungsi untuk melihat mapping di tab baru
+function viewMappingInNewTab() {
+    window.open('{{ site_url("rekon/step1/mapping") }}', '_blank');
+}
+
+function downloadMappingData() {
+    window.open('{{ site_url("rekon/step1/mapping") }}', '_blank');
 }
 </script>
 @endpush

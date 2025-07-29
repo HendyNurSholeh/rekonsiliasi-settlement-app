@@ -8,6 +8,7 @@ use App\Models\ProsesModel;
 use App\Models\AgnDetailModel;
 use App\Models\AgnSettleEduModel;
 use App\Models\AgnSettlePajakModel;
+use App\Models\VGroupProdukModel;
 use App\Models\AgnTrxMgateModel;
 use App\Services\FileProcessingService;
 
@@ -333,6 +334,10 @@ class RekonStep1Controller extends BaseController
                 ])
             ]);
 
+            // Cek mapping produk menggunakan v_group_produk
+            $vGroupProdukModel = new VGroupProdukModel();
+            $detailedMapping = $vGroupProdukModel->getDetailedMappingInfo();
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Proses data upload berhasil dijalankan menggunakan stored procedure p_proses_dataupload',
@@ -341,6 +346,13 @@ class RekonStep1Controller extends BaseController
                     'procedure_executed' => 'p_proses_dataupload',
                     'results_count' => count($results),
                     'executed_at' => date('Y-m-d H:i:s')
+                ],
+                'mapping_check' => [
+                    'statistics' => $detailedMapping['statistics'],
+                    'unmapped_products' => $detailedMapping['unmapped_data'],
+                    'all_mapping_data' => $detailedMapping['all_data'],
+                    'detailed_info' => $detailedMapping,
+                    'has_unmapped' => count($detailedMapping['unmapped_data']) > 0
                 ]
             ]);
 
@@ -487,6 +499,61 @@ class RekonStep1Controller extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error getting CSRF token: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Check product mapping after data upload process
+     */
+    public function checkProductMapping()
+    {
+        try {
+            log_message('info', 'checkProductMapping called');
+            
+            $vGroupProdukModel = new VGroupProdukModel();
+            log_message('info', 'VGroupProdukModel instantiated');
+            
+            // Get detailed mapping data
+            $detailedMapping = $vGroupProdukModel->getDetailedMappingInfo();
+            log_message('info', 'Detailed mapping data retrieved: ' . json_encode($detailedMapping));
+
+            // Check if request wants JSON or HTML view
+            if ($this->request->isAJAX() || $this->request->getGet('format') === 'json') {
+                log_message('info', 'Returning JSON response');
+                return $this->response->setJSON([
+                    'success' => true,
+                    'data' => $detailedMapping
+                ]);
+            }
+
+            log_message('info', 'Returning HTML view');
+            // Return HTML view for download
+            return view('rekon/mapping_report', [
+                'all_mapping' => $detailedMapping['all_data'],
+                'unmapped_products' => $detailedMapping['unmapped_data'],
+                'statistics' => $detailedMapping['statistics'],
+                'detailed_info' => $detailedMapping
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error in checkProductMapping: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            if ($this->request->isAJAX() || $this->request->getGet('format') === 'json') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Error mendapatkan data mapping produk: ' . $e->getMessage(),
+                    'debug_info' => [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]
+                ]);
+            }
+            
+            return view('errors/html/error_500', [
+                'message' => 'Error mendapatkan data mapping produk: ' . $e->getMessage()
             ]);
         }
     }
