@@ -107,7 +107,7 @@
                                     <td>
                                         <button type="button" class="btn btn-sm btn-primary btn-proses" 
                                                 data-id="{{ $item['v_ID'] ?? '' }}">
-                                            <i class="fal fa-edit"></i> Proses
+                                            <i class="fal fa-tools"></i> Proses
                                         </button>
                                     </td>
                                 </tr>
