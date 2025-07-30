@@ -9,6 +9,7 @@ use App\Models\AgnDetailModel;
 use App\Models\AgnSettleEduModel;
 use App\Models\AgnSettlePajakModel;
 use App\Models\AgnTrxMgateModel;
+use App\Models\VGroupProdukModel;
 
 class RekonStep2Controller extends BaseController
 {
@@ -19,6 +20,7 @@ class RekonStep2Controller extends BaseController
     protected $agnSettleEduModel;
     protected $agnSettlePajakModel;
     protected $agnTrxMgateModel;
+    protected $vGroupProdukModel;
 
     public function __construct()
     {
@@ -27,6 +29,7 @@ class RekonStep2Controller extends BaseController
         $this->agnSettleEduModel = new AgnSettleEduModel();
         $this->agnSettlePajakModel = new AgnSettlePajakModel();
         $this->agnTrxMgateModel = new AgnTrxMgateModel();
+        $this->vGroupProdukModel = new VGroupProdukModel();
     }
 
     /**
@@ -34,21 +37,51 @@ class RekonStep2Controller extends BaseController
      */
     public function index()
     {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getGet('tanggal') ?? date('Y-m-d', strtotime('-1 day'));
 
-        // If no date available, get default from database using ORM
-        if (!$tanggalRekon) {
-            $tanggalRekon = $this->prosesModel->getDefaultDate();
+        try {
+            // Get product mapping data from v_cek_group_produk view
+            $validationStatus = $this->vGroupProdukModel->getValidationStatus();
+            $mappingData = $this->vGroupProdukModel->getGroupProdukData();
+            $mappingStats = $this->vGroupProdukModel->getMappingStatistics();
+
+            $data = [
+                'title' => 'Step 2: Verifikasi Isi Data',
+                'route' => 'rekon/step2',
+                'tanggalRekon' => $tanggalRekon,
+                'currentStep' => 2,
+                'mappingData' => $mappingData,
+                'mappingStats' => $mappingStats,
+                'validationStatus' => $validationStatus
+            ];
+
+            return $this->render('rekon/process/step2.blade.php', $data);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in Step 2 index: ' . $e->getMessage());
+            
+            $data = [
+                'title' => 'Step 2: Verifikasi Isi Data',
+                'route' => 'rekon/step2',
+                'tanggalRekon' => $tanggalRekon,
+                'currentStep' => 2,
+                'mappingData' => [],
+                'mappingStats' => [
+                    'total_products' => 0,
+                    'mapped_products' => 0,
+                    'unmapped_products' => 0,
+                    'mapping_percentage' => 0
+                ],
+                'validationStatus' => [
+                    'is_valid' => false,
+                    'validation_message' => 'Error: ' . $e->getMessage(),
+                    'can_proceed' => false
+                ],
+                'error' => $e->getMessage()
+            ];
+
+            return $this->render('rekon/process/step2.blade.php', $data);
         }
-
-        $data = [
-            'title' => 'Step 2: Validasi & Review Data',
-            'route' => 'rekon/step2',
-            'tanggalRekon' => $tanggalRekon,
-            'currentStep' => 2
-        ];
-
-        return $this->render('rekon/process/step2.blade.php', $data);
     }
 
     /**
@@ -56,7 +89,7 @@ class RekonStep2Controller extends BaseController
      */
     public function processValidation()
     {
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getPost('tanggal') ?? session()->get('current_rekon_date');
         
         if (!$tanggalRekon) {
             return $this->response->setJSON([
@@ -66,59 +99,78 @@ class RekonStep2Controller extends BaseController
         }
 
         try {
-            // Check if all required files are uploaded
-            $fileTypes = ['agn_detail', 'agn_settle_edu', 'agn_settle_pajak', 'agn_trx_mgate'];
-            $missingFiles = [];
-            $validationErrors = [];
-
-            foreach ($fileTypes as $fileType) {
-                $uploadPath = WRITEPATH . 'uploads/settlement/' . $tanggalRekon . '/';
-                $possibleExtensions = ['csv', 'xlsx', 'xls'];
-                $fileExists = false;
-
-                foreach ($possibleExtensions as $ext) {
-                    $filePath = $uploadPath . $fileType . '_' . $tanggalRekon . '.' . $ext;
-                    if (file_exists($filePath)) {
-                        $fileExists = true;
-                        
-                        // Validate file content
-                        $validation = $this->validateFileContent($filePath, $fileType, $tanggalRekon);
-                        if (!$validation['valid']) {
-                            $validationErrors[$fileType] = $validation['errors'];
-                        }
-                        break;
-                    }
-                }
-
-                if (!$fileExists) {
-                    $missingFiles[] = $fileType;
-                }
-            }
-
-            $success = empty($missingFiles) && empty($validationErrors);
-
-            if ($success) {
-                $this->logActivity([
-                    'log_name' => 'DATA_VALIDATION',
-                    'description' => "Validasi data berhasil untuk tanggal {$tanggalRekon}",
-                    'event' => 'VALIDATION_SUCCESS',
-                    'subject' => 'Settlement Data Validation'
+            // Check product mapping using view v_cek_group_produk
+            $validationStatus = $this->vGroupProdukModel->getValidationStatus();
+            
+            if (!$validationStatus['can_proceed']) {
+                // Filter data yang belum mapping dari getGroupProdukData
+                $allData = $this->vGroupProdukModel->getGroupProdukData();
+                $unmappedProducts = array_filter($allData, function($item) {
+                    return empty($item['NAMA_GROUP']) || $item['NAMA_GROUP'] === '';
+                });
+                
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $validationStatus['validation_message'],
+                    'unmapped_products' => array_values($unmappedProducts)
                 ]);
             }
 
-            return $this->response->setJSON([
-                'success' => $success,
-                'message' => $success ? 'Validasi data berhasil' : 'Terdapat error dalam validasi',
-                'missing_files' => $missingFiles,
-                'validation_errors' => $validationErrors,
-                'can_proceed' => $success
-            ]);
+            // If mapping is valid, call reconciliation procedure
+            $result = $this->executeReconciliation($tanggalRekon);
 
+            if ($result['success']) {
+                $this->logActivity([
+                    'log_name' => 'RECONCILIATION_START',
+                    'description' => "Memulai proses rekonsiliasi untuk tanggal {$tanggalRekon}",
+                    'event' => 'RECONCILIATION_START',
+                    'subject' => 'Settlement Reconciliation'
+                ]);
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Proses rekonsiliasi berhasil dimulai',
+                    'redirect' => base_url('rekon/step3?tanggal=' . $tanggalRekon)
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $result['message']
+                ]);
+            }
+            
         } catch (\Exception $e) {
+            log_message('error', 'Error in processValidation: ' . $e->getMessage());
+            
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error validasi: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Execute reconciliation procedure
+     */
+    private function executeReconciliation($tanggalRekon)
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            // Call stored procedure p_proses_rekonsiliasi
+            $query = $db->query("CALL p_proses_rekonsiliasi(?)", [$tanggalRekon]);
+            
+            return [
+                'success' => true,
+                'message' => 'Procedure executed successfully'
+            ];
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error executing reconciliation: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
         }
     }
 
@@ -171,6 +223,36 @@ class RekonStep2Controller extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Error reading preview: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get product mapping data via AJAX
+     */
+    public function getMappingData()
+    {
+        try {
+            $mappingData = $this->vGroupProdukModel->getGroupProdukData();
+            $mappingStats = $this->vGroupProdukModel->getMappingStatistics();
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $mappingData,
+                'stats' => $mappingStats
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error getting mapping data: ' . $e->getMessage(),
+                'data' => [],
+                'stats' => [
+                    'total_products' => 0,
+                    'mapped_products' => 0,
+                    'unmapped_products' => 0,
+                    'mapping_percentage' => 0
+                ]
             ]);
         }
     }

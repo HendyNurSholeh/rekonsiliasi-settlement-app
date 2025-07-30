@@ -6,7 +6,7 @@ use CodeIgniter\Model;
 
 class VGroupProdukModel extends Model
 {
-    protected $table      = 'v_group_produk';
+    protected $table      = 'v_cek_group_produk';
     protected $primaryKey = '';
 
     protected $useAutoIncrement = false;
@@ -19,121 +19,66 @@ class VGroupProdukModel extends Model
     protected $useTimestamps = false;
 
     /**
-     * Get data from v_cek_group_produk view (jika view sudah ada)
-     * Fallback ke query manual jika view belum ada
+     * Get all data from v_cek_group_produk view
+     * Menggunakan view yang sudah dibuat senior
+     * Yang belum mapping akan muncul paling atas
      */
     public function getGroupProdukData()
     {
-        try {
-            // Coba gunakan view v_cek_group_produk dulu
-            $sql = "SELECT * FROM v_cek_group_produk ORDER BY SOURCE, PRODUK";
-            return $this->db->query($sql)->getResultArray();
-        } catch (\Exception $e) {
-            // Fallback ke query manual jika view belum ada
-            log_message('warning', 'View v_cek_group_produk not found, using manual query: ' . $e->getMessage());
-            
-            $sql = "SELECT 'DETAIL' AS SOURCE, a.PRODUK AS PRODUK, B.NAMA_GROUP AS NAMA_GROUP 
-                    FROM (
-                        SELECT DISTINCT PRODUK 
-                        FROM tamp_agn_detail
-                    ) A 
-                    LEFT JOIN t_group_settlement B ON (a.PRODUK = B.KEY_GROUP AND B.JENIS_DATA = 'DETAIL')
-                    
-                    UNION
-                    
-                    SELECT 'REKAP' AS SOURCE, 
-                           CONCAT(a.KODE_PRODUK, ' - ', a.NAMA_PRODUK) AS PRODUK, 
-                           B.NAMA_GROUP AS NAMA_GROUP 
-                    FROM (
-                        SELECT DISTINCT KODE_PRODUK, NAMA_PRODUK 
-                        FROM tamp_agn_settle_pajak
-                    ) A 
-                    LEFT JOIN t_group_settlement B ON (a.KODE_PRODUK = B.KEY_GROUP AND B.JENIS_DATA = 'REKAP')
-                    
-                    ORDER BY SOURCE, PRODUK";
-            
-            return $this->db->query($sql)->getResultArray();
-        }
-    }
-
-    /**
-     * Get produk yang NAMA_GROUP nya null (tidak ada mapping)
-     */
-    public function getProdukWithoutMapping()
-    {
-        $sql = "SELECT 'DETAIL' AS SOURCE, a.PRODUK AS PRODUK, B.NAMA_GROUP AS NAMA_GROUP 
-                FROM (
-                    SELECT DISTINCT PRODUK 
-                    FROM tamp_agn_detail
-                ) A 
-                LEFT JOIN t_group_settlement B ON (a.PRODUK = B.KEY_GROUP AND B.JENIS_DATA = 'DETAIL')
-                WHERE B.NAMA_GROUP IS NULL
-                
-                UNION
-                
-                SELECT 'REKAP' AS SOURCE, 
-                       CONCAT(a.KODE_PRODUK, ' - ', a.NAMA_PRODUK) AS PRODUK, 
-                       B.NAMA_GROUP AS NAMA_GROUP 
-                FROM (
-                    SELECT DISTINCT KODE_PRODUK, NAMA_PRODUK 
-                    FROM tamp_agn_settle_pajak
-                ) A 
-                LEFT JOIN t_group_settlement B ON (a.KODE_PRODUK = B.KEY_GROUP AND B.JENIS_DATA = 'REKAP')
-                WHERE B.NAMA_GROUP IS NULL
-                
-                ORDER BY SOURCE, PRODUK";
-        
+        $sql = "SELECT * FROM v_cek_group_produk 
+                ORDER BY 
+                    CASE WHEN NAMA_GROUP IS NULL OR NAMA_GROUP = '' THEN 0 ELSE 1 END";
         return $this->db->query($sql)->getResultArray();
     }
 
     /**
-     * Get statistics mapping
+     * Get mapping statistics berdasarkan view v_cek_group_produk
      */
     public function getMappingStatistics()
     {
-        $allData = $this->getGroupProdukData();
-        $unmappedData = $this->getProdukWithoutMapping();
+        // Query untuk mendapatkan statistik langsung dari view
+        $totalSql = "SELECT COUNT(*) as total FROM v_cek_group_produk";
+        $mappedSql = "SELECT COUNT(*) as mapped FROM v_cek_group_produk WHERE NAMA_GROUP IS NOT NULL AND NAMA_GROUP != ''";
+        $unmappedSql = "SELECT COUNT(*) as unmapped FROM v_cek_group_produk WHERE NAMA_GROUP IS NULL OR NAMA_GROUP = ''";
+        
+        $total = $this->db->query($totalSql)->getRow()->total ?? 0;
+        $mapped = $this->db->query($mappedSql)->getRow()->mapped ?? 0;
+        $unmapped = $this->db->query($unmappedSql)->getRow()->unmapped ?? 0;
+        
+        $percentage = $total > 0 ? round(($mapped / $total) * 100, 2) : 0;
         
         return [
-            'total_produk' => count($allData),
-            'mapped_produk' => count($allData) - count($unmappedData),
-            'unmapped_produk' => count($unmappedData),
-            'mapping_percentage' => count($allData) > 0 ? round(((count($allData) - count($unmappedData)) / count($allData)) * 100, 2) : 0
+            'total_products' => (int)$total,
+            'mapped_products' => (int)$mapped,
+            'unmapped_products' => (int)$unmapped,
+            'mapping_percentage' => (float)$percentage
         ];
     }
 
     /**
-     * Get detailed mapping information for display
+     * Check if all products are mapped
      */
-    public function getDetailedMappingInfo()
+    public function isAllProductsMapped()
     {
-        $allData = $this->getGroupProdukData();
-        $unmappedData = $this->getProdukWithoutMapping();
+        $unmappedCount = $this->db->query("SELECT COUNT(*) as count FROM v_cek_group_produk WHERE NAMA_GROUP IS NULL OR NAMA_GROUP = ''")->getRow()->count ?? 0;
+        return $unmappedCount == 0;
+    }
+
+    /**
+     * Get validation status untuk Step 2
+     */
+    public function getValidationStatus()
+    {
         $stats = $this->getMappingStatistics();
-        
-        // Kelompokkan data berdasarkan source
-        $detailData = array_filter($allData, function($item) {
-            return $item['SOURCE'] === 'DETAIL';
-        });
-        
-        $rekapData = array_filter($allData, function($item) {
-            return $item['SOURCE'] === 'REKAP';
-        });
+        $isAllMapped = $this->isAllProductsMapped();
         
         return [
+            'is_valid' => $isAllMapped,
             'statistics' => $stats,
-            'all_data' => $allData,
-            'unmapped_data' => $unmappedData,
-            'detail_data' => array_values($detailData),
-            'rekap_data' => array_values($rekapData),
-            'detail_count' => count($detailData),
-            'rekap_count' => count($rekapData),
-            'detail_unmapped' => array_filter($unmappedData, function($item) {
-                return $item['SOURCE'] === 'DETAIL';
-            }),
-            'rekap_unmapped' => array_filter($unmappedData, function($item) {
-                return $item['SOURCE'] === 'REKAP';
-            })
+            'validation_message' => $isAllMapped ? 
+                'Semua produk telah termapping. Siap untuk proses rekonsiliasi.' : 
+                'Terdapat ' . $stats['unmapped_products'] . ' produk yang belum termapping.',
+            'can_proceed' => $isAllMapped
         ];
     }
 }
