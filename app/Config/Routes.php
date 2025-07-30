@@ -82,6 +82,13 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->get('process/detail-vs-rekap', 'RekonProcessController::detailVsRekap', ['as' => 'rekon.process.detail-vs-rekap']);
     $routes->get('process/direct-jurnal-rekap', 'RekonProcessController::directJurnalRekap', ['as' => 'rekon.process.direct-jurnal-rekap']);
     $routes->get('process/penyelesaian-dispute', 'RekonProcessController::disputeResolution', ['as' => 'rekon.process.penyelesaian-dispute']);
+    
+    // Dispute resolution AJAX routes
+    $routes->post('process/direct-jurnal/dispute/detail', 'RekonProcessController::getDisputeDetail', ['as' => 'rekon.process.dispute.detail']);
+    $routes->post('process/direct-jurnal/dispute/update', 'RekonProcessController::updateDispute', ['as' => 'rekon.process.dispute.update']);
+    
+    // CSRF Token refresh route
+    $routes->get('process/get-csrf-token', 'RekonProcessController::getCSRFToken', ['as' => 'rekon.process.csrf-token']);
 
     // Report Routes (existing)
     $routes->get('reports', 'RekonReport::index', ['as' => 'rekon.reports']);

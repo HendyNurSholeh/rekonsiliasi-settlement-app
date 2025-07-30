@@ -41,7 +41,6 @@ class Filters extends BaseConfig
 					'login',
 					'logout',
 					'refresh/captcha',
-					'api/currency-conversions',
 				]
 			],
 			'isFirstLogin' => [
@@ -50,7 +49,6 @@ class Filters extends BaseConfig
 					'logout',
 					'profile',
 					'refresh/captcha',
-					'api/currency-conversions',
 				]
 			]
 		],

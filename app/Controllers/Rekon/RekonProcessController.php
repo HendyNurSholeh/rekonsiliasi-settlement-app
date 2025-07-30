@@ -122,7 +122,8 @@ class RekonProcessController extends BaseController
         if (!$id) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'ID tidak ditemukan'
+                'message' => 'ID tidak ditemukan',
+                'csrf_token' => csrf_hash()
             ]);
         }
 
@@ -138,20 +139,23 @@ class RekonProcessController extends BaseController
             if (!$disputeDetail) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Data tidak ditemukan'
+                    'message' => 'Data tidak ditemukan',
+                    'csrf_token' => csrf_hash()
                 ]);
             }
 
             return $this->response->setJSON([
                 'success' => true,
-                'data' => $disputeDetail
+                'data' => $disputeDetail,
+                'csrf_token' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
             log_message('error', 'Error fetching dispute detail: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengambil data'
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'csrf_token' => csrf_hash()
             ]);
         }
     }
@@ -170,7 +174,8 @@ class RekonProcessController extends BaseController
         if (!$id || $statusBiller === null || $statusCore === null || $statusSettlement === null || !$idpartner) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Data tidak lengkap'
+                'message' => 'Data tidak lengkap',
+                'csrf_token' => csrf_hash()
             ]);
         }
 
@@ -182,15 +187,28 @@ class RekonProcessController extends BaseController
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Data berhasil diupdate'
+                'message' => 'Data berhasil diupdate',
+                'csrf_token' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
             log_message('error', 'Error updating dispute: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengupdate data'
+                'message' => 'Terjadi kesalahan saat mengupdate data',
+                'csrf_token' => csrf_hash()
             ]);
         }
+    }
+
+    /**
+     * Get fresh CSRF token
+     */
+    public function getCSRFToken()
+    {
+        return $this->response->setJSON([
+            'success' => true,
+            'csrf_token' => csrf_hash()
+        ]);
     }
 }

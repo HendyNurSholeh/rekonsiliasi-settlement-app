@@ -105,8 +105,8 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-primary" 
-                                                onclick="openDisputeModal('{{ $item['v_ID'] ?? '' }}')">
+                                        <button type="button" class="btn btn-sm btn-primary btn-proses" 
+                                                data-id="{{ $item['v_ID'] ?? '' }}">
                                             <i class="fal fa-edit"></i> Proses
                                         </button>
                                     </td>
@@ -305,8 +305,75 @@
 
 @endsection
 
-@push('js')
+@push('scripts')
 <script>
+// Super Simple but Robust CSRF Management
+let currentCSRF = '{{ csrf_token() }}';
+
+// Global AJAX setup untuk auto-inject CSRF
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        // Untuk semua POST request, tambahkan CSRF
+        if (settings.type === 'POST') {
+            // Jika data adalah FormData
+            if (settings.data instanceof FormData) {
+                settings.data.append('csrf_test_name', currentCSRF);
+            } 
+            // Jika data adalah string biasa
+            else {
+                const separator = settings.data ? '&' : '';
+                settings.data = (settings.data || '') + separator + 'csrf_test_name=' + encodeURIComponent(currentCSRF);
+            }
+        }
+    }
+});
+
+// Global error handler untuk CSRF expired
+$(document).ajaxError(function(event, xhr, settings) {
+    if (xhr.status === 403 || xhr.status === 419) {
+        console.log('CSRF Token expired, refreshing...');
+        refreshCSRFToken().then(function() {
+            console.log('CSRF refreshed, retrying request...');
+            // Retry the request with new token
+            if (!settings._retried) {
+                settings._retried = true;
+                $.ajax(settings);
+            }
+        });
+    }
+});
+
+// Function untuk refresh CSRF token
+function refreshCSRFToken() {
+    return $.get('{{ base_url('rekon/process/get-csrf-token') }}').then(function(response) {
+        if (response.csrf_token) {
+            currentCSRF = response.csrf_token;
+            console.log('New CSRF token:', currentCSRF);
+        }
+    }).catch(function(error) {
+        console.error('Failed to refresh CSRF:', error);
+        // Fallback: reload page if can't refresh token
+        setTimeout(function() {
+            if (confirm('Session expired. Reload page?')) {
+                location.reload();
+            }
+        }, 1000);
+    });
+}
+
+$(document).ready(function() {
+    // Refresh CSRF token saat page load untuk memastikan token fresh
+    refreshCSRFToken().then(function() {
+        console.log('CSRF token refreshed on page load');
+    });
+    
+    // Simple onClick event handler for Proses buttons
+    $('.btn-proses').on('click', function() {
+        const id = $(this).data('id');
+        openDisputeModal(id);
+    });
+});
+
 function openDisputeModal(id) {
     if (!id) {
         showAlert('error', 'ID tidak ditemukan');
@@ -317,41 +384,51 @@ function openDisputeModal(id) {
     $('#disputeForm')[0].reset();
     $('#dispute_id').val(id);
     
-    // Get dispute detail
-    $.ajax({
-        url: '{{ base_url('rekon/process/direct-jurnal/dispute/detail') }}',
-        type: 'POST',
-        data: { id: id },
-        dataType: 'json',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            if (response.success) {
-                const data = response.data;
+    // Refresh CSRF token terlebih dahulu untuk memastikan valid
+    refreshCSRFToken().then(function() {
+        // Get dispute detail - CSRF otomatis ditambahkan dengan token fresh
+        $.ajax({
+            url: '{{ base_url('rekon/process/direct-jurnal/dispute/detail') }}',
+            type: 'POST',
+            data: { id: id },
+            dataType: 'json',
+            success: function(response) {
+                // Update CSRF jika ada di response
+                if (response.csrf_token) {
+                    currentCSRF = response.csrf_token;
+                }
                 
-                // Fill readonly fields
-                $('#modal_idpartner').val(data.IDPARTNER || '');
-                $('#modal_terminalid').val(data.TERMINALID || '');
-                $('#modal_produk').val(data.v_GROUP_PRODUK || '');
-                $('#modal_idpel').val(data.IDPEL || '');
-                $('#modal_rp_pokok').val(formatNumber(data.RP_BILLER_POKOK || 0));
-                $('#modal_rp_admin').val(formatNumber(data.RP_BILLER_ADMIN || 0));
-                $('#modal_rp_tag').val(formatNumber(data.RP_BILLER_TAG || 0));
-                
-                // Set current values for radio buttons
-                $('input[name="status_biller"][value="' + (data.STATUS || '0') + '"]').prop('checked', true);
-                $('input[name="status_core"][value="' + (data.v_STAT_CORE_AGR || '0') + '"]').prop('checked', true);
-                
-                $('#disputeModal').modal('show');
-            } else {
-                showAlert('error', response.message);
+                if (response.success) {
+                    const data = response.data;
+                    
+                    // Fill readonly fields
+                    $('#modal_idpartner').val(data.IDPARTNER || '');
+                    $('#modal_terminalid').val(data.TERMINALID || '');
+                    $('#modal_produk').val(data.v_GROUP_PRODUK || '');
+                    $('#modal_idpel').val(data.IDPEL || '');
+                    $('#modal_rp_pokok').val(formatNumber(data.RP_BILLER_POKOK || 0));
+                    $('#modal_rp_admin').val(formatNumber(data.RP_BILLER_ADMIN || 0));
+                    $('#modal_rp_tag').val(formatNumber(data.RP_BILLER_TAG || 0));
+                    
+                    // Set current values for radio buttons
+                    $('input[name="status_biller"][value="' + (data.STATUS || '0') + '"]').prop('checked', true);
+                    $('input[name="status_core"][value="' + (data.v_STAT_CORE_AGR || '0') + '"]').prop('checked', true);
+                    
+                    $('#disputeModal').modal('show');
+                } else {
+                    showAlert('error', response.message);
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 403) {
+                    showAlert('error', 'Session expired. Please try again.');
+                } else {
+                    showAlert('error', 'Terjadi kesalahan saat mengambil data');
+                }
             }
-        },
-        error: function() {
-            showAlert('error', 'Terjadi kesalahan saat mengambil data');
-        }
+        });
+    }).catch(function(error) {
+        showAlert('error', 'Gagal memperbarui token. Silakan refresh halaman.');
     });
 }
 
@@ -365,31 +442,42 @@ function saveDispute() {
         return;
     }
     
-    $.ajax({
-        url: '{{ base_url('rekon/process/direct-jurnal/dispute/update') }}',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            if (response.success) {
-                showAlert('success', response.message);
-                $('#disputeModal').modal('hide');
-                // Reload page to refresh data
-                setTimeout(function() {
-                    location.reload();
-                }, 1500);
-            } else {
-                showAlert('error', response.message);
+    // Refresh CSRF token terlebih dahulu untuk memastikan valid
+    refreshCSRFToken().then(function() {
+        // CSRF otomatis ditambahkan oleh ajaxSetup dengan token fresh
+        $.ajax({
+            url: '{{ base_url('rekon/process/direct-jurnal/dispute/update') }}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                // Update CSRF jika ada di response
+                if (response.csrf_token) {
+                    currentCSRF = response.csrf_token;
+                }
+                
+                if (response.success) {
+                    showAlert('success', response.message);
+                    $('#disputeModal').modal('hide');
+                    // Reload page to refresh data
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showAlert('error', response.message);
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 403) {
+                    showAlert('error', 'Session expired. Please try again.');
+                } else {
+                    showAlert('error', 'Terjadi kesalahan saat menyimpan data');
+                }
             }
-        },
-        error: function() {
-            showAlert('error', 'Terjadi kesalahan saat menyimpan data');
-        }
+        });
+    }).catch(function(error) {
+        showAlert('error', 'Gagal memperbarui token. Silakan refresh halaman.');
     });
 }
 
