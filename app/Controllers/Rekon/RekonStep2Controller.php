@@ -10,6 +10,10 @@ use App\Models\AgnSettleEduModel;
 use App\Models\AgnSettlePajakModel;
 use App\Models\AgnTrxMgateModel;
 use App\Models\VGroupProdukModel;
+use App\Models\TampAgnDetailModel;
+use App\Models\TampAgnSettleEduModel;
+use App\Models\TampAgnSettlePajakModel;
+use App\Models\TampAgnTrxMgateModel;
 
 class RekonStep2Controller extends BaseController
 {
@@ -21,6 +25,10 @@ class RekonStep2Controller extends BaseController
     protected $agnSettlePajakModel;
     protected $agnTrxMgateModel;
     protected $vGroupProdukModel;
+    protected $tampAgnDetailModel;
+    protected $tampAgnSettleEduModel;
+    protected $tampAgnSettlePajakModel;
+    protected $tampAgnTrxMgateModel;
 
     public function __construct()
     {
@@ -30,6 +38,10 @@ class RekonStep2Controller extends BaseController
         $this->agnSettlePajakModel = new AgnSettlePajakModel();
         $this->agnTrxMgateModel = new AgnTrxMgateModel();
         $this->vGroupProdukModel = new VGroupProdukModel();
+        $this->tampAgnDetailModel = new TampAgnDetailModel();
+        $this->tampAgnSettleEduModel = new TampAgnSettleEduModel();
+        $this->tampAgnSettlePajakModel = new TampAgnSettlePajakModel();
+        $this->tampAgnTrxMgateModel = new TampAgnTrxMgateModel();
     }
 
     /**
@@ -50,6 +62,14 @@ class RekonStep2Controller extends BaseController
             $mappingData = $this->vGroupProdukModel->getGroupProdukData();
             $mappingStats = $this->vGroupProdukModel->getMappingStatistics();
 
+            // Get real data statistics from temporary tables
+            $dataStats = [
+                'agn_detail' => $this->tampAgnDetailModel->getStatistics(),
+                'settle_edu' => $this->tampAgnSettleEduModel->getStatistics(),
+                'settle_pajak' => $this->tampAgnSettlePajakModel->getStatistics(),
+                'mgate' => $this->tampAgnTrxMgateModel->getStatistics()
+            ];
+
             $data = [
                 'title' => 'Step 2: Verifikasi Isi Data',
                 'route' => 'rekon/step2',
@@ -57,7 +77,8 @@ class RekonStep2Controller extends BaseController
                 'currentStep' => 2,
                 'mappingData' => $mappingData,
                 'mappingStats' => $mappingStats,
-                'validationStatus' => $validationStatus
+                'validationStatus' => $validationStatus,
+                'dataStats' => $dataStats
             ];
 
             return $this->render('rekon/process/step2.blade.php', $data);

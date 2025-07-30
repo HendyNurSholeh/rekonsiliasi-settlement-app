@@ -33,20 +33,20 @@
                 <div class="row">
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-primary">15,847</h3>
+                            <h3 class="text-primary">{{ number_format($dataStats['agn_detail']['total_records'] ?? 0) }}</h3>
                             <small class="text-muted">Total Records</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-success">2,456,890,000</h3>
-                            <small class="text-muted">Total Amount</small>
+                            <h3 class="text-success">{{ number_format($dataStats['agn_detail']['total_amount'] ?? 0) }}</h3>
+                            <small class="text-muted">Total Transaksi</small>
                         </div>
                     </div>
                 </div>
                 <hr>
                 <div class="small text-muted">
-                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon)) }}
                     <div class="float-right">
                         <i class="fal fa-check-circle text-success"></i> Valid
                     </div>
@@ -67,20 +67,20 @@
                 <div class="row">
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-primary">2,456</h3>
+                            <h3 class="text-primary">{{ number_format($dataStats['settle_edu']['total_records'] ?? 0) }}</h3>
                             <small class="text-muted">Total Records</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-success">156,780,000</h3>
-                            <small class="text-muted">Settlement Amount</small>
+                            <h3 class="text-success">{{ number_format($dataStats['settle_edu']['total_amount'] ?? 0) }}</h3>
+                            <small class="text-muted">Total Nominal</small>
                         </div>
                     </div>
                 </div>
                 <hr>
                 <div class="small text-muted">
-                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon)) }}
                     <div class="float-right">
                         <i class="fal fa-check-circle text-success"></i> Valid
                     </div>
@@ -101,20 +101,20 @@
                 <div class="row">
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-primary">892</h3>
+                            <h3 class="text-primary">{{ number_format($dataStats['settle_pajak']['total_records'] ?? 0) }}</h3>
                             <small class="text-muted">Total Records</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-success">45,230,000</h3>
-                            <small class="text-muted">Settlement Amount</small>
+                            <h3 class="text-success">{{ number_format($dataStats['settle_pajak']['total_amount'] ?? 0) }}</h3>
+                            <small class="text-muted">Total Nominal</small>
                         </div>
                     </div>
                 </div>
                 <hr>
                 <div class="small text-muted">
-                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon)) }}
                     <div class="float-right">
                         <i class="fal fa-check-circle text-success"></i> Valid
                     </div>
@@ -135,20 +135,20 @@
                 <div class="row">
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-primary">18,923</h3>
+                            <h3 class="text-primary">{{ number_format($dataStats['mgate']['total_records'] ?? 0) }}</h3>
                             <small class="text-muted">Total Records</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center">
-                            <h3 class="text-success">2,658,900,000</h3>
-                            <small class="text-muted">Transaction Amount</small>
+                            <h3 class="text-success">{{ number_format($dataStats['mgate']['total_amount'] ?? 0) }}</h3>
+                            <small class="text-muted">Total Nilai</small>
                         </div>
                     </div>
                 </div>
                 <hr>
                 <div class="small text-muted">
-                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
+                    <i class="fal fa-calendar"></i> {{ date('d/m/Y', strtotime($tanggalRekon)) }}
                     <div class="float-right">
                         <i class="fal fa-check-circle text-success"></i> Valid
                     </div>
@@ -189,7 +189,7 @@
                                         <i class="fal fa-check"></i> Valid
                                     </span>
                                 </td>
-                                <td>15,847 records</td>
+                                <td>{{ number_format($dataStats['agn_detail']['total_records'] ?? 0) }} records</td>
                                 <td>Data transaksi tersedia lengkap</td>
                             </tr>
                             <tr>
@@ -202,7 +202,7 @@
                                         <i class="fal fa-check"></i> Valid
                                     </span>
                                 </td>
-                                <td>2,456 records</td>
+                                <td>{{ number_format($dataStats['settle_edu']['total_records'] ?? 0) }} records</td>
                                 <td>Data settlement education tersedia</td>
                             </tr>
                             <tr>
@@ -215,7 +215,7 @@
                                         <i class="fal fa-check"></i> Valid
                                     </span>
                                 </td>
-                                <td>892 records</td>
+                                <td>{{ number_format($dataStats['settle_pajak']['total_records'] ?? 0) }} records</td>
                                 <td>Data settlement pajak tersedia</td>
                             </tr>
                             <tr>
@@ -228,7 +228,7 @@
                                         <i class="fal fa-check"></i> Valid
                                     </span>
                                 </td>
-                                <td>{{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}</td>
+                                <td>{{ date('d/m/Y', strtotime($tanggalRekon)) }}</td>
                                 <td>Semua data menggunakan tanggal yang sama</td>
                             </tr>
                             <tr>
@@ -241,7 +241,7 @@
                                         <i class="fal fa-check"></i> Valid
                                     </span>
                                 </td>
-                                <td>18,923 records</td>
+                                <td>{{ number_format($dataStats['mgate']['total_records'] ?? 0) }} records</td>
                                 <td>Data transaksi payment gateway tersedia</td>
                             </tr>
                             <tr class="table-success">
