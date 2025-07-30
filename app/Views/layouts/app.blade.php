@@ -102,44 +102,41 @@
                                     </ul>
                                 </li>
                             @endif
-
-                             {{-- @if ($upload_data)
-                                <li class="@if (str_contains($route, 'upload')) active open @endif">
-                                    <a href="javascript:void(0);" title="Upload Data" data-filter-tags="upload data">
-                                        <i class="fal fa-cloud-upload-alt"></i>
-                                        <span class="nav-link-text">Upload Data</span>
-                                    </a>
-                                    <ul>
-                                        <li class="@if ($route == 'upload/agregator') active @endif">
-                                            <a href="{{ site_url('upload/agregator') }}">
-                                                <span class="nav-link-text text-left">Upload Data Agregator</span>
-                                            </a>
-                                        </li>
-                                        <li class="@if ($route == 'upload/settlement-pajak') active @endif">
-                                            <a href="{{ site_url('upload/settlement-pajak') }}">
-                                                <span class="nav-link-text text-left">Upload File Settlement Pajak</span>
-                                            </a>
-                                        </li>
-                                        <li class="@if ($route == 'upload/settlement-edu') active @endif">
-                                            <a href="{{ site_url('upload/settlement-edu') }}">
-                                                <span class="nav-link-text text-left">Upload File Settlement Edu</span>
-                                            </a>
-                                        <li class="@if ($route == 'upload/mgate') active @endif">
-                                            <a href="{{ site_url('upload/mgate') }}">
-                                                <span class="nav-link-text text-left">Upload File MGate</span>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                            @endif --}}
                         @endif
                             
-                            {{-- Reports Menu --}}
-                            <li class="@if (str_contains($route, 'rekon/reports')) active open @endif">
-                                <a href="{{ site_url('rekon/reports') }}" title="Laporan Rekonsiliasi" data-filter-tags="laporan reports rekonsiliasi">
-                                    <i class="fal fa-file-chart-line"></i>
-                                    <span class="nav-link-text">Laporan Rekonsiliasi</span>
+                            {{-- TAHAP 3 - PROSES REKONSILIASI --}}
+                            <li class="@if (str_contains($route, 'rekon/process')) active open @endif">
+                                <a href="javascript:void(0);" title="Proses Rekonsiliasi" data-filter-tags="tahap 3 proses rekonsiliasi">
+                                    <i class="fal fa-cogs"></i>
+                                    <span class="nav-link-text">Proses Rekonsiliasi</span>
                                 </a>
+                                <ul>
+                                    <!-- 1. Laporan Detail vs Rekap -->
+                                    <li class="@if ($route == 'rekon/process/detail-vs-rekap') active @endif">
+                                        <a href="{{ site_url('rekon/process/detail-vs-rekap') }}">
+                                            <span class="nav-link-text text-left">Laporan Detail vs Rekap</span>
+                                        </a>
+                                    </li>
+                                    
+                                    <!-- 2. Rekon Direct Jurnal -->
+                                    <li class="@if (str_contains($route, 'rekon/process/direct-jurnal')) active open @endif">
+                                        <a href="javascript:void(0);" title="Rekon Direct Jurnal">
+                                            <span class="nav-link-text text-left">Rekon Direct Jurnal</span>
+                                        </a>
+                                        <ul>
+                                            <li class="@if ($route == 'rekon/process/direct-jurnal-rekap') active @endif">
+                                                <a href="{{ site_url('rekon/process/direct-jurnal-rekap') }}">
+                                                    <span class="nav-link-text text-left">Rekap Tx Direct Jurnal</span>
+                                                </a>
+                                            </li>
+                                            <li class="@if ($route == 'rekon/process/penyelesaian-dispute') active @endif">
+                                                <a href="{{ site_url('rekon/process/penyelesaian-dispute') }}">
+                                                    <span class="nav-link-text text-left">Penyelesaian Dispute</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
                             </li>
                        
                         @if ($user || $unit_kerja || $permission || $role)

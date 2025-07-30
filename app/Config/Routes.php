@@ -78,6 +78,11 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->post('step3/reports', 'RekonStep3Controller::generateReports', ['as' => 'rekon.step3.reports']);
     $routes->get('step3/download', 'RekonStep3Controller::downloadReport', ['as' => 'rekon.step3.download']);
     
+    // Process Controller - untuk Tahap 3 - Proses Rekonsiliasi menu features
+    $routes->get('process/detail-vs-rekap', 'RekonProcessController::detailVsRekap', ['as' => 'rekon.process.detail-vs-rekap']);
+    $routes->get('process/direct-jurnal-rekap', 'RekonProcessController::directJurnalRekap', ['as' => 'rekon.process.direct-jurnal-rekap']);
+    $routes->get('process/penyelesaian-dispute', 'RekonProcessController::disputeResolution', ['as' => 'rekon.process.penyelesaian-dispute']);
+
     // Report Routes (existing)
     $routes->get('reports', 'RekonReport::index', ['as' => 'rekon.reports']);
     $routes->get('reports/(:segment)', 'RekonReport::index/$1', ['as' => 'rekon.reports.date']);
