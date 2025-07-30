@@ -107,7 +107,7 @@
                             {{-- TAHAP 3 - PROSES REKONSILIASI --}}
                             <li class="@if (str_contains($route, 'rekon/process')) active open @endif">
                                 <a href="javascript:void(0);" title="Proses Rekonsiliasi" data-filter-tags="tahap 3 proses rekonsiliasi">
-                                    <i class="fal fa-cogs"></i>
+                                    <i class="fal fa-check-square"></i>
                                     <span class="nav-link-text">Proses Rekonsiliasi</span>
                                 </a>
                                 <ul>
