@@ -97,10 +97,7 @@ class RekonSetupController extends BaseController
                 $message = 'Proses rekonsiliasi untuk tanggal ' . date('d/m/Y', strtotime($tanggal)) . ' berhasil dibuat';
             }
 
-            // Store date in session
-            session()->set('current_rekon_process_id', 'PRK-' . date('ymd', strtotime($tanggal)) . '-001');
-            session()->set('current_rekon_date', $tanggal);
-            
+            // Redirect to step 1 with tanggal parameter
             return redirect()->to('rekon/step1?tanggal=' . $tanggal)->with('success', $message);
             
         } catch (\Exception $e) {
@@ -165,9 +162,7 @@ class RekonSetupController extends BaseController
             $result = $this->prosesModel->resetProcess($tanggal);
             
             if ($result['success']) {
-                // Clear any existing session
-                session()->remove('current_rekon_process_id');
-                session()->remove('current_rekon_date');
+                // Process reset completed successfully
                 
                 $this->logActivity([
                     'log_name' => 'REKON_PROCESS',

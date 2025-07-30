@@ -37,7 +37,12 @@ class RekonStep2Controller extends BaseController
      */
     public function index()
     {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? date('Y-m-d', strtotime('-1 day'));
+        // Get date from URL parameter or database
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        
+        if (!$tanggalRekon) {
+            return redirect()->to('rekon')->with('error', 'Tanggal rekonsiliasi tidak ditemukan. Silakan buat proses baru.');
+        }
 
         try {
             // Get product mapping data from v_cek_group_produk view
@@ -89,12 +94,12 @@ class RekonStep2Controller extends BaseController
      */
     public function processValidation()
     {
-        $tanggalRekon = $this->request->getPost('tanggal') ?? session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         if (!$tanggalRekon) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Session tidak valid'
+                'message' => 'Tanggal rekonsiliasi tidak ditemukan'
             ]);
         }
 
@@ -180,7 +185,7 @@ class RekonStep2Controller extends BaseController
     public function getDataPreview()
     {
         $fileType = $this->request->getGet('file_type');
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         if (!$fileType || !$tanggalRekon) {
             return $this->response->setJSON([
@@ -262,12 +267,12 @@ class RekonStep2Controller extends BaseController
      */
     public function getUploadStats()
     {
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         if (!$tanggalRekon) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Session tidak valid'
+                'message' => 'Tanggal rekonsiliasi tidak ditemukan'
             ]);
         }
 

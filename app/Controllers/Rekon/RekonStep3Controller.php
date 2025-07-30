@@ -34,15 +34,11 @@ class RekonStep3Controller extends BaseController
      */
     public function index()
     {
-        // Get tanggalRekon from URL parameter or session
-        $tanggalRekon = $this->request->getGet('tanggal') ?: session()->get('current_rekon_date');
+        // Get tanggalRekon from URL parameter or database
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
 
-        // If no date available, get default from database using ORM
         if (!$tanggalRekon) {
-            $tanggalRekon = $this->prosesModel->getDefaultDate();
-            if ($tanggalRekon) {
-                session()->set('current_rekon_date', $tanggalRekon);
-            }
+            return redirect()->to('rekon')->with('error', 'Tanggal rekonsiliasi tidak ditemukan. Silakan buat proses baru.');
         }
 
         $data = [
@@ -60,12 +56,12 @@ class RekonStep3Controller extends BaseController
      */
     public function processReconciliation()
     {
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         if (!$tanggalRekon) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Session tidak valid'
+                'message' => 'Tanggal rekonsiliasi tidak ditemukan'
             ]);
         }
 
@@ -113,12 +109,12 @@ class RekonStep3Controller extends BaseController
      */
     public function getReconciliationProgress()
     {
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         if (!$tanggalRekon) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Session tidak valid'
+                'message' => 'Tanggal rekonsiliasi tidak ditemukan'
             ]);
         }
 
@@ -154,12 +150,12 @@ class RekonStep3Controller extends BaseController
      */
     public function generateReports()
     {
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         if (!$tanggalRekon) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Session tidak valid'
+                'message' => 'Tanggal rekonsiliasi tidak ditemukan'
             ]);
         }
 
@@ -194,7 +190,7 @@ class RekonStep3Controller extends BaseController
     public function downloadReport()
     {
         $reportType = $this->request->getGet('type');
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         if (!$reportType || !$tanggalRekon) {
             return redirect()->back()->with('error', 'Parameter tidak valid');

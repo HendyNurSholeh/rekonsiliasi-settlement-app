@@ -4,7 +4,7 @@
 <div class="subheader">
     <h1 class="subheader-title">
         <i class="fal fa-check-square"></i> {{ $title }}
-        <small>Verifikasi isi data untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}</small>
+        <small>Verifikasi isi data untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
     </h1>
 </div>
 
@@ -370,7 +370,7 @@
                                         @if(!empty($item['NAMA_GROUP']))
                                             <span class="badge badge-success">{{ $item['NAMA_GROUP'] }}</span>
                                         @else
-                                            <span class="badge badge-warning">Belum Mapping</span>
+                                            <span class="badge badge-danger">Belum Mapping</span>
                                         @endif
                                     </td>
                                     <td>
