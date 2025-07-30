@@ -63,10 +63,10 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th>No</th>
-                                    <th>Produk</th>
+                                    <th>Nama Group</th>
                                     <th>File Settle</th>
-                                    <th>Jumlah Transaksi</th>
-                                    <th>Total Amount</th>
+                                    <th>Amount Detail</th>
+                                    <th>Amount Rekap</th>
                                     <th>Selisih</th>
                                 </tr>
                             </thead>
@@ -74,16 +74,16 @@
                                 @foreach($compareData as $index => $item)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $item['produk'] ?? '' }}</td>
+                                    <td>{{ $item['NAMA_GROUP'] ?? '' }}</td>
                                     <td>
-                                        <span class="badge {{ ($item['file_settle'] ?? 0) == 0 ? 'badge-primary' : 'badge-info' }}">
-                                            {{ ($item['file_settle'] ?? 0) == 0 ? 'Detail' : 'Rekap' }}
+                                        <span class="badge {{ ($item['FILE_SETTLE'] ?? 0) == 0 ? 'badge-primary' : 'badge-info' }}">
+                                            {{ ($item['FILE_SETTLE'] ?? 0) == 0 ? 'Detail' : 'Rekap' }}
                                         </span>
                                     </td>
-                                    <td>{{ number_format($item['jumlah_transaksi'] ?? 0) }}</td>
-                                    <td>{{ number_format($item['total_amount'] ?? 0) }}</td>
-                                    <td class="{{ ($item['selisih'] ?? 0) != 0 ? 'text-danger fw-bold' : 'text-success' }}">
-                                        {{ number_format($item['selisih'] ?? 0) }}
+                                    <td class="text-end">Rp {{ number_format((float)str_replace(',', '', $item['AMOUNT_DETAIL'] ?? 0), 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format((float)str_replace(',', '', $item['AMOUNT_REKAP'] ?? 0), 0, ',', '.') }}</td>
+                                    <td class="text-end {{ ((float)str_replace(',', '', $item['SELISIH'] ?? 0)) != 0 ? 'text-danger fw-bold' : 'text-success' }}">
+                                        Rp {{ number_format((float)str_replace(',', '', $item['SELISIH'] ?? 0), 0, ',', '.') }}
                                     </td>
                                 </tr>
                                 @endforeach
@@ -107,18 +107,18 @@
 @push('js')
 <script>
 $(document).ready(function() {
-    @if(!empty($compareData))
-        $('#compareTable').DataTable({
-            responsive: true,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
-            },
-            order: [[1, 'asc']],
-            columnDefs: [
-                { targets: [0], orderable: false }
-            ]
-        });
-    @endif
+    // @if(!empty($compareData))
+    //     $('#compareTable').DataTable({
+    //         responsive: true,
+    //         language: {
+    //             url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
+    //         },
+    //         order: [[1, 'asc']],
+    //         columnDefs: [
+    //             { targets: [0], orderable: false }
+    //         ]
+    //     });
+    // @endif
 });
 </script>
 @endpush
@@ -143,6 +143,24 @@ $(document).ready(function() {
 .card {
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.text-end {
+    text-align: right !important;
+}
+
+.table td.text-end {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    font-weight: bolder;
+}
+
+.badge-primary {
+    background-color: #007bff;
+}
+
+.badge-info {
+    background-color: #17a2b8;
 }
 </style>
 @endpush
