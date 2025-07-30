@@ -34,17 +34,11 @@ class RekonStep2Controller extends BaseController
      */
     public function index()
     {
-        $processId = session()->get('current_rekon_process_id');
-        $tanggalRekon = session()->get('current_rekon_date');
+        $tanggalRekon = $this->request->getGet('tanggal') ?? session()->get('current_rekon_date');
 
-        // If no date in session, get default from database using ORM
+        // If no date available, get default from database using ORM
         if (!$tanggalRekon) {
             $tanggalRekon = $this->prosesModel->getDefaultDate();
-            session()->set('current_rekon_date', $tanggalRekon);
-        }
-
-        if (!$processId || !$tanggalRekon) {
-            return redirect()->to('rekon')->with('error', 'Session proses rekonsiliasi tidak ditemukan');
         }
 
         $data = [
