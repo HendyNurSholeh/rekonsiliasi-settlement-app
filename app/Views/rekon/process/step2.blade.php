@@ -337,22 +337,17 @@
                 <h5 class="card-title">
                     <i class="fal fa-table text-primary"></i> Data Product Mapping (v_cek_group_produk)
                 </h5>
-                <div class="card-header-actions">
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshMappingData()">
-                        <i class="fal fa-sync"></i> Refresh
-                    </button>
-                </div>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="mappingTable">
-                        <thead class="thead-light">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-striped table-hover table-sm" id="mappingTable">
+                        <thead class="thead-light sticky-top">
                             <tr>
-                                <th>No</th>
-                                <th>Source</th>
+                                <th style="width: 60px;">No</th>
+                                <th style="width: 100px;">Source</th>
                                 <th>Produk</th>
                                 <th>Nama Group</th>
-                                <th>Status Mapping</th>
+                                <th style="width: 120px;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -429,59 +424,6 @@
 @push('js')
 <script>
 let currentTanggalRekon = '{{ $tanggalRekon }}';
-
-function refreshMappingData() {
-    $('#mappingTable tbody').html('<tr><td colspan="5" class="text-center"><i class="fal fa-spinner fa-spin"></i> Loading...</td></tr>');
-    
-    $.ajax({
-        url: '{{ base_url('rekon/step2/getMappingData') }}',
-        type: 'GET',
-        data: { tanggal: currentTanggalRekon },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                updateMappingTable(response.data);
-                updateMappingStats(response.stats);
-            } else {
-                showAlert('error', response.message);
-            }
-        },
-        error: function() {
-            showAlert('error', 'Error saat mengambil data mapping');
-        }
-    });
-}
-
-function updateMappingTable(data) {
-    let tbody = $('#mappingTable tbody');
-    tbody.empty();
-    
-    if (data && data.length > 0) {
-        data.forEach(function(item, index) {
-            let rowClass = item.NAMA_GROUP ? '' : 'table-warning';
-            let badgeClass = item.NAMA_GROUP ? 'badge-success' : 'badge-warning';
-            let badgeText = item.NAMA_GROUP || 'Belum Mapping';
-            let statusIcon = item.NAMA_GROUP ? 
-                '<i class="fal fa-check-circle text-success"></i> Mapped' : 
-                '<i class="fal fa-exclamation-triangle text-warning"></i> Not Mapped';
-            
-            // Badge untuk SOURCE
-            let sourceBadgeClass = item.SOURCE === 'DETAIL' ? 'badge-primary' : 'badge-info';
-            
-            tbody.append(`
-                <tr class="${rowClass}">
-                    <td>${index + 1}</td>
-                    <td><span class="badge ${sourceBadgeClass}">${item.SOURCE || ''}</span></td>
-                    <td><code>${item.PRODUK || ''}</code></td>
-                    <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-                    <td>${statusIcon}</td>
-                </tr>
-            `);
-        });
-    } else {
-        tbody.append('<tr><td colspan="5" class="text-center text-muted"><i class="fal fa-inbox"></i> Tidak ada data ditemukan</td></tr>');
-    }
-}
 
 function updateMappingStats(stats) {
     $('#totalProducts').text(stats.total_products || 0);
@@ -566,11 +508,6 @@ function showAlert(type, message) {
         }, 3000);
     }
 }
-
-$(document).ready(function() {
-    // Initialize data if needed
-    refreshMappingData();
-});
 </script>
 @endpush
 
@@ -578,10 +515,6 @@ $(document).ready(function() {
 <style>
 .table-warning {
     background-color: rgba(255, 193, 7, 0.1);
-}
-
-.card-header-actions {
-    float: right;
 }
 
 .badge {
@@ -621,6 +554,28 @@ $(document).ready(function() {
 /* Table row styling for unmapped items */
 .table-warning td {
     background-color: rgba(255, 193, 7, 0.15) !important;
+}
+
+/* Fixed table styling */
+.table-responsive {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#mappingTable thead th {
+    background-color: #f8f9fa !important;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Compact table for better space usage */
+.table-sm th, .table-sm td {
+    padding: 0.5rem;
 }
 </style>
 @endpush
