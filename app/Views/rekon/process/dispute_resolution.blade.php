@@ -81,7 +81,7 @@
                                     <td>{{ $item['TERMINALID'] ?? '' }}</td>
                                     <td><code>{{ $item['PRODUK'] ?? '' }}</code></td>
                                     <td>{{ $item['IDPEL'] ?? '' }}</td>
-                                    <td>{{ number_format($item['RP_BILLER_TAG'] ?? 0) }}</td>
+                                    <td>Rp {{ number_format((float)str_replace(',', '', $item['RP_BILLER_TAG'] ?? 0), 0, ',', '.') }}</td>
                                     <td>
                                         @php
                                             $statusBiller = $item['STATUS_BILLER'] ?? 0;
@@ -307,21 +307,6 @@
 
 @push('js')
 <script>
-$(document).ready(function() {
-    @if(!empty($disputeData))
-        $('#disputeTable').DataTable({
-            responsive: true,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
-            },
-            order: [[1, 'asc']],
-            columnDefs: [
-                { targets: [0, 8], orderable: false }
-            ]
-        });
-    @endif
-});
-
 function openDisputeModal(id) {
     if (!id) {
         showAlert('error', 'ID tidak ditemukan');
@@ -349,15 +334,15 @@ function openDisputeModal(id) {
                 // Fill readonly fields
                 $('#modal_idpartner').val(data.IDPARTNER || '');
                 $('#modal_terminalid').val(data.TERMINALID || '');
-                $('#modal_produk').val(data.PRODUK || '');
+                $('#modal_produk').val(data.v_GROUP_PRODUK || '');
                 $('#modal_idpel').val(data.IDPEL || '');
                 $('#modal_rp_pokok').val(formatNumber(data.RP_BILLER_POKOK || 0));
                 $('#modal_rp_admin').val(formatNumber(data.RP_BILLER_ADMIN || 0));
                 $('#modal_rp_tag').val(formatNumber(data.RP_BILLER_TAG || 0));
                 
                 // Set current values for radio buttons
-                $('input[name="status_biller"][value="' + (data.STATUS_BILLER || '0') + '"]').prop('checked', true);
-                $('input[name="status_core"][value="' + (data.STATUS_CORE || '0') + '"]').prop('checked', true);
+                $('input[name="status_biller"][value="' + (data.STATUS || '0') + '"]').prop('checked', true);
+                $('input[name="status_core"][value="' + (data.v_STAT_CORE_AGR || '0') + '"]').prop('checked', true);
                 
                 $('#disputeModal').modal('show');
             } else {
@@ -409,7 +394,9 @@ function saveDispute() {
 }
 
 function formatNumber(num) {
-    return new Intl.NumberFormat('id-ID').format(num);
+    // Convert string to number first, removing any existing commas
+    const cleanNum = parseFloat(String(num).replace(/,/g, '')) || 0;
+    return new Intl.NumberFormat('id-ID').format(cleanNum);
 }
 
 function showAlert(type, message) {

@@ -96,8 +96,7 @@ class RekonProcessController extends BaseController
                 $db = \Config\Database::connect();
                 $query = $db->query("
                     SELECT IDPARTNER, TERMINALID, v_GROUP_PRODUK AS PRODUK, IDPEL, 
-                           RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE,
-                           v_ID, RP_BILLER_POKOK, RP_BILLER_ADMIN, RP_BILLER_DENDA
+                           RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE, v_ID
                     FROM v_cek_biller_dispute_direct 
                     WHERE v_TGL_FILE_REKON = ?
                 ", [$tanggalRekon]);
