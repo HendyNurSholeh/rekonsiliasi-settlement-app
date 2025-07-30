@@ -410,6 +410,9 @@ function openDisputeModal(id) {
                     $('#modal_rp_admin').val(formatNumber(data.RP_BILLER_ADMIN || 0));
                     $('#modal_rp_tag').val(formatNumber(data.RP_BILLER_TAG || 0));
                     
+                    // Auto-select channel berdasarkan IDPARTNER
+                    $('#modal_channel').val(data.IDPARTNER || '');
+                    
                     // Set current values for radio buttons
                     $('input[name="status_biller"][value="' + (data.STATUS || '0') + '"]').prop('checked', true);
                     $('input[name="status_core"][value="' + (data.v_STAT_CORE_AGR || '0') + '"]').prop('checked', true);
