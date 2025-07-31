@@ -673,10 +673,13 @@ function callDataUploadProcess() {
             
             if (response.success) {
                 // Update button ke status sukses
-                $('#btn-validate').remove();
                 toastr['success'](response.message || 'Data berhasil diproses');
-                // Redirect ke step 2 untuk validasi mapping
-                window.location.href = response.redirect;
+                // Ganti tombol dengan tombol "Lanjut ke Step 2"
+                $('#btn-validate').replaceWith(`
+                    <a href="${response.redirect}" class="btn btn-success" id="btn-next-step">
+                        <i class="fal fa-arrow-right"></i> Lanjut ke Step 2
+                    </a>
+                `);
                 
             } else {
                 var errorMsg = 'Proses penyimpanan data gagal';

@@ -326,7 +326,7 @@ class RekonStep1Controller extends BaseController
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Proses data upload berhasil dijalankan. Otomatis akan dilanjutkan ke Step 2 untuk validasi mapping produk.',
+                'message' => 'Proses data upload berhasil dijalankan. Silahkan lanjutkan ke Step 2 untuk validasi mapping produk.',
                 'data' => [
                     'tanggal_rekon' => $tanggalRekon,
                     'procedure_executed' => 'p_proses_dataupload',
