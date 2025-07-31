@@ -454,7 +454,7 @@
                         @endif
                     </div>
                     <div>
-                        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='{{ base_url('rekon/step1?tanggal=' . $tanggalRekon) }}'">
+                        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='{{ base_url('rekon') }}'">
                             <i class="fal fa-arrow-left"></i> Kembali ke Step 1
                         </button>
                         @if(($mappingStats['unmapped_products'] ?? 0) > 0)
