@@ -1,4 +1,4 @@
-"branch";"stmt_booking_date";"ft_bil_product";"stmt_date_time";"ft_bil_customer";"ft_term_id";"kosong";"ft_debit_acct_no";"ft_trans_reff";"stmt_our_reference";"recipt_no";"amount";"fee"
+branch;stmt_booking_date;ft_bil_product;stmt_date_time;ft_bil_customer;ft_term_id;kosong;ft_debit_acct_no;ft_trans_reff;stmt_our_reference;recipt_no;amount;fee
 "KONVEN";"2025-07-21";"92030";"2507211135";"0104701";"MBS";"";"2001965762";"0721113609601613MBS349246107937";"FT2520200R76";"349246107937";"30000.00";"3000.00"
 "KONVEN";"2025-07-21";"78012";"2507211204";"63104182801009";"MBS";"";"3200685104";"0721120357646512MBS086794574031";"FT2520201K8G";"086794574031";"144000.00";"2000.00"
 "KONVEN";"2025-07-21";"PDAM";"2507211049";"029601";"MBS";"";"3201004868";"0721104941527279MBS660918326695";"FT2520201YHB";"660918326695";"60000.00";"6000.00"
