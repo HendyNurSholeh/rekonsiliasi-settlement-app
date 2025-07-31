@@ -162,13 +162,13 @@
                                         <input type="text" class="form-control" id="modal_terminalid" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6  mt-md-2">
                                     <div class="form-group">
                                         <label>Produk</label>
                                         <input type="text" class="form-control" id="modal_produk" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6  mt-md-2">
                                     <div class="form-group">
                                         <label>ID Pelanggan</label>
                                         <input type="text" class="form-control" id="modal_idpel" readonly>
@@ -193,11 +193,23 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>RP Biller Admin</label>
-                                        <input type="text" class="form-control" id="modal_rp_admin" readonly>
+                                        <label>RP Biller Denda</label>
+                                        <input type="text" class="form-control" id="modal_rp_denda" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>RP Fee Struk</label>
+                                        <input type="text" class="form-control" id="modal_rp_fee_struk" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-md-2">
+                                    <div class="form-group">
+                                        <label>RP Amount Struk</label>
+                                        <input type="text" class="form-control" id="modal_rp_amount_struk" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-md-2">
                                     <div class="form-group">
                                         <label>RP Biller Tag</label>
                                         <input type="text" class="form-control" id="modal_rp_tag" readonly>
@@ -213,8 +225,9 @@
                             <h6 class="mb-0">Status Rekonsiliasi</h6>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
+                            <!-- ID Partner (Channel) -->
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <div class="form-group">
                                         <label>ID Partner (Channel) <span class="text-danger">*</span></label>
                                         <select class="form-control" id="modal_channel" name="idpartner" required>
@@ -233,10 +246,14 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                            </div>
+                            
+                            <!-- Status Biller -->
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Biller <span class="text-danger">*</span></label>
-                                        <div>
+                                        <div class="mt-2">
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_biller" id="biller_sukses" value="1">
                                                 <label class="form-check-label" for="biller_sukses">Sukses</label>
@@ -252,10 +269,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                            </div>
+                            
+                            <!-- Status Core -->
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Core <span class="text-danger">*</span></label>
-                                        <div>
+                                        <div class="mt-2">
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_core" id="core_terdebet" value="1">
                                                 <label class="form-check-label" for="core_terdebet">Terdebet</label>
@@ -267,10 +288,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                            </div>
+                            
+                            <!-- Status Settlement -->
+                            <div class="row">
+                                <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Settlement <span class="text-danger">*</span></label>
-                                        <div>
+                                        <div class="mt-2">
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="settlement_dilimpahkan" value="1">
                                                 <label class="form-check-label" for="settlement_dilimpahkan">Dilimpahkan</label>
@@ -407,7 +432,9 @@ function openDisputeModal(id) {
                     $('#modal_produk').val(data.v_GROUP_PRODUK || '');
                     $('#modal_idpel').val(data.IDPEL || '');
                     $('#modal_rp_pokok').val(formatNumber(data.RP_BILLER_POKOK || 0));
-                    $('#modal_rp_admin').val(formatNumber(data.RP_BILLER_ADMIN || 0));
+                    $('#modal_rp_denda').val(formatNumber(data.RP_BILLER_DENDA || 0));
+                    $('#modal_rp_fee_struk').val(formatNumber(data.RP_FEE_STRUK || 0));
+                    $('#modal_rp_amount_struk').val(formatNumber(data.RP_AMOUNT_STRUK || 0));
                     $('#modal_rp_tag').val(formatNumber(data.RP_BILLER_TAG || 0));
                     
                     // Auto-select channel berdasarkan IDPARTNER
