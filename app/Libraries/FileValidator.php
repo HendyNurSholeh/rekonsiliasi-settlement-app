@@ -269,17 +269,17 @@ class FileValidator
             }
 
             // Validate amount
-            if ($amountColIndex !== false && isset($data[$amountColIndex])) {
-                $amountValue = trim($data[$amountColIndex]);
-                if (!$this->validateAmountFormat($amountValue)) {
-                    $invalidAmounts++;
-                    if ($invalidAmounts <= 3) { // Show max 3 examples
-                        $this->addError("Baris {$lineNumber}: Format amount tidak valid: {$amountValue}");
-                    }
-                } else {
-                    $totalAmount += $this->parseAmount($amountValue);
-                }
-            }
+            // if ($amountColIndex !== false && isset($data[$amountColIndex])) {
+            //     $amountValue = trim($data[$amountColIndex]);
+            //     if (!$this->validateAmountFormat($amountValue)) {
+            //         $invalidAmounts++;
+            //         if ($invalidAmounts <= 3) { // Show max 3 examples
+            //             $this->addError("Baris {$lineNumber}: Format amount tidak valid: {$amountValue}");
+            //         }
+            //     } else {
+            //         $totalAmount += $this->parseAmount($amountValue);
+            //     }
+            // }
 
             $lineNumber++;
         }
@@ -354,21 +354,21 @@ class FileValidator
     /**
      * Validasi format amount
      */
-    private function validateAmountFormat($amountValue)
-    {
-        // Remove common formatting
-        $cleaned = str_replace([',', '.00'], '', $amountValue);
-        return is_numeric($cleaned) && $cleaned >= 0;
-    }
+    // private function validateAmountFormat($amountValue)
+    // {
+    //     // Remove common formatting
+    //     $cleaned = str_replace([',', '.00'], '', $amountValue);
+    //     return is_numeric($cleaned) && $cleaned >= 0;
+    // }
 
     /**
      * Parse amount to numeric value
      */
-    private function parseAmount($amountValue)
-    {
-        $cleaned = str_replace([','], '', $amountValue);
-        return floatval($cleaned);
-    }
+    // private function parseAmount($amountValue)
+    // {
+    //     $cleaned = str_replace([','], '', $amountValue);
+    //     return floatval($cleaned);
+    // }
 
     /**
      * Generate file statistics
