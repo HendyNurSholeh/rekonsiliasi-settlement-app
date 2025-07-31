@@ -480,6 +480,26 @@
 <script>
 let currentTanggalRekon = '{{ $tanggalRekon }}';
 
+// Setup CSRF token for all AJAX requests
+$(document).ready(function() {
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                let csrfToken = $('meta[name="csrf-token"]').attr('content');
+                let csrfName = $('meta[name="csrf-name"]').attr('content');
+                if (csrfToken && csrfName) {
+                    settings.data = settings.data || {};
+                    if (typeof settings.data === 'string') {
+                        settings.data += '&' + csrfName + '=' + encodeURIComponent(csrfToken);
+                    } else {
+                        settings.data[csrfName] = csrfToken;
+                    }
+                }
+            }
+        }
+    });
+});
+
 function updateMappingStats(stats) {
     $('#totalProducts').text(stats.total_products || 0);
     $('#mappedProducts').text(stats.mapped_products || 0);
@@ -497,8 +517,7 @@ function startReconciliation() {
         url: '{{ base_url('rekon/step2/validate') }}',
         type: 'POST',
         data: {
-            tanggal_rekon: currentTanggalRekon,
-            '{{ csrf_token() }}': '{{ csrf_hash() }}'
+            tanggal_rekon: currentTanggalRekon
         },
         dataType: 'json',
         headers: {
@@ -522,8 +541,16 @@ function startReconciliation() {
                 btn.prop('disabled', false).html(originalText);
             }
         },
-        error: function() {
-            toastr['error']('Error saat memulai rekonsiliasi');
+        error: function(xhr, status, error) {
+            if (xhr.status === 403) {
+                // CSRF token expired, refresh page
+                toastr['warning']('Session expired. Refreshing page...');
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                toastr['error']('Error saat memulai rekonsiliasi: ' + error);
+            }
             btn.prop('disabled', false).html(originalText);
         }
     });
