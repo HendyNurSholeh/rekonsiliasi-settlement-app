@@ -545,8 +545,6 @@ function callDataUploadProcess() {
             refreshCSRFToken();
             
             if (response.success) {
-                alert('Proses penyimpanan data berhasil! Data telah disimpan ke database.');
-                
                 // Update button ke status sukses
                 $('#btn-validate').removeClass('btn-success').addClass('btn-primary')
                     .prop('disabled', false)
