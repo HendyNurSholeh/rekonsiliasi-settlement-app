@@ -372,11 +372,6 @@ function uploadFile(type) {
         return;
     }
     
-    // Konfirmasi upload
-    if (!confirm('Yakin ingin upload file ini?')) {
-        return;
-    }
-    
     // Show loading
     var btn = $(formId).find('button');
     var originalHtml = btn.html();
@@ -417,9 +412,9 @@ function uploadFile(type) {
                             </button>
                         </div>
                     `);
-                    
-                    alert('File berhasil diupload dan divalidasi!');
-                    
+
+                    toastr['success']('File berhasil diupload dan divalidasi!');
+
                     // Tambahkan ke daftar uploaded files
                     if (!uploadedFiles.includes(type)) {
                         uploadedFiles.push(type);
@@ -490,7 +485,6 @@ function updateUploadStatus() {
     if (uploadedRequired.length === totalRequired) {
         $('#upload-count').removeClass('text-warning').addClass('text-success');
         $('#btn-validate').prop('disabled', false);
-        alert('Semua file wajib telah diupload! Silakan klik "Validasi & Lanjutkan"');
     } else {
         $('#upload-count').removeClass('text-success').addClass('text-warning');
         $('#btn-validate').prop('disabled', true);
@@ -513,10 +507,6 @@ function validateAndProceed() {
     
     if (uploadedRequired.length < requiredFiles.length) {
         alert('Harap upload semua file yang wajib terlebih dahulu!');
-        return;
-    }
-    
-    if (!confirm('Yakin ingin melanjutkan ke proses validasi dan penyimpanan data?')) {
         return;
     }
     
@@ -562,7 +552,7 @@ function callDataUploadProcess() {
                     .prop('disabled', false)
                     .html('<i class="fal fa-check-circle"></i> Proses Selesai');
                 
-                showAlert('success', response.message);
+                toastr["success"](response.message);
                 
                 // Redirect ke step 2 untuk validasi mapping
                 if (response.redirect) {
