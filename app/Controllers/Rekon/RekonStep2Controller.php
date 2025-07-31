@@ -156,7 +156,7 @@ class RekonStep2Controller extends BaseController
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Proses rekonsiliasi berhasil dimulai',
-                    'redirect' => base_url('rekon/step3?tanggal=' . $tanggalRekon)
+                    'redirect' => base_url('/rekon/process/detail-vs-rekap')
                 ]);
             } else {
                 return $this->response->setJSON([

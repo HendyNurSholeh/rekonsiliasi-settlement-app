@@ -476,7 +476,7 @@
 
 @endsection
 
-@push('js')
+@push('scripts')
 <script>
 let currentTanggalRekon = '{{ $tanggalRekon }}';
 
@@ -494,16 +494,19 @@ function startReconciliation() {
     btn.prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
     
     $.ajax({
-        url: '{{ base_url('rekon/step2/processValidation') }}',
+        url: '{{ base_url('rekon/step2/validate') }}',
         type: 'POST',
+        data: {
+            tanggal_rekon: currentTanggalRekon,
+            '{{ csrf_token() }}': '{{ csrf_hash() }}'
+        },
         dataType: 'json',
         headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            'X-Requested-With': 'XMLHttpRequest'
         },
         success: function(response) {
             if (response.success) {
-                showAlert('success', response.message);
+                toastr['success'](response.message);
                 if (response.redirect) {
                     setTimeout(function() {
                         window.location.href = response.redirect;
@@ -512,56 +515,18 @@ function startReconciliation() {
             } else {
                 if (response.unmapped_products && response.unmapped_products.length > 0) {
                     let productList = response.unmapped_products.map(p => `${p.SOURCE}: ${p.PRODUK}`).join('<br>');
-                    showAlert('warning', response.message + '<br><br><strong>Produk yang belum mapping:</strong><br>' + productList);
+                    toastr['warning'](response.message + '<br><br><strong>Produk yang belum mapping:</strong><br>' + productList);
                 } else {
-                    showAlert('error', response.message);
+                    toastr['error'](response.message);
                 }
                 btn.prop('disabled', false).html(originalText);
             }
         },
         error: function() {
-            showAlert('error', 'Error saat memulai rekonsiliasi');
+            toastr['error']('Error saat memulai rekonsiliasi');
             btn.prop('disabled', false).html(originalText);
         }
     });
-}
-
-function showAlert(type, message) {
-    let alertClass = 'alert-info';
-    let icon = 'fa-info-circle';
-    
-    switch(type) {
-        case 'success':
-            alertClass = 'alert-success';
-            icon = 'fa-check-circle';
-            break;
-        case 'error':
-            alertClass = 'alert-danger';
-            icon = 'fa-exclamation-circle';
-            break;
-        case 'warning':
-            alertClass = 'alert-warning';
-            icon = 'fa-exclamation-triangle';
-            break;
-    }
-    
-    let alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fal ${icon}"></i> ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    `;
-    
-    $('.subheader').after(alertHtml);
-    
-    // Auto hide success alerts
-    if (type === 'success') {
-        setTimeout(function() {
-            $('.alert-success').fadeOut();
-        }, 3000);
-    }
 }
 </script>
 @endpush
