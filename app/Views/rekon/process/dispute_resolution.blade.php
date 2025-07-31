@@ -150,25 +150,31 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label>ID Partner</label>
                                         <input type="text" class="form-control" id="modal_idpartner" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label>Terminal ID</label>
                                         <input type="text" class="form-control" id="modal_terminalid" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-6  mt-md-2">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Is Direct Fee</label>
+                                        <input type="text" class="form-control" id="modal_is_direct_fee" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-md-2">
                                     <div class="form-group">
                                         <label>Produk</label>
                                         <input type="text" class="form-control" id="modal_produk" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-6  mt-md-2">
+                                <div class="col-md-6 mt-md-2">
                                     <div class="form-group">
                                         <label>ID Pelanggan</label>
                                         <input type="text" class="form-control" id="modal_idpel" readonly>
@@ -429,6 +435,7 @@ function openDisputeModal(id) {
                     // Fill readonly fields
                     $('#modal_idpartner').val(data.IDPARTNER || '');
                     $('#modal_terminalid').val(data.TERMINALID || '');
+                    $('#modal_is_direct_fee').val(data.v_IS_DIRECT_FEE || '');
                     $('#modal_produk').val(data.v_GROUP_PRODUK || '');
                     $('#modal_idpel').val(data.IDPEL || '');
                     $('#modal_rp_pokok').val(formatNumber(data.RP_BILLER_POKOK || 0));
