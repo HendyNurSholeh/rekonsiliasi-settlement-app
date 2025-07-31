@@ -87,7 +87,7 @@
                                             $statusBiller = $item['STATUS_BILLER'] ?? 0;
                                         @endphp
                                         @if($statusBiller == 0)
-                                            <span class="badge badge-warning">Pending</span>
+                                            <span class="badge text-white" style="background-color: #f9911b;">Pending</span>
                                         @elseif($statusBiller == 1)
                                             <span class="badge badge-success">Sukses</span>
                                         @else
