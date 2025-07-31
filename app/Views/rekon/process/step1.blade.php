@@ -574,7 +574,7 @@ function disableAllUploadCards(currentType) {
                 <div class="upload-overlay-content">
                     <i class="fal fa-upload fa-2x text-primary mb-2"></i>
                     <h5>Upload Sedang Berlangsung</h5>
-                    <p>Harap tunggu hingga upload selesai sebelum melakukan upload lainnya.</p>
+                    <p>Harap tunggu hingga upload selesai.</p>
                 </div>
             </div>
         `);
