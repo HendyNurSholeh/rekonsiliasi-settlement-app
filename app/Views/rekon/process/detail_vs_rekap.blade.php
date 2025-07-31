@@ -107,7 +107,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="d-flex flex-column">
-                            <span class="text-muted small">Akurasi</span>
+                            <span class="text-muted small">Persentase</span>
                             <h4 class="mb-0 text-info" id="stat-akurasi">
                                 @php
                                     $total = count($compareData);
