@@ -252,6 +252,58 @@
     border-color: #bee5eb;
     color: #0c5460;
 }
+
+/* Upload disabled styling */
+.upload-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+}
+
+.upload-disabled::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+}
+
+/* Upload overlay styling */
+.upload-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-overlay-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    margin: 0 1rem;
+}
+
+.upload-overlay-content h5 {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.upload-overlay-content p {
+    color: #666;
+    margin-bottom: 0;
+}
 </style>
 @endpush
 
@@ -259,6 +311,7 @@
 <script>
 // Variabel global untuk tracking upload
 let uploadedFiles = [];
+let isUploading = false; // Flag untuk mencegah multiple upload bersamaan
 const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
 
 // Fungsi untuk refresh CSRF token
@@ -338,6 +391,12 @@ $(document).ready(function() {
 function uploadFile(type) {
     console.log('Uploading file for type:', type);
     
+    // Check jika sedang ada upload lain yang berjalan
+    if (isUploading) {
+        alert('Ada upload lain yang sedang berjalan. Harap tunggu hingga selesai.');
+        return;
+    }
+    
     // Map file type to correct form and input IDs
     var formIdMap = {
         'agn_detail': 'form-agn-detail',
@@ -371,6 +430,10 @@ function uploadFile(type) {
         alert('Pilih file terlebih dahulu');
         return;
     }
+    
+    // Set flag uploading dan disable semua upload cards
+    isUploading = true;
+    disableAllUploadCards(type);
     
     // Show loading
     var btn = $(formId).find('button');
@@ -412,8 +475,8 @@ function uploadFile(type) {
                             </button>
                         </div>
                     `);
-
-                    toastr['success']('File berhasil diupload dan divalidasi!');
+                    
+                    toastr['success'](response.message);
 
                     // Tambahkan ke daftar uploaded files
                     if (!uploadedFiles.includes(type)) {
@@ -422,6 +485,10 @@ function uploadFile(type) {
                     
                     // Update status upload
                     updateUploadStatus();
+                    
+                    // Reset flag uploading dan enable kembali semua cards
+                    isUploading = false;
+                    enableAllUploadCards();
                 } else {
                     var errorMsg = response.message || 'Terjadi kesalahan saat upload file';
                     
@@ -437,6 +504,10 @@ function uploadFile(type) {
                     
                     alert('Upload gagal: ' + errorMsg);
                     btn.prop('disabled', false).html(originalHtml);
+                    
+                    // Reset flag uploading dan enable kembali semua cards
+                    isUploading = false;
+                    enableAllUploadCards();
                 }
             },
             error: function(xhr, status, error) {
@@ -464,13 +535,69 @@ function uploadFile(type) {
                 
                 alert('Upload gagal: ' + errorMsg);
                 btn.prop('disabled', false).html(originalHtml);
+                
+                // Reset flag uploading dan enable kembali semua cards
+                isUploading = false;
+                enableAllUploadCards();
             }
         });
     }).catch(function(error) {
         console.error('Failed to refresh CSRF token:', error);
         alert('Gagal refresh CSRF token. Silakan refresh halaman dan coba lagi.');
         btn.prop('disabled', false).html(originalHtml);
+        
+        // Reset flag uploading dan enable kembali semua cards
+        isUploading = false;
+        enableAllUploadCards();
     });
+}
+
+// Fungsi untuk disable semua upload cards kecuali yang sedang diupload
+function disableAllUploadCards(currentType) {
+    const cardTypes = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
+    
+    cardTypes.forEach(function(type) {
+        if (type !== currentType) {
+            // Disable file input dan button
+            $('#file-' + type.replace('_', '-')).prop('disabled', true);
+            $('#form-' + type.replace('_', '-')).find('button').prop('disabled', true);
+            
+            // Add opacity untuk visual feedback
+            $('#form-' + type.replace('_', '-')).closest('.card').addClass('upload-disabled');
+        }
+    });
+    
+    // Tambahkan overlay message
+    if (!$('.upload-overlay').length) {
+        $('body').append(`
+            <div class="upload-overlay">
+                <div class="upload-overlay-content">
+                    <i class="fal fa-upload fa-2x text-primary mb-2"></i>
+                    <h5>Upload Sedang Berlangsung</h5>
+                    <p>Harap tunggu hingga upload selesai sebelum melakukan upload lainnya.</p>
+                </div>
+            </div>
+        `);
+    }
+}
+
+// Fungsi untuk enable kembali semua upload cards
+function enableAllUploadCards() {
+    const cardTypes = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
+    
+    cardTypes.forEach(function(type) {
+        // Enable file input dan button (kecuali yang sudah diupload)
+        if (!uploadedFiles.includes(type)) {
+            $('#file-' + type.replace('_', '-')).prop('disabled', false);
+            $('#form-' + type.replace('_', '-')).find('button').prop('disabled', false);
+        }
+        
+        // Remove opacity
+        $('#form-' + type.replace('_', '-')).closest('.card').removeClass('upload-disabled');
+    });
+    
+    // Remove overlay
+    $('.upload-overlay').remove();
 }
 
 function updateUploadStatus() {
@@ -492,6 +619,7 @@ function updateUploadStatus() {
 }
 
 function reuploadFile(type) {
+    // Konfirmasi dihapus untuk mempercepat workflow
     if (confirm('Yakin ingin upload ulang? File sebelumnya akan diganti.')) {
         // Reset upload status untuk tipe ini
         uploadedFiles = uploadedFiles.filter(file => file !== type);
@@ -539,29 +667,16 @@ function callDataUploadProcess() {
             tanggal_rekon: '{{ $tanggalRekon }}',
             '{{ csrf_token() }}': $('input[name="{{ csrf_token() }}"]').val()
         },
-        timeout: 300000, // 5 menit timeout untuk proses yang lama
         success: function(response) {
             // Refresh CSRF token setelah response
             refreshCSRFToken();
             
             if (response.success) {
                 // Update button ke status sukses
-                $('#btn-validate').removeClass('btn-success').addClass('btn-primary')
-                    .prop('disabled', false)
-                    .html('<i class="fal fa-check-circle"></i> Proses Selesai');
-                
-                toastr["success"](response.message);
-                
+                $('#btn-validate').remove();
+                toastr['success'](response.message || 'Data berhasil diproses');
                 // Redirect ke step 2 untuk validasi mapping
-                if (response.redirect) {
-                    setTimeout(() => {
-                        window.location.href = response.redirect;
-                    }, 2000);
-                } else {
-                    setTimeout(() => {
-                        window.location.href = '{{ base_url("rekon/step2") }}?tanggal={{ $tanggalRekon }}';
-                    }, 2000);
-                }
+                window.location.href = response.redirect;
                 
             } else {
                 var errorMsg = 'Proses penyimpanan data gagal';
