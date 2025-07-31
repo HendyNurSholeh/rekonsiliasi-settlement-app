@@ -253,10 +253,10 @@
                                 <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Biller <span class="text-danger">*</span></label>
-                                        <div class="mt-2">
+                                        <div>
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="status_biller" id="biller_sukses" value="1">
-                                                <label class="form-check-label" for="biller_sukses">Sukses</label>
+                                                <input class="form-check-input bg-danger" type="radio" name="status_biller" id="biller_sukses" value="1">
+                                                <label class="form-check-label " for="biller_sukses">Sukses</label>
                                             </div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_biller" id="biller_pending" value="0">
@@ -276,7 +276,7 @@
                                 <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Core <span class="text-danger">*</span></label>
-                                        <div class="mt-2">
+                                        <div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_core" id="core_terdebet" value="1">
                                                 <label class="form-check-label" for="core_terdebet">Terdebet</label>
@@ -295,7 +295,7 @@
                                 <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Settlement <span class="text-danger">*</span></label>
-                                        <div class="mt-2">
+                                        <div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="settlement_dilimpahkan" value="1">
                                                 <label class="form-check-label" for="settlement_dilimpahkan">Dilimpahkan</label>
