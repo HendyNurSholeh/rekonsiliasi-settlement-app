@@ -471,7 +471,7 @@ function initializeDataTable() {
                 }
             }
         ],
-        pageLength: 25,
+        pageLength: 10,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         order: [[0, 'asc']],
         language: {
@@ -491,7 +491,8 @@ function initializeDataTable() {
             zeroRecords: "Tidak ditemukan data yang sesuai"
         },
         responsive: true,
-        dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+        searching: false,
+        dom: '<"row"<"col-sm-6"l><"col-sm-6">>' +
              '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
         drawCallback: function(settings) {
