@@ -39,8 +39,8 @@
                             <label for="filter_selisih" class="form-label">Filter Selisih</label>
                             <select class="form-control" id="filter_selisih" name="filter_selisih">
                                 <option value="">Semua Data</option>
-                                <option value="ada_selisih" {{ (isset($filterSelisih) && $filterSelisih == 'ada_selisih') ? 'selected' : '' }}>Ada Selisih</option>
-                                <option value="tidak_ada_selisih" {{ (isset($filterSelisih) && $filterSelisih == 'tidak_ada_selisih') ? 'selected' : '' }}>Tidak Ada Selisih</option>
+                                <option value="ada_selisih" @if(request()->getGet('filter_selisih') == 'ada_selisih') selected @endif>Ada Selisih</option>
+                                <option value="tidak_ada_selisih" @if(request()->getGet('filter_selisih') == 'tidak_ada_selisih') selected @endif>Tidak Ada Selisih</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -131,44 +131,27 @@
             <div class="card-header">
                 <h5 class="card-title">
                     <i class="fal fa-table"></i> Data Perbandingan Detail vs Rekap
-                    <span id="filter-indicator" class="badge badge-info ml-2" style="display: none;"></span>
                 </h5>
             </div>
             <div class="card-body">
-                @if(!empty($compareData))
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover" id="compareTable">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Group</th>
-                                    <th>File Settle</th>
-                                    <th>Amount Detail</th>
-                                    <th>Amount Rekap</th>
-                                    <th>Selisih</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($compareData as $index => $item)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $item['NAMA_GROUP'] ?? '' }}</td>
-                                    <td>
-                                        <span class="badge {{ ($item['FILE_SETTLE'] ?? 0) == 0 ? 'badge-primary' : 'badge-info' }}">
-                                            {{ ($item['FILE_SETTLE'] ?? 0) == 0 ? 'Detail' : 'Rekap' }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end">Rp {{ number_format((float)str_replace(',', '', $item['AMOUNT_DETAIL'] ?? 0), 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format((float)str_replace(',', '', $item['AMOUNT_REKAP'] ?? 0), 0, ',', '.') }}</td>
-                                    <td class="text-end {{ ((float)str_replace(',', '', $item['SELISIH'] ?? 0)) != 0 ? 'text-danger fw-bold' : 'text-success' }}">
-                                        Rp {{ number_format((float)str_replace(',', '', $item['SELISIH'] ?? 0), 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="compareTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Group</th>
+                                <th>File Settle</th>
+                                <th>Amount Detail</th>
+                                <th>Amount Rekap</th>
+                                <th>Selisih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data akan dimuat via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+                @if(empty($compareData))
                     <div class="text-center py-4">
                         <i class="fal fa-inbox fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">Tidak ada data ditemukan</h5>
@@ -184,115 +167,315 @@
 
 @push('scripts')
 <script>
+// Super Simple but Robust CSRF Management
+let currentCSRF = '{{ csrf_token() }}';
+
+// Global AJAX setup untuk auto-inject CSRF
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        // Untuk semua POST request, tambahkan CSRF
+        if (settings.type === 'POST') {
+            // Jika data adalah FormData
+            if (settings.data instanceof FormData) {
+                settings.data.append('csrf_test_name', currentCSRF);
+            } 
+            // Jika data adalah string biasa
+            else {
+                const separator = settings.data ? '&' : '';
+                settings.data = (settings.data || '') + separator + 'csrf_test_name=' + encodeURIComponent(currentCSRF);
+            }
+        }
+    }
+});
+
+// Global error handler untuk CSRF expired
+$(document).ajaxError(function(event, xhr, settings) {
+    if (xhr.status === 403 || xhr.status === 419) {
+        console.log('CSRF Token expired, refreshing...');
+        refreshCSRFToken().then(function() {
+            console.log('CSRF refreshed, retrying request...');
+            // Retry the request with new token
+            if (!settings._retried) {
+                settings._retried = true;
+                $.ajax(settings);
+            }
+        });
+    }
+});
+
+// Function untuk refresh CSRF token
+function refreshCSRFToken() {
+    return $.get('{{ base_url('rekon/process/get-csrf-token') }}').then(function(response) {
+        if (response.csrf_token) {
+            currentCSRF = response.csrf_token;
+            console.log('New CSRF token:', currentCSRF);
+        }
+    }).catch(function(error) {
+        console.error('Failed to refresh CSRF:', error);
+        // Fallback: reload page if can't refresh token
+        setTimeout(function() {
+            if (confirm('Session expired. Reload page?')) {
+                location.reload();
+            }
+        }, 1000);
+    });
+}
+
+// DataTable instance
+let compareTable;
+
 $(document).ready(function() {
-    // Client-side filtering function
-    function applyFilter() {
-        var filterValue = $('#filter_selisih').val();
-        var $tableRows = $('#compareTable tbody tr');
-        var visibleCount = 0;
+    // Refresh CSRF token saat page load untuk memastikan token fresh
+    refreshCSRFToken().then(function() {
+        console.log('CSRF token refreshed on page load');
         
-        $tableRows.each(function() {
-            var $row = $(this);
-            var selisihCell = $row.find('td:last');
-            var selisihText = selisihCell.text().replace('Rp ', '').replace(/\./g, '').replace(/,/g, '').trim();
-            var selisihValue = parseInt(selisihText) || 0;
-            var shouldShow = false;
-            
-            if (filterValue === '') {
-                // Show all rows
-                shouldShow = true;
-            } else if (filterValue === 'ada_selisih') {
-                // Show only rows with selisih != 0
-                shouldShow = (selisihValue !== 0);
-            } else if (filterValue === 'tidak_ada_selisih') {
-                // Show only rows with selisih = 0
-                shouldShow = (selisihValue === 0);
-            }
-            
-            if (shouldShow) {
-                $row.show();
-                visibleCount++;
-            } else {
-                $row.hide();
-            }
-        });
-        
-        // Update row numbers for visible rows
-        var rowNumber = 1;
-        $tableRows.filter(':visible').each(function() {
-            $(this).find('td:first').text(rowNumber++);
-        });
-        
-        // Update filter indicator (statistics tetap menampilkan data keseluruhan)
-        updateFilterIndicator(filterValue, visibleCount);
-        
-        // Show/hide empty message
-        if (visibleCount === 0) {
-            if ($('#no-data-message').length === 0) {
-                $('#compareTable').after(`
-                    <div id="no-data-message" class="text-center py-4">
-                        <i class="fal fa-search fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Tidak ada data yang sesuai dengan filter</h5>
-                        <p class="text-muted">Silakan ubah filter untuk menampilkan data.</p>
-                    </div>
-                `);
-            }
-            $('#compareTable').hide();
-            $('#no-data-message').show();
-        } else {
-            $('#compareTable').show();
-            $('#no-data-message').hide();
-        }
-    }
-    
-    function updateFilterIndicator(filterValue, visibleCount) {
-        var $indicator = $('#filter-indicator');
-        
-        if (filterValue === '') {
-            $indicator.hide();
-        } else {
-            var filterText = '';
-            var badgeClass = 'badge-info';
-            
-            if (filterValue === 'ada_selisih') {
-                filterText = 'Filter: Ada Selisih';
-                badgeClass = 'badge-danger';
-            } else if (filterValue === 'tidak_ada_selisih') {
-                filterText = 'Filter: Tidak Ada Selisih';
-                badgeClass = 'badge-success';
-            }
-            
-            $indicator
-                .removeClass('badge-info badge-danger badge-success')
-                .addClass(badgeClass)
-                .text(filterText + ' (' + visibleCount + ' data)')
-                .show();
-        }
-    }
-    
-    // Event handler for filter change
-    $('#filter_selisih').on('change', function() {
-        applyFilter();
+        // Initialize DataTable dengan AJAX
+        initializeDataTable();
     });
     
-    // Initialize filter on page load
-    @if(!empty($compareData))
-        // Apply initial filter if set from URL
-        var urlParams = new URLSearchParams(window.location.search);
-        var filterParam = urlParams.get('filter_selisih');
-        if (filterParam) {
-            $('#filter_selisih').val(filterParam);
-        }
+    // Handle form submit for filters
+    $('form').on('submit', function(e) {
+        e.preventDefault();
+        const tanggal = $('#tanggal').val();
+        const filterSelisih = $('#filter_selisih').val();
         
-        // Apply filter on page load
-        applyFilter();
-    @endif
+        console.log('Form submit - Tanggal:', tanggal);
+        console.log('Form submit - Filter Selisih:', filterSelisih);
+        
+        if (tanggal && compareTable) {
+            // Update current URL parameters
+            const url = new URL(window.location);
+            url.searchParams.set('tanggal', tanggal);
+            if (filterSelisih !== '') {
+                url.searchParams.set('filter_selisih', filterSelisih);
+            } else {
+                url.searchParams.delete('filter_selisih');
+            }
+            window.history.pushState({}, '', url);
+            
+            console.log('Updated URL:', url.toString());
+            
+            // Reload DataTable with new filters
+            compareTable.ajax.reload(function(json) {
+                // Update statistics if available in response
+                updateStatistics(json);
+            });
+        }
+    });
     
-    // Remove auto-submit to prevent conflict with client-side filtering
-    // $('#filter_selisih').on('change', function() {
-    //     $(this).closest('form').submit();
-    // });
+    // Handle filter selisih change
+    $('#filter_selisih').on('change', function() {
+        const tanggal = $('#tanggal').val();
+        const filterSelisih = $(this).val();
+        
+        console.log('Filter selisih changed - Tanggal:', tanggal);
+        console.log('Filter selisih changed - Filter Selisih:', filterSelisih);
+        
+        if (tanggal && compareTable) {
+            // Update current URL parameters
+            const url = new URL(window.location);
+            url.searchParams.set('tanggal', tanggal);
+            if (filterSelisih !== '') {
+                url.searchParams.set('filter_selisih', filterSelisih);
+            } else {
+                url.searchParams.delete('filter_selisih');
+            }
+            window.history.pushState({}, '', url);
+            
+            console.log('Updated URL from filter change:', url.toString());
+            
+            // Reload DataTable with new filters
+            compareTable.ajax.reload(function(json) {
+                // Update statistics if available in response
+                updateStatistics(json);
+            });
+        }
+    });
 });
+
+function initializeDataTable() {
+    compareTable = $('#compareTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: '{{ base_url('rekon/process/detail-vs-rekap/datatable') }}',
+            type: 'GET',
+            data: function(d) {
+                // Add current filters
+                d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
+                d.filter_selisih = $('#filter_selisih').val();
+                console.log('DataTable request data:', d);
+                console.log('Filter Selisih:', d.filter_selisih);
+                return d;
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTable AJAX Error:', error, thrown, xhr.responseText);
+                if (xhr.status === 403 || xhr.status === 419) {
+                    console.log('CSRF error in DataTable, refreshing token...');
+                    refreshCSRFToken().then(function() {
+                        console.log('CSRF refreshed, reloading DataTable...');
+                        compareTable.ajax.reload();
+                    });
+                }
+            }
+        },
+        columns: [
+            { 
+                data: null,
+                name: 'no',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                }
+            },
+            { data: 'NAMA_GROUP', name: 'NAMA_GROUP' },
+            { 
+                data: 'FILE_SETTLE', 
+                name: 'FILE_SETTLE',
+                render: function(data, type, row) {
+                    const fileSettle = parseInt(data || 0);
+                    if (fileSettle === 0) {
+                        return '<span class="badge badge-primary">Detail</span>';
+                    } else {
+                        return '<span class="badge badge-info">Rekap</span>';
+                    }
+                }
+            },
+            { 
+                data: 'AMOUNT_DETAIL', 
+                name: 'AMOUNT_DETAIL',
+                className: 'text-end',
+                render: function(data, type, row) {
+                    const amount = parseFloat(String(data || 0).replace(/,/g, ''));
+                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+                }
+            },
+            { 
+                data: 'AMOUNT_REKAP', 
+                name: 'AMOUNT_REKAP',
+                className: 'text-end',
+                render: function(data, type, row) {
+                    const amount = parseFloat(String(data || 0).replace(/,/g, ''));
+                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+                }
+            },
+            { 
+                data: 'SELISIH', 
+                name: 'SELISIH',
+                className: 'text-end',
+                render: function(data, type, row) {
+                    const amount = parseFloat(String(data || 0).replace(/,/g, ''));
+                    const isNonZero = amount !== 0;
+                    const className = isNonZero ? 'text-danger fw-bold' : 'text-success';
+                    return '<span class="' + className + '">Rp ' + new Intl.NumberFormat('id-ID').format(amount) + '</span>';
+                }
+            }
+        ],
+        pageLength: 25,
+        lengthMenu: [[25, 50, 100, 200], [25, 50, 100, 200]],
+        order: [[1, 'asc']],
+        language: {
+            processing: "Memuat data...",
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ data per halaman",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(difilter dari _MAX_ total data)",
+            paginate: {
+                first: "Pertama",
+                last: "Terakhir",
+                next: "Selanjutnya",
+                previous: "Sebelumnya"
+            },
+            emptyTable: "Tidak ada data yang tersedia",
+            zeroRecords: "Tidak ditemukan data yang sesuai"
+        },
+        responsive: true,
+        searching: false,
+        dom: '<"row"<"col-sm-12">>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-5"i><"col-sm-7"p>>'
+    });
+}
+
+function updateStatistics(json) {
+    // Update the statistics display based on current filter
+    if (json && json.data) {
+        const data = json.data;
+        const total = data.length;
+        let countAdaSelisih = 0;
+        let countTidakAdaSelisih = 0;
+        
+        console.log('UpdateStatistics - Data received:', data);
+        console.log('UpdateStatistics - Total records:', total);
+        
+        data.forEach(function(item, index) {
+            const selisih = parseFloat(String(item.SELISIH || 0).replace(/,/g, ''));
+            console.log('Item', index, '- SELISIH:', item.SELISIH, 'Parsed:', selisih);
+            if (selisih !== 0) {
+                countAdaSelisih++;
+            } else {
+                countTidakAdaSelisih++;
+            }
+        });
+        
+        console.log('UpdateStatistics - Ada Selisih:', countAdaSelisih);
+        console.log('UpdateStatistics - Tidak Ada Selisih:', countTidakAdaSelisih);
+        
+        const akurasi = total > 0 ? Math.round((countTidakAdaSelisih / total) * 100 * 10) / 10 : 0;
+        
+        // Update the displayed statistics (note: these show filtered data, not total data)
+        $('#stat-total').text(json.recordsFiltered || total);
+        $('#stat-ada-selisih').text(countAdaSelisih);
+        $('#stat-tidak-ada-selisih').text(countTidakAdaSelisih);
+        $('#stat-akurasi').text(akurasi + '%');
+    }
+}
+
+function formatNumber(num) {
+    // Convert string to number first, removing any existing commas
+    const cleanNum = parseFloat(String(num).replace(/,/g, '')) || 0;
+    return new Intl.NumberFormat('id-ID').format(cleanNum);
+}
+
+function showAlert(type, message) {
+    let alertClass = 'alert-info';
+    let icon = 'fa-info-circle';
+    
+    switch(type) {
+        case 'success':
+            alertClass = 'alert-success';
+            icon = 'fa-check-circle';
+            break;
+        case 'error':
+            alertClass = 'alert-danger';
+            icon = 'fa-exclamation-circle';
+            break;
+        case 'warning':
+            alertClass = 'alert-warning';
+            icon = 'fa-exclamation-triangle';
+            break;
+    }
+    
+    let alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            <i class="fal ${icon}"></i> ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    `;
+    
+    $('.subheader').after(alertHtml);
+    
+    // Auto hide success alerts
+    if (type === 'success') {
+        setTimeout(function() {
+            $('.alert-success').fadeOut();
+        }, 3000);
+    }
+}
 </script>
 @endpush
 
@@ -334,6 +517,10 @@ $(document).ready(function() {
 
 .badge-info {
     background-color: #17a2b8;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
 }
 </style>
 @endpush

@@ -80,6 +80,8 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     
     // Process Controller - untuk Tahap 3 - Proses Rekonsiliasi menu features
     $routes->get('process/detail-vs-rekap', 'RekonProcessController::detailVsRekap', ['as' => 'rekon.process.detail-vs-rekap']);
+    $routes->get('process/detail-vs-rekap/datatable', 'RekonProcessController::detailVsRekapDataTable', ['as' => 'rekon.process.detail-vs-rekap.datatable']);
+    $routes->post('process/detail-vs-rekap/datatable', 'RekonProcessController::detailVsRekapDataTable', ['as' => 'rekon.process.detail-vs-rekap.datatable.post']);
     $routes->get('process/direct-jurnal-rekap', 'RekonProcessController::directJurnalRekap', ['as' => 'rekon.process.direct-jurnal-rekap']);
     $routes->get('process/penyelesaian-dispute', 'RekonProcessController::disputeResolution', ['as' => 'rekon.process.penyelesaian-dispute']);
     
