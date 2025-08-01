@@ -208,6 +208,11 @@ class RekonProcessController extends BaseController
     {
         // Get parameters from both GET and POST to handle DataTables requests
         $tanggalRekon = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $statusBiller = $this->request->getGet('status_biller') ?? $this->request->getPost('status_biller') ?? '';
+        $statusCore = $this->request->getGet('status_core') ?? $this->request->getPost('status_core') ?? '';
+        
+        // Debug log
+        log_message('info', 'DataTable parameters - Tanggal: ' . $tanggalRekon . ', Status Biller: ' . $statusBiller . ', Status Core: ' . $statusCore);
         
         // DataTables parameters
         $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
@@ -247,9 +252,21 @@ class RekonProcessController extends BaseController
                 WHERE v_TGL_FILE_REKON = ?
             ";
             
+            // Add status filters
+            $queryParams = [$tanggalRekon];
+            if ($statusBiller !== '') {
+                $baseQuery .= " AND STATUS = ?";
+                $queryParams[] = $statusBiller;
+                log_message('info', 'Adding status_biller filter: ' . $statusBiller);
+            }
+            if ($statusCore !== '') {
+                $baseQuery .= " AND v_STAT_CORE_AGR = ?";
+                $queryParams[] = $statusCore;
+                log_message('info', 'Adding status_core filter: ' . $statusCore);
+            }
+            
             // Add search conditions
             $searchConditions = [];
-            $searchParams = [$tanggalRekon];
             
             if (!empty($searchValue)) {
                 $searchConditions[] = "(
@@ -260,29 +277,54 @@ class RekonProcessController extends BaseController
                     CAST(RP_BILLER_TAG AS CHAR) LIKE ?
                 )";
                 $searchTerm = "%{$searchValue}%";
-                $searchParams = array_merge($searchParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+                $queryParams = array_merge($queryParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
             }
             
             if (!empty($searchConditions)) {
                 $baseQuery .= " AND " . implode(" AND ", $searchConditions);
             }
             
-            // Count total records without filtering
+            // Count total records without filtering (but with status filters)
             $totalQuery = "
                 SELECT COUNT(*) as total 
                 FROM v_cek_biller_dispute_direct 
                 WHERE v_TGL_FILE_REKON = ?
             ";
-            $totalResult = $db->query($totalQuery, [$tanggalRekon]);
+            $totalParams = [$tanggalRekon];
+            if ($statusBiller !== '') {
+                $totalQuery .= " AND STATUS = ?";
+                $totalParams[] = $statusBiller;
+            }
+            if ($statusCore !== '') {
+                $totalQuery .= " AND v_STAT_CORE_AGR = ?";
+                $totalParams[] = $statusCore;
+            }
+            $totalResult = $db->query($totalQuery, $totalParams);
             $totalRecords = $totalResult->getRow()->total;
             
-            // Count filtered records
+            // Count filtered records (with status filters and search)
             if (!empty($searchConditions)) {
                 $filteredQuery = "
                     SELECT COUNT(*) as total 
                     FROM v_cek_biller_dispute_direct 
-                    WHERE v_TGL_FILE_REKON = ? AND " . implode(" AND ", $searchConditions);
-                $filteredResult = $db->query($filteredQuery, $searchParams);
+                    WHERE v_TGL_FILE_REKON = ?
+                ";
+                $filteredParams = [$tanggalRekon];
+                if ($statusBiller !== '') {
+                    $filteredQuery .= " AND STATUS = ?";
+                    $filteredParams[] = $statusBiller;
+                }
+                if ($statusCore !== '') {
+                    $filteredQuery .= " AND v_STAT_CORE_AGR = ?";
+                    $filteredParams[] = $statusCore;
+                }
+                $filteredQuery .= " AND " . implode(" AND ", $searchConditions);
+                // Add search parameters
+                if (!empty($searchValue)) {
+                    $searchTerm = "%{$searchValue}%";
+                    $filteredParams = array_merge($filteredParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+                }
+                $filteredResult = $db->query($filteredQuery, $filteredParams);
                 $filteredRecords = $filteredResult->getRow()->total;
             } else {
                 $filteredRecords = $totalRecords;
@@ -300,8 +342,12 @@ class RekonProcessController extends BaseController
             // Add pagination
             $baseQuery .= " LIMIT {$length} OFFSET {$start}";
             
+            // Log the final query and parameters
+            log_message('info', 'Final query: ' . $baseQuery);
+            log_message('info', 'Query parameters: ' . json_encode($queryParams));
+            
             // Execute query
-            $result = $db->query($baseQuery, $searchParams);
+            $result = $db->query($baseQuery, $queryParams);
             $data = $result->getResultArray();
             
             // Format data for DataTables

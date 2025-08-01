@@ -30,12 +30,29 @@
             <div class="card-body">
                 <form method="GET" action="{{ current_url() }}">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="tanggal" class="form-label">Tanggal Rekonsiliasi</label>
                             <input type="date" class="form-control" id="tanggal" name="tanggal" 
                                    value="{{ $tanggalRekon }}" required>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
+                        <div class="col-md-3">
+                            <label for="filter_status_biller" class="form-label">Status Biller</label>
+                            <select class="form-control" id="filter_status_biller" name="status_biller">
+                                <option value="">Semua Status</option>
+                                <option value="0" @if(request()->getGet('status_biller') == '0') selected @endif>Pending</option>
+                                <option value="1" @if(request()->getGet('status_biller') == '1') selected @endif>Sukses</option>
+                                <option value="2" @if(request()->getGet('status_biller') == '2') selected @endif>Gagal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filter_status_core" class="form-label">Status Core</label>
+                            <select class="form-control" id="filter_status_core" name="status_core">
+                                <option value="">Semua Status</option>
+                                <option value="0" @if(request()->getGet('status_core') == '0') selected @endif>Tidak Terdebet</option>
+                                <option value="1" @if(request()->getGet('status_core') == '1') selected @endif>Terdebet</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
@@ -370,13 +387,32 @@ $(document).ready(function() {
     $('form').on('submit', function(e) {
         e.preventDefault();
         const tanggal = $('#tanggal').val();
+        const statusBiller = $('#filter_status_biller').val();
+        const statusCore = $('#filter_status_core').val();
+        
+        console.log('Form submit - Tanggal:', tanggal);
+        console.log('Form submit - Status Biller:', statusBiller);
+        console.log('Form submit - Status Core:', statusCore);
+        
         if (tanggal && disputeTable) {
-            // Update current URL parameter
+            // Update current URL parameters
             const url = new URL(window.location);
             url.searchParams.set('tanggal', tanggal);
+            if (statusBiller !== '') {
+                url.searchParams.set('status_biller', statusBiller);
+            } else {
+                url.searchParams.delete('status_biller');
+            }
+            if (statusCore !== '') {
+                url.searchParams.set('status_core', statusCore);
+            } else {
+                url.searchParams.delete('status_core');
+            }
             window.history.pushState({}, '', url);
             
-            // Reload DataTable with new date
+            console.log('Updated URL:', url.toString());
+            
+            // Reload DataTable with new filters
             disputeTable.ajax.reload();
         }
     });
@@ -392,7 +428,12 @@ function initializeDataTable() {
             data: function(d) {
                 // Add current date filter
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
+                // Add status filters
+                d.status_biller = $('#filter_status_biller').val();
+                d.status_core = $('#filter_status_core').val();
                 console.log('DataTable request data:', d);
+                console.log('Status Biller:', d.status_biller);
+                console.log('Status Core:', d.status_core);
                 return d;
             },
             error: function(xhr, error, thrown) {
