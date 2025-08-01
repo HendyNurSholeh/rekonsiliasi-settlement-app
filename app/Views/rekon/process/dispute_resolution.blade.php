@@ -57,65 +57,27 @@
                 </h5>
             </div>
             <div class="card-body">
-                @if(!empty($disputeData))
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover" id="disputeTable">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>ID Partner</th>
-                                    <th>Terminal ID</th>
-                                    <th>Produk</th>
-                                    <th>ID Pelanggan</th>
-                                    <th>RP Biller Tag</th>
-                                    <th>Status Biller</th>
-                                    <th>Status Core</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($disputeData as $index => $item)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $item['IDPARTNER'] ?? '' }}</td>
-                                    <td>{{ $item['TERMINALID'] ?? '' }}</td>
-                                    <td><code>{{ $item['PRODUK'] ?? '' }}</code></td>
-                                    <td>{{ $item['IDPEL'] ?? '' }}</td>
-                                    <td>Rp {{ number_format((float)str_replace(',', '', $item['RP_BILLER_TAG'] ?? 0), 0, ',', '.') }}</td>
-                                    <td>
-                                        @php
-                                            $statusBiller = $item['STATUS_BILLER'] ?? 0;
-                                        @endphp
-                                        @if($statusBiller == 0)
-                                            <span class="badge text-white" style="background-color: #f9911b;">Pending</span>
-                                        @elseif($statusBiller == 1)
-                                            <span class="badge badge-success">Sukses</span>
-                                        @else
-                                            <span class="badge badge-danger">Gagal</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @php
-                                            $statusCore = $item['STATUS_CORE'] ?? 0;
-                                        @endphp
-                                        @if($statusCore == 0)
-                                            <span class="badge badge-danger">Tidak Terdebet</span>
-                                        @else
-                                            <span class="badge badge-primary">Terdebet</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-sm btn-primary btn-proses" 
-                                                data-id="{{ $item['v_ID'] ?? '' }}">
-                                            <i class="fal fa-tools"></i> Proses
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="disputeTable">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>No</th>
+                                <th>ID Partner</th>
+                                <th>Terminal ID</th>
+                                <th>Produk</th>
+                                <th>ID Pelanggan</th>
+                                <th>RP Biller Tag</th>
+                                <th>Status Biller</th>
+                                <th>Status Core</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data akan dimuat via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+                @if(empty($disputeData))
                     <div class="text-center py-4">
                         <i class="fal fa-inbox fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">Tidak ada data ditemukan</h5>
@@ -392,18 +354,155 @@ function refreshCSRFToken() {
     });
 }
 
+// DataTable instance
+let disputeTable;
+
 $(document).ready(function() {
     // Refresh CSRF token saat page load untuk memastikan token fresh
     refreshCSRFToken().then(function() {
         console.log('CSRF token refreshed on page load');
+        
+        // Initialize DataTable dengan AJAX
+        initializeDataTable();
     });
     
-    // Simple onClick event handler for Proses buttons
-    $('.btn-proses').on('click', function() {
-        const id = $(this).data('id');
-        openDisputeModal(id);
+    // Handle form submit for date filter
+    $('form').on('submit', function(e) {
+        e.preventDefault();
+        const tanggal = $('#tanggal').val();
+        if (tanggal && disputeTable) {
+            // Update current URL parameter
+            const url = new URL(window.location);
+            url.searchParams.set('tanggal', tanggal);
+            window.history.pushState({}, '', url);
+            
+            // Reload DataTable with new date
+            disputeTable.ajax.reload();
+        }
     });
 });
+
+function initializeDataTable() {
+    disputeTable = $('#disputeTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: '{{ base_url('rekon/process/direct-jurnal/dispute/datatable') }}',
+            type: 'GET',
+            data: function(d) {
+                // Add current date filter
+                d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
+                console.log('DataTable request data:', d);
+                return d;
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTable AJAX Error:', error, thrown, xhr.responseText);
+                if (xhr.status === 403 || xhr.status === 419) {
+                    console.log('CSRF error in DataTable, refreshing token...');
+                    refreshCSRFToken().then(function() {
+                        console.log('CSRF refreshed, reloading DataTable...');
+                        disputeTable.ajax.reload();
+                    });
+                }
+            }
+        },
+        columns: [
+            { 
+                data: null,
+                name: 'no',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                }
+            },
+            { data: 'IDPARTNER', name: 'IDPARTNER' },
+            { data: 'TERMINALID', name: 'TERMINALID' },
+            { 
+                data: 'PRODUK', 
+                name: 'PRODUK',
+                render: function(data, type, row) {
+                    return '<code>' + (data || '') + '</code>';
+                }
+            },
+            { data: 'IDPEL', name: 'IDPEL' },
+            { 
+                data: 'RP_BILLER_TAG', 
+                name: 'RP_BILLER_TAG',
+                render: function(data, type, row) {
+                    const amount = parseFloat(String(data || 0).replace(/,/g, ''));
+                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+                }
+            },
+            { 
+                data: 'STATUS_BILLER', 
+                name: 'STATUS_BILLER',
+                render: function(data, type, row) {
+                    const status = parseInt(data || 0);
+                    if (status === 0) {
+                        return '<span class="badge text-white" style="background-color: #f9911b;">Pending</span>';
+                    } else if (status === 1) {
+                        return '<span class="badge badge-success">Sukses</span>';
+                    } else {
+                        return '<span class="badge badge-danger">Gagal</span>';
+                    }
+                }
+            },
+            { 
+                data: 'STATUS_CORE', 
+                name: 'STATUS_CORE',
+                render: function(data, type, row) {
+                    const status = parseInt(data || 0);
+                    if (status === 0) {
+                        return '<span class="badge badge-danger">Tidak Terdebet</span>';
+                    } else {
+                        return '<span class="badge badge-primary">Terdebet</span>';
+                    }
+                }
+            },
+            { 
+                data: 'v_ID', 
+                name: 'action',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    return '<button type="button" class="btn btn-sm btn-primary btn-proses" data-id="' + (data || '') + '">' +
+                           '<i class="fal fa-tools"></i> Proses</button>';
+                }
+            }
+        ],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        order: [[0, 'asc']],
+        language: {
+            processing: "Memuat data...",
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ data per halaman",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(difilter dari _MAX_ total data)",
+            paginate: {
+                first: "Pertama",
+                last: "Terakhir",
+                next: "Selanjutnya",
+                previous: "Sebelumnya"
+            },
+            emptyTable: "Tidak ada data yang tersedia",
+            zeroRecords: "Tidak ditemukan data yang sesuai"
+        },
+        responsive: true,
+        dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+        drawCallback: function(settings) {
+            // Re-attach event handlers untuk button yang baru di-render
+            $('.btn-proses').off('click').on('click', function() {
+                const id = $(this).data('id');
+                openDisputeModal(id);
+            });
+        }
+    });
+}
 
 function openDisputeModal(id) {
     if (!id) {
@@ -497,10 +596,10 @@ function saveDispute() {
                 if (response.success) {
                     showAlert('success', response.message);
                     $('#disputeModal').modal('hide');
-                    // Reload page to refresh data
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
+                    // Reload DataTable instead of page
+                    if (disputeTable) {
+                        disputeTable.ajax.reload();
+                    }
                 } else {
                     showAlert('error', response.message);
                 }

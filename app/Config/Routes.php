@@ -86,6 +86,8 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     // Dispute resolution AJAX routes
     $routes->post('process/direct-jurnal/dispute/detail', 'RekonProcessController::getDisputeDetail', ['as' => 'rekon.process.dispute.detail']);
     $routes->post('process/direct-jurnal/dispute/update', 'RekonProcessController::updateDispute', ['as' => 'rekon.process.dispute.update']);
+    $routes->get('process/direct-jurnal/dispute/datatable', 'RekonProcessController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable']);
+    $routes->post('process/direct-jurnal/dispute/datatable', 'RekonProcessController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable.post']);
     
     // CSRF Token refresh route
     $routes->get('process/get-csrf-token', 'RekonProcessController::getCSRFToken', ['as' => 'rekon.process.csrf-token']);

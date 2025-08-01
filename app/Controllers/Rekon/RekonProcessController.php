@@ -202,6 +202,145 @@ class RekonProcessController extends BaseController
     }
 
     /**
+     * DataTables AJAX endpoint for dispute resolution
+     */
+    public function disputeDataTable()
+    {
+        // Get parameters from both GET and POST to handle DataTables requests
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
+        
+        // DataTables parameters
+        $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
+        $start = $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0;
+        $length = $this->request->getGet('length') ?? $this->request->getPost('length') ?? 25;
+        
+        // Handle search parameter
+        $searchArray = $this->request->getGet('search') ?? $this->request->getPost('search') ?? [];
+        $searchValue = isset($searchArray['value']) ? $searchArray['value'] : '';
+        
+        // Handle order parameter
+        $orderArray = $this->request->getGet('order') ?? $this->request->getPost('order') ?? [];
+        $orderColumn = isset($orderArray[0]['column']) ? $orderArray[0]['column'] : 0;
+        $orderDir = isset($orderArray[0]['dir']) ? $orderArray[0]['dir'] : 'asc';
+
+        // Column mapping
+        $columns = [
+            0 => 'v_ID', // For row number (not actual column)
+            1 => 'IDPARTNER',
+            2 => 'TERMINALID', 
+            3 => 'v_GROUP_PRODUK',
+            4 => 'IDPEL',
+            5 => 'RP_BILLER_TAG',
+            6 => 'STATUS',
+            7 => 'v_STAT_CORE_AGR',
+            8 => 'v_ID' // For action column
+        ];
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Base query
+            $baseQuery = "
+                SELECT IDPARTNER, TERMINALID, v_GROUP_PRODUK AS PRODUK, IDPEL, 
+                       RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE, v_ID
+                FROM v_cek_biller_dispute_direct 
+                WHERE v_TGL_FILE_REKON = ?
+            ";
+            
+            // Add search conditions
+            $searchConditions = [];
+            $searchParams = [$tanggalRekon];
+            
+            if (!empty($searchValue)) {
+                $searchConditions[] = "(
+                    IDPARTNER LIKE ? OR 
+                    TERMINALID LIKE ? OR 
+                    v_GROUP_PRODUK LIKE ? OR 
+                    IDPEL LIKE ? OR 
+                    CAST(RP_BILLER_TAG AS CHAR) LIKE ?
+                )";
+                $searchTerm = "%{$searchValue}%";
+                $searchParams = array_merge($searchParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+            }
+            
+            if (!empty($searchConditions)) {
+                $baseQuery .= " AND " . implode(" AND ", $searchConditions);
+            }
+            
+            // Count total records without filtering
+            $totalQuery = "
+                SELECT COUNT(*) as total 
+                FROM v_cek_biller_dispute_direct 
+                WHERE v_TGL_FILE_REKON = ?
+            ";
+            $totalResult = $db->query($totalQuery, [$tanggalRekon]);
+            $totalRecords = $totalResult->getRow()->total;
+            
+            // Count filtered records
+            if (!empty($searchConditions)) {
+                $filteredQuery = "
+                    SELECT COUNT(*) as total 
+                    FROM v_cek_biller_dispute_direct 
+                    WHERE v_TGL_FILE_REKON = ? AND " . implode(" AND ", $searchConditions);
+                $filteredResult = $db->query($filteredQuery, $searchParams);
+                $filteredRecords = $filteredResult->getRow()->total;
+            } else {
+                $filteredRecords = $totalRecords;
+            }
+            
+            // Add ordering
+            if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 8) {
+                $orderColumnName = $columns[$orderColumn];
+                if ($orderColumn == 3) $orderColumnName = 'v_GROUP_PRODUK'; // Handle alias
+                $baseQuery .= " ORDER BY {$orderColumnName} {$orderDir}";
+            } else {
+                $baseQuery .= " ORDER BY v_ID ASC";
+            }
+            
+            // Add pagination
+            $baseQuery .= " LIMIT {$length} OFFSET {$start}";
+            
+            // Execute query
+            $result = $db->query($baseQuery, $searchParams);
+            $data = $result->getResultArray();
+            
+            // Format data for DataTables
+            $formattedData = [];
+            foreach ($data as $row) {
+                $formattedData[] = [
+                    'IDPARTNER' => $row['IDPARTNER'] ?? '',
+                    'TERMINALID' => $row['TERMINALID'] ?? '',
+                    'PRODUK' => $row['PRODUK'] ?? '',
+                    'IDPEL' => $row['IDPEL'] ?? '',
+                    'RP_BILLER_TAG' => $row['RP_BILLER_TAG'] ?? '0',
+                    'STATUS_BILLER' => $row['STATUS_BILLER'] ?? '0',
+                    'STATUS_CORE' => $row['STATUS_CORE'] ?? '0',
+                    'v_ID' => $row['v_ID'] ?? ''
+                ];
+            }
+            
+            return $this->response->setJSON([
+                'draw' => intval($draw),
+                'recordsTotal' => intval($totalRecords),
+                'recordsFiltered' => intval($filteredRecords),
+                'data' => $formattedData,
+                'csrf_token' => csrf_hash()
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in disputeDataTable: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'draw' => intval($draw),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Terjadi kesalahan saat mengambil data',
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
      * Get fresh CSRF token
      */
     public function getCSRFToken()
