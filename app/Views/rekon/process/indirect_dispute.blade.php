@@ -31,22 +31,24 @@
                 <form method="GET" action="{{ current_url() }}">
                     <div class="row">
                         <div class="col-md-3">
-                            <label for="tanggal" class="form-label">Tanggal Rekonsiliasi</label>
+                            <label for="tanggal" class="form-label">Tanggal Rekonsiliasi <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="tanggal" name="tanggal" 
                                    value="{{ $tanggalRekon }}" required>
                         </div>
                         <div class="col-md-3">
-                            <label for="filterPartner" class="form-label">Partner</label>
-                            <select class="form-control" id="filterPartner" name="partner">
-                                <option value="">Semua Partner</option>
-                                <!-- Options akan diisi via AJAX atau dari controller -->
+                            <label for="status_biller" class="form-label">Status Biller</label>
+                            <select class="form-control" id="status_biller" name="status_biller">
+                                <option value="">Semua Status</option>
+                                <option value="0">Pending</option>
+                                <option value="1">Sukses</option>
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label for="filterProduk" class="form-label">Group Produk</label>
-                            <select class="form-control" id="filterProduk" name="produk">
-                                <option value="">Semua Produk</option>
-                                <!-- Options akan diisi via AJAX atau dari controller -->
+                            <label for="status_core" class="form-label">Status Core</label>
+                            <select class="form-control" id="status_core" name="status_core">
+                                <option value="">Semua Status</option>
+                                <option value="0">Tidak Terdebet</option>
+                                <option value="1">Terdebet</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -79,16 +81,13 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>No</th>
-                                <th>ID</th>
-                                <th>Tanggal Rekon</th>
                                 <th>Partner</th>
                                 <th>Terminal ID</th>
-                                <th>Group Produk</th>
+                                <th>Produk</th>
                                 <th>IDPEL</th>
                                 <th>RP Biller Tag</th>
                                 <th>Status Biller</th>
-                                <th>Stat Core AGR</th>
-                                <th>Settle RP Tag</th>
+                                <th>Status Core</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -102,117 +101,198 @@
     </div>
 </div>
 
-<!-- Modal Detail Dispute -->
-<div class="modal fade" id="modalDetailDispute" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
+<!-- Modal Proses Data Dispute -->
+<div class="modal fade" id="modalProsesDispute" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fal fa-eye"></i> Detail Dispute
+                    <i class="fal fa-cogs"></i> Proses Data Dispute
                 </h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
-                <div id="detailContent">
-                    <!-- Content akan diisi via AJAX -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Update Dispute -->
-<div class="modal fade" id="modalUpdateDispute" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fal fa-edit"></i> Update Dispute
-                </h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form id="formUpdateDispute">
+            <form id="formProsesDispute">
                 <div class="modal-body">
-                    <input type="hidden" id="updateDisputeId" name="dispute_id">
+                    <input type="hidden" id="prosesVId" name="v_id">
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="updatePartner">Partner</label>
-                                <input type="text" class="form-control" id="updatePartner" readonly>
-                            </div>
+                    <!-- Data Transaksi -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fal fa-info-circle"></i> A. Data Transaksi</h6>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="updateTerminalID">Terminal ID</label>
-                                <input type="text" class="form-control" id="updateTerminalID" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="updateTanggalRekon">Tanggal Rekon</label>
-                                <input type="text" class="form-control" id="updateTanggalRekon" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="updateGroupProduk">Group Produk</label>
-                                <input type="text" class="form-control" id="updateGroupProduk" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="updateIDPEL">IDPEL</label>
-                                <input type="text" class="form-control" id="updateIDPEL" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="updateAmount">RP Biller Tag</label>
-                                <input type="text" class="form-control" id="updateAmount" readonly>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Partner</label>
+                                        <input type="text" class="form-control" id="prosesPartner" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Terminal ID</label>
+                                        <input type="text" class="form-control" id="prosesTerminalID" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Group Produk</label>
+                                        <input type="text" class="form-control" id="prosesGroupProduk" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>IDPEL</label>
+                                        <input type="text" class="form-control" id="prosesIDPEL" readonly>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="updateStatus">Status Dispute <span class="text-danger">*</span></label>
-                        <select class="form-control" id="updateStatus" name="status" required>
-                            <option value="">Pilih Status</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="RESOLVED">Resolved</option>
-                        </select>
+                    <!-- Data Tagihan -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fal fa-money-bill"></i> B. Data Tagihan</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>RP Biller Pokok</label>
+                                        <input type="text" class="form-control" id="prosesBillerPokok" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>RP Biller Denda</label>
+                                        <input type="text" class="form-control" id="prosesBillerDenda" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>RP Biller Tag</label>
+                                        <input type="text" class="form-control" id="prosesBillerTag" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="updateKeterangan">Keterangan <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="updateKeterangan" name="keterangan" rows="4" 
-                                  placeholder="Masukkan keterangan penyelesaian dispute..." required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="updateTindakLanjut">Tindak Lanjut</label>
-                        <textarea class="form-control" id="updateTindakLanjut" name="tindak_lanjut" rows="3" 
-                                  placeholder="Tindak lanjut yang diperlukan (opsional)"></textarea>
+                    <!-- Status Rekonsiliasi -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="fal fa-cog"></i> Status Rekonsiliasi</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- IDPARTNER Select -->
+                                <div class="col-md-12 mb-3">
+                                    <div class="form-group">
+                                        <label for="prosesIDPartnerSelect">IDPARTNER <span class="text-danger">*</span></label>
+                                        <select class="form-control" id="prosesIDPartnerSelect" name="idpartner" required>
+                                            <option value="">Pilih Partner</option>
+                                            <option value="CHANNEL KON">CHANNEL KON</option>
+                                            <option value="CHANNEL SYA">CHANNEL SYA</option>
+                                            <option value="VA DIGITAL KON">VA DIGITAL KON</option>
+                                            <option value="VA DIGITAL SYA">VA DIGITAL SYA</option>
+                                            <option value="PPOB KON">PPOB KON</option>
+                                            <option value="PPOB SYA">PPOB SYA</option>
+                                            <option value="MITRACOMM">MITRACOMM</option>
+                                            <option value="POS INDONESIA">POS INDONESIA</option>
+                                            <option value="GO-PAY">GO-PAY</option>
+                                            <option value="ARTAJASA">ARTAJASA</option>
+                                            <option value="PDAM BARITO KUALA">PDAM BARITO KUALA</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <!-- STATUS BILLER -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Status Biller <span class="text-danger">*</span></label>
+                                        <div class="mt-2">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="status_biller" id="statusBiller1" value="1" required>
+                                                <label class="form-check-label" for="statusBiller1">
+                                                    <span class="badge badge-success">Sukses (1)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="status_biller" id="statusBiller0" value="0" required>
+                                                <label class="form-check-label" for="statusBiller0">
+                                                    <span class="badge badge-warning">Pending (0)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="status_biller" id="statusBiller2" value="2" required>
+                                                <label class="form-check-label" for="statusBiller2">
+                                                    <span class="badge badge-danger">Gagal (2)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- STATUS CORE -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Status Core <span class="text-danger">*</span></label>
+                                        <div class="mt-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="status_core" id="statusCore1" value="1" required>
+                                                <label class="form-check-label" for="statusCore1">
+                                                    <span class="badge badge-info">Terdebet (1)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="status_core" id="statusCore0" value="0" required>
+                                                <label class="form-check-label" for="statusCore0">
+                                                    <span class="badge badge-danger">Tidak Terdebet (0)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- STATUS SETTLEMENT -->
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Status Settlement <span class="text-danger">*</span></label>
+                                        <div class="mt-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement1" value="1" required>
+                                                <label class="form-check-label" for="statusSettlement1">
+                                                    <span class="badge badge-primary">Dilimpahkan (1)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement9" value="9" required>
+                                                <label class="form-check-label" for="statusSettlement9">
+                                                    <span class="badge badge-danger">Transaksi Gagal (9)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement8" value="8" required>
+                                                <label class="form-check-label" for="statusSettlement8">
+                                                    <span class="badge badge-secondary">Transaksi di Revershal (8)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fal fa-save"></i> Update Dispute
+                    <button type="submit" class="btn btn-success">
+                        <i class="fal fa-save"></i> Proses Data Dispute
                     </button>
                 </div>
             </form>
@@ -317,14 +397,20 @@ $(document).ready(function() {
         }
     });
     
-    // Handle form submit for update dispute
-    $('#formUpdateDispute').on('submit', function(e) {
+    // Handle form submit for proses dispute
+    $('#formProsesDispute').on('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
-        const disputeId = $('#updateDisputeId').val();
+        const vId = $('#prosesVId').val();
         
-        console.log('Submitting update dispute for ID:', disputeId);
+        console.log('Submitting proses dispute for v_ID:', vId);
+        
+        // Validasi form
+        if (!formData.get('idpartner') || !formData.get('status_biller') || !formData.get('status_core') || !formData.get('status_settlement')) {
+            showAlert('error', 'Harap lengkapi semua field yang diperlukan');
+            return;
+        }
         
         $.ajax({
             url: '{{ base_url('rekon/process/indirect-dispute/update') }}',
@@ -333,19 +419,19 @@ $(document).ready(function() {
             processData: false,
             contentType: false,
             success: function(response) {
-                console.log('Update response:', response);
+                console.log('Proses response:', response);
                 
                 if (response.success) {
                     showAlert('success', response.message);
-                    $('#modalUpdateDispute').modal('hide');
+                    $('#modalProsesDispute').modal('hide');
                     disputeTable.ajax.reload();
                 } else {
                     showAlert('error', response.message);
                 }
             },
             error: function(xhr) {
-                console.error('Update error:', xhr.responseText);
-                showAlert('error', 'Terjadi kesalahan saat memproses update dispute');
+                console.error('Proses error:', xhr.responseText);
+                showAlert('error', 'Terjadi kesalahan saat memproses data dispute');
             }
         });
     });
@@ -359,10 +445,10 @@ function initializeDataTable() {
             url: '{{ base_url('rekon/process/indirect-dispute/datatable') }}',
             type: 'GET',
             data: function(d) {
-                // Add current filters
+                // Add current filters sesuai arahan senior
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
-                d.partner = $('#filterPartner').val();
-                d.produk = $('#filterProduk').val();
+                d.status_biller = $('#status_biller').val();
+                d.status_core = $('#status_core').val();
                 
                 console.log('DataTable request data:', d);
                 return d;
@@ -388,21 +474,9 @@ function initializeDataTable() {
                     return meta.row + meta.settings._iDisplayStart + 1;
                 }
             },
-            { data: 'v_ID', name: 'v_ID' },
-            { 
-                data: 'v_TGL_FILE_REKON', 
-                name: 'v_TGL_FILE_REKON',
-                render: function(data, type, row) {
-                    if (data) {
-                        const date = new Date(data);
-                        return date.toLocaleDateString('id-ID');
-                    }
-                    return '-';
-                }
-            },
             { data: 'IDPARTNER', name: 'IDPARTNER' },
             { data: 'TERMINALID', name: 'TERMINALID' },
-            { data: 'v_GROUP_PRODUK', name: 'v_GROUP_PRODUK' },
+            { data: 'PRODUK', name: 'PRODUK' },
             { data: 'IDPEL', name: 'IDPEL' },
             { 
                 data: 'RP_BILLER_TAG', 
@@ -414,45 +488,35 @@ function initializeDataTable() {
                 }
             },
             { 
-                data: 'STATUS', 
-                name: 'STATUS',
-                className: 'text-center',
-                render: function(data, type, row) {
-                    let badgeClass = 'badge-danger';
-                    let statusText = data == 1 ? 'SUKSES' : 'GAGAL';
-                    
-                    if (data == 1) {
-                        badgeClass = 'badge-success';
-                    }
-                    
-                    return '<span class="badge ' + badgeClass + '">' + statusText + '</span>';
-                }
-            },
-            { 
-                data: 'v_STAT_CORE_AGR', 
-                name: 'v_STAT_CORE_AGR',
+                data: 'STATUS_BILLER', 
+                name: 'STATUS_BILLER',
                 className: 'text-center',
                 render: function(data, type, row) {
                     let badgeClass = 'badge-warning';
-                    let statusText = data == 1 ? 'AGREE' : 'NOT AGREE';
+                    let statusText = 'Pending';
                     
                     if (data == 1) {
-                        badgeClass = 'badge-info';
+                        badgeClass = 'badge-success';
+                        statusText = 'Sukses';
                     }
                     
                     return '<span class="badge ' + badgeClass + '">' + statusText + '</span>';
                 }
             },
             { 
-                data: 'v_SETTLE_RP_TAG', 
-                name: 'v_SETTLE_RP_TAG',
-                className: 'text-end',
+                data: 'STATUS_CORE', 
+                name: 'STATUS_CORE',
+                className: 'text-center',
                 render: function(data, type, row) {
-                    if (data !== null && data !== undefined) {
-                        const amount = parseFloat(String(data).replace(/,/g, ''));
-                        return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+                    let badgeClass = 'badge-danger';
+                    let statusText = 'Tidak Terdebet';
+                    
+                    if (data == 1) {
+                        badgeClass = 'badge-info';
+                        statusText = 'Terdebet';
                     }
-                    return '<span class="text-muted">-</span>';
+                    
+                    return '<span class="badge ' + badgeClass + '">' + statusText + '</span>';
                 }
             },
             { 
@@ -463,21 +527,16 @@ function initializeDataTable() {
                 className: 'text-center',
                 render: function(data, type, row) {
                     return `
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-info" onclick="showDetailDispute('${row.v_ID}')">
-                                <i class="fal fa-eye"></i> Detail
-                            </button>
-                            <button type="button" class="btn btn-sm btn-primary" onclick="showUpdateDispute('${row.v_ID}')">
-                                <i class="fal fa-edit"></i> Update
-                            </button>
-                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="showProsesDispute('${row.v_ID}')">
+                            <i class="fal fa-cogs"></i> Proses Data Dispute
+                        </button>
                     `;
                 }
             }
         ],
         pageLength: 10,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-        order: [[2, 'desc']],
+        order: [[1, 'asc']],
         language: {
             processing: "Memuat data...",
             search: "Cari:",
@@ -502,176 +561,61 @@ function initializeDataTable() {
     });
 }
 
-function showDetailDispute(disputeId) {
-    console.log('Showing detail for dispute ID:', disputeId);
-    
-    // Show loading in modal
-    $('#detailContent').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Memuat detail...</div>');
-    $('#modalDetailDispute').modal('show');
-    
-    // Load detail via AJAX
-    $.ajax({
-        url: '{{ base_url('rekon/process/indirect-dispute/detail') }}',
-        type: 'GET',
-        data: { id: disputeId },
-        success: function(response) {
-            console.log('Detail response:', response);
-            
-            if (response.success && response.data) {
-                const data = response.data;
-                let detailHtml = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>ID:</strong></td>
-                                    <td>${data.v_ID || '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Partner:</strong></td>
-                                    <td>${data.IDPARTNER || '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Terminal ID:</strong></td>
-                                    <td>${data.TERMINALID || '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Tanggal Rekon:</strong></td>
-                                    <td>${data.v_TGL_FILE_REKON ? new Date(data.v_TGL_FILE_REKON).toLocaleDateString('id-ID') : '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Group Produk:</strong></td>
-                                    <td>${data.v_GROUP_PRODUK || '-'}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>IDPEL:</strong></td>
-                                    <td>${data.IDPEL || '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>RP Biller Tag:</strong></td>
-                                    <td>Rp ${formatNumber(data.RP_BILLER_TAG || 0)}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Status:</strong></td>
-                                    <td>
-                                        <span class="badge ${data.STATUS == 1 ? 'badge-success' : 'badge-danger'}">
-                                            ${data.STATUS == 1 ? 'SUKSES' : 'GAGAL'}
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Stat Core AGR:</strong></td>
-                                    <td>
-                                        <span class="badge ${data.v_STAT_CORE_AGR == 1 ? 'badge-info' : 'badge-warning'}">
-                                            ${data.v_STAT_CORE_AGR == 1 ? 'AGREE' : 'NOT AGREE'}
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Settle Verifikasi:</strong></td>
-                                    <td>${data.v_SETTLE_VERIFIKASI || '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Settle RP Tag:</strong></td>
-                                    <td>Rp ${formatNumber(data.v_SETTLE_RP_TAG || 0)}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Settle RP Fee:</strong></td>
-                                    <td>Rp ${formatNumber(data.v_SETTLE_RP_FEE || 0)}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Is Direct Fee:</strong></td>
-                                    <td>${data.v_IS_DIRECT_FEE == 1 ? 'Yes' : 'No'}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <h6><strong>RP Biller Pokok:</strong></h6>
-                            <div class="border p-3 bg-light">
-                                Rp ${formatNumber(data.RP_BILLER_POKOK || 0)}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6><strong>RP Biller Denda:</strong></h6>
-                            <div class="border p-3 bg-light">
-                                Rp ${formatNumber(data.RP_BILLER_DENDA || 0)}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <h6><strong>RP Fee Struk:</strong></h6>
-                            <div class="border p-3 bg-light">
-                                Rp ${formatNumber(data.RP_FEE_STRUK || 0)}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h6><strong>RP Amount Struk:</strong></h6>
-                            <div class="border p-3 bg-light">
-                                Rp ${formatNumber(data.RP_AMOUNT_STRUK || 0)}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                $('#detailContent').html(detailHtml);
-            } else {
-                $('#detailContent').html('<div class="alert alert-warning">Data detail tidak ditemukan</div>');
-            }
-        },
-        error: function(xhr) {
-            console.error('Detail error:', xhr.responseText);
-            $('#detailContent').html('<div class="alert alert-danger">Terjadi kesalahan saat memuat detail</div>');
-        }
-    });
-}
-
-function showUpdateDispute(disputeId) {
-    console.log('Showing update form for dispute ID:', disputeId);
+function showProsesDispute(vId) {
+    console.log('Showing proses dispute form for v_ID:', vId);
     
     // Reset form
-    $('#formUpdateDispute')[0].reset();
-    $('#updateDisputeId').val(disputeId);
+    $('#formProsesDispute')[0].reset();
+    $('#prosesVId').val(vId);
     
     // Load current data
     $.ajax({
         url: '{{ base_url('rekon/process/indirect-dispute/detail') }}',
         type: 'GET',
-        data: { id: disputeId },
+        data: { id: vId },
         success: function(response) {
-            console.log('Detail response for update:', response);
+            console.log('Detail response for proses:', response);
             
             if (response.success && response.data) {
                 const data = response.data;
                 
-                // Fill readonly fields
-                $('#updatePartner').val(data.IDPARTNER || '');
-                $('#updateTerminalID').val(data.TERMINALID || '');
-                $('#updateTanggalRekon').val(data.v_TGL_FILE_REKON ? new Date(data.v_TGL_FILE_REKON).toLocaleDateString('id-ID') : '');
-                $('#updateGroupProduk').val(data.v_GROUP_PRODUK || '');
-                $('#updateIDPEL').val(data.IDPEL || '');
-                $('#updateAmount').val('Rp ' + formatNumber(data.RP_BILLER_TAG || 0));
+                // Fill readonly fields - Data Transaksi
+                $('#prosesPartner').val(data.IDPARTNER || '');
+                $('#prosesTerminalID').val(data.TERMINALID || '');
+                $('#prosesGroupProduk').val(data.v_GROUP_PRODUK || '');
+                $('#prosesIDPEL').val(data.IDPEL || '');
                 
-                // Fill editable fields
-                $('#updateStatus').val(data.STATUS_DISPUTE || '');
-                $('#updateKeterangan').val(data.KETERANGAN || '');
-                $('#updateTindakLanjut').val(data.TINDAK_LANJUT || '');
+                // Fill readonly fields - Data Tagihan
+                $('#prosesBillerPokok').val('Rp ' + formatNumber(data.RP_BILLER_POKOK || 0));
+                $('#prosesBillerDenda').val('Rp ' + formatNumber(data.RP_BILLER_DENDA || 0));
+                $('#prosesBillerTag').val('Rp ' + formatNumber(data.RP_BILLER_TAG || 0));
                 
-                $('#modalUpdateDispute').modal('show');
+                // Set selected values for form fields
+                // IDPARTNER Select - set to current partner value
+                $('#prosesIDPartnerSelect').val(data.IDPARTNER || '');
+                
+                // Status Biller Radio - set to current status
+                const currentStatusBiller = data.STATUS;
+                if (currentStatusBiller !== null && currentStatusBiller !== undefined) {
+                    $('input[name="status_biller"][value="' + currentStatusBiller + '"]').prop('checked', true);
+                }
+                
+                // Status Core Radio - set to current status
+                const currentStatusCore = data.v_STAT_CORE_AGR;
+                if (currentStatusCore !== null && currentStatusCore !== undefined) {
+                    $('input[name="status_core"][value="' + currentStatusCore + '"]').prop('checked', true);
+                }
+                
+                // Status Settlement Radio - leave unselected (user must choose)
+                // This is intentionally left empty as user needs to select the appropriate action
+                
+                $('#modalProsesDispute').modal('show');
             } else {
                 showAlert('error', 'Data dispute tidak ditemukan');
             }
         },
         error: function(xhr) {
-            console.error('Detail error for update:', xhr.responseText);
+            console.error('Detail error for proses:', xhr.responseText);
             showAlert('error', 'Terjadi kesalahan saat memuat data dispute');
         }
     });
@@ -679,8 +623,8 @@ function showUpdateDispute(disputeId) {
 
 function resetFilters() {
     $('#tanggal').val('{{ $tanggalRekon }}');
-    $('#filterPartner').val('');
-    $('#filterProduk').val('');
+    $('#status_biller').val('');
+    $('#status_core').val('');
     
     // Reload table
     if (disputeTable) {
@@ -689,19 +633,10 @@ function resetFilters() {
     
     // Update URL
     const url = new URL(window.location);
-    url.searchParams.delete('partner');
-    url.searchParams.delete('produk');
+    url.searchParams.delete('status_biller');
+    url.searchParams.delete('status_core');
     url.searchParams.set('tanggal', '{{ $tanggalRekon }}');
     window.history.pushState({}, '', url);
-}
-
-function getStatusBadgeClass(status) {
-    switch((status || 'PENDING').toUpperCase()) {
-        case 'PENDING': return 'badge-warning';
-        case 'IN_PROGRESS': return 'badge-info';
-        case 'RESOLVED': return 'badge-success';
-        default: return 'badge-secondary';
-    }
 }
 
 function formatNumber(num) {
@@ -772,6 +707,16 @@ function showAlert(type, message) {
     color: #fff;
 }
 
+.badge-danger {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.badge-primary {
+    background-color: #007bff;
+    color: #fff;
+}
+
 .badge-secondary {
     background-color: #6c757d;
     color: #fff;
@@ -810,8 +755,8 @@ function showAlert(type, message) {
     margin-right: 0;
 }
 
-.modal-lg {
-    max-width: 800px;
+.modal-xl {
+    max-width: 1140px;
 }
 
 .form-group {
@@ -833,6 +778,66 @@ function showAlert(type, message) {
 
 .border {
     border: 1px solid #dee2e6 !important;
+}
+
+/* Card headers with colors */
+.card-header.bg-primary {
+    background-color: #007bff !important;
+}
+
+.card-header.bg-success {
+    background-color: #28a745 !important;
+}
+
+.card-header.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+/* Form check styling */
+.form-check {
+    margin-bottom: 0.5rem;
+}
+
+.form-check-input {
+    margin-right: 0.5rem;
+}
+
+.form-check-label {
+    display: flex;
+    align-items: center;
+}
+
+.form-check-inline {
+    margin-right: 1rem;
+}
+
+/* Radio button badges styling */
+.form-check-label .badge {
+    margin-left: 0.25rem;
+}
+
+/* Modal body spacing */
+.modal-body .card {
+    border: 1px solid #dee2e6;
+}
+
+.modal-body .card-header {
+    padding: 0.75rem 1rem;
+}
+
+.modal-body .card-body {
+    padding: 1rem;
+}
+
+/* Required field indicator */
+.text-danger {
+    font-weight: bold;
+}
+
+/* Status badge spacing in form */
+.form-check-label .badge {
+    min-width: 100px;
+    text-align: center;
 }
 </style>
 @endpush
