@@ -51,7 +51,7 @@ class Step1Controller extends BaseController
             'currentStep' => 1
         ];
 
-        return $this->render('rekon/process/step1.blade.php', $data);
+        return $this->render('rekon/persiapan/step1.blade.php', $data);
     }
 
     /**

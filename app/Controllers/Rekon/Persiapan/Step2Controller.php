@@ -81,7 +81,7 @@ class Step2Controller extends BaseController
                 'dataStats' => $dataStats
             ];
 
-            return $this->render('rekon/process/step2.blade.php', $data);
+            return $this->render('rekon/persiapan/step2.blade.php', $data);
             
         } catch (\Exception $e) {
             log_message('error', 'Error in Step 2 index: ' . $e->getMessage());
@@ -106,7 +106,7 @@ class Step2Controller extends BaseController
                 'error' => $e->getMessage()
             ];
 
-            return $this->render('rekon/process/step2.blade.php', $data);
+            return $this->render('rekon/persiapan/step2.blade.php', $data);
         }
     }
 
