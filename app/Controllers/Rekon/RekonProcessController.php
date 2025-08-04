@@ -669,6 +669,9 @@ class RekonProcessController extends BaseController
         try {
             $db = \Config\Database::connect();
             
+            // Debug logging untuk filter
+            log_message('info', "IndirectDispute filters - tanggal: {$tanggalRekon}, status_biller: {$statusBiller}, status_core: {$statusCore}");
+            
             // Query sesuai arahan senior - hanya kolom yang diperlukan
             $baseQuery = "SELECT v_ID, IDPARTNER, TERMINALID, v_GROUP_PRODUK AS PRODUK, IDPEL, RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE
                          FROM v_cek_biller_dispute_indirect";
@@ -709,10 +712,11 @@ class RekonProcessController extends BaseController
             // Execute main query
             $result = $db->query($baseQuery, $queryParams);
             $data = $result->getResultArray();
-
-            log_message('info', "IndirectDispute query: {$baseQuery}");
+            
+            log_message('info', "IndirectDispute final query: {$baseQuery}");
             log_message('info', "IndirectDispute params: " . json_encode($queryParams));
             log_message('info', "IndirectDispute total records: {$totalRecords}");
+            log_message('info', "IndirectDispute data count: " . count($data));
             
             return $this->response->setJSON([
                 'draw' => intval($draw),
@@ -720,9 +724,7 @@ class RekonProcessController extends BaseController
                 'recordsFiltered' => intval($totalRecords),
                 'data' => $data,
                 'csrf_token' => csrf_hash()
-            ]);
-            
-        } catch (\Exception $e) {
+            ]);        } catch (\Exception $e) {
             log_message('error', 'Error in indirectDisputeDataTable: ' . $e->getMessage());
             return $this->response->setJSON([
                 'draw' => intval($draw),

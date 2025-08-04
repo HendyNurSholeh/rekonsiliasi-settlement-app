@@ -49,6 +49,7 @@
                                 <option value="">Semua Status</option>
                                 <option value="0">Tidak Terdebet</option>
                                 <option value="1">Terdebet</option>
+                                <option value="2">Belum Diproses</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -183,7 +184,7 @@
                     
                     <!-- Status Rekonsiliasi -->
                     <div class="card mb-3">
-                        <div class="card-header bg-warning text-dark">
+                        <div class="card-header bg-warning text-white">
                             <h6 class="mb-0"><i class="fal fa-cog"></i> Status Rekonsiliasi</h6>
                         </div>
                         <div class="card-body">
@@ -255,6 +256,12 @@
                                                     <span class="badge badge-danger">Tidak Terdebet (0)</span>
                                                 </label>
                                             </div>
+                                            {{-- <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="status_core" id="statusCore2" value="2" required>
+                                                <label class="form-check-label" for="statusCore2">
+                                                    <span class="badge badge-secondary">Belum Diproses (2)</span>
+                                                </label>
+                                            </div> --}}
                                         </div>
                                     </div>
                                 </div>
@@ -292,7 +299,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-success">
-                        <i class="fal fa-save"></i> Proses Data Dispute
+                        <i class="fal fa-save"></i> Simpan
                     </button>
                 </div>
             </form>
@@ -362,6 +369,15 @@ function refreshCSRFToken() {
 let disputeTable;
 
 $(document).ready(function() {
+    // Set initial filter values from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('status_biller')) {
+        $('#status_biller').val(urlParams.get('status_biller'));
+    }
+    if (urlParams.get('status_core')) {
+        $('#status_core').val(urlParams.get('status_core'));
+    }
+    
     // Refresh CSRF token saat page load untuk memastikan token fresh
     refreshCSRFToken().then(function() {
         console.log('CSRF token refreshed on page load');
@@ -473,7 +489,11 @@ function initializeDataTable() {
                 d.status_biller = $('#status_biller').val();
                 d.status_core = $('#status_core').val();
                 
-                console.log('DataTable request data:', d);
+                console.log('DataTable request data:');
+                console.log('- tanggal:', d.tanggal);
+                console.log('- status_biller:', d.status_biller);
+                console.log('- status_core:', d.status_core);
+                console.log('Full request data:', d);
                 return d;
             },
             error: function(xhr, error, thrown) {
@@ -531,12 +551,15 @@ function initializeDataTable() {
                 name: 'STATUS_CORE',
                 className: 'text-center',
                 render: function(data, type, row) {
-                    let badgeClass = 'badge-danger';
-                    let statusText = 'Tidak Terdebet';
+                    let badgeClass = 'badge-secondary';
+                    let statusText = 'Belum Diproses';
                     
                     if (data == 1) {
                         badgeClass = 'badge-info';
                         statusText = 'Terdebet';
+                    } else if (data == 0) {
+                        badgeClass = 'badge-danger';
+                        statusText = 'Tidak Terdebet';
                     }
                     
                     return '<span class="badge ' + badgeClass + '">' + statusText + '</span>';
@@ -813,7 +836,7 @@ function showAlert(type, message) {
 }
 
 .card-header.bg-warning {
-    background-color: #ffc107 !important;
+    background-color: #d39e00 !important;
 }
 
 /* Form check styling */
