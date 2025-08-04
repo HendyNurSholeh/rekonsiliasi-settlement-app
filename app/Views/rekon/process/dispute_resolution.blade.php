@@ -706,32 +706,5 @@ function showAlert(type, message) {
 @endpush
 
 @push('styles')
-<style>
-.badge {
-    font-size: 0.75em;
-}
-
-.table thead th {
-    border-top: none;
-    font-weight: 600;
-    background-color: #f8f9fa;
-}
-
-.card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.modal-lg {
-    max-width: 900px;
-}
-
-.form-check-inline {
-    margin-right: 1rem;
-}
-
-.text-danger {
-    color: #dc3545 !important;
-}
-</style>
+<link rel="stylesheet" href="{{ base_url('css/rekon/process/dispute_resolution.css') }}">
 @endpush

@@ -165,6 +165,10 @@
 
 @endsection
 
+@push('styles')
+<link rel="stylesheet" href="{{ base_url('css/rekon/process/detail_vs_rekap.css') }}">
+@endpush
+
 @push('scripts')
 <script>
 // Super Simple but Robust CSRF Management
@@ -437,50 +441,4 @@ function showAlert(type, message) {
     }
 }
 </script>
-@endpush
-
-@push('styles')
-<style>
-.text-danger.fw-bold {
-    color: #dc3545 !important;
-    font-weight: 700 !important;
-}
-
-.badge {
-    font-size: 0.75em;
-}
-
-.table thead th {
-    border-top: none;
-    font-weight: 600;
-    background-color: #f8f9fa;
-}
-
-.card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    border: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.text-end {
-    text-align: right !important;
-}
-
-.table td.text-end {
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
-    font-weight: bolder;
-}
-
-.badge-primary {
-    background-color: #007bff;
-}
-
-.badge-info {
-    background-color: #17a2b8;
-}
-
-.fw-bold {
-    font-weight: 700 !important;
-}
-</style>
 @endpush

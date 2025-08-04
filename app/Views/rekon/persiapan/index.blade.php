@@ -149,22 +149,7 @@
 @endsection
 
 @push('styles')
-<style>
-.alert-sm {
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-}
-
-.fa-spin {
-    animation: fa-spin 1s infinite linear;
-}
-
-@keyframes fa-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-</style>
+<link rel="stylesheet" href="{{ base_url('css/rekon/persiapan/index.css') }}">
 @endpush
 
 @push('scripts')
