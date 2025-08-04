@@ -183,7 +183,7 @@ class RekonProcessController extends BaseController
 
         try {
             $db = \Config\Database::connect();
-            $query = $db->query("CALL p_direct_jurnal_update(?, ?, ?, ?, ?)", [
+            $query = $db->query("CALL p_update_dispute_tx(?, ?, ?, ?, ?)", [
                 $id, $statusBiller, $statusCore, $statusSettlement, $idpartner
             ]);
 
