@@ -318,7 +318,7 @@ const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
 function refreshCSRFToken() {
     return new Promise((resolve, reject) => {
         $.ajax({
-            url: '{{ site_url("rekon/get-csrf-token") }}',
+            url: '{{ site_url("get-csrf-token") }}',
             method: 'GET',
             success: function(response) {
                 if (response.success && response.csrf_hash) {

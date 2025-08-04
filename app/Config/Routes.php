@@ -53,8 +53,8 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->post('checkDate', 'RekonSetupController::checkDate', ['as' => 'rekon.checkDate']);
     $routes->post('resetProcess', 'RekonSetupController::resetProcess', ['as' => 'rekon.resetProcess']);
     
-    // CSRF Token Refresh
-    $routes->get('get-csrf-token', 'RekonStep1Controller::getCSRFToken', ['as' => 'rekon.csrf-token']);
+    // CSRF Token Refresh (moved to CommonController)
+    $routes->get('get-csrf-token', 'CommonController::getCsrfToken', ['as' => 'rekon.csrf-token']);
     
     // Step 1 Controller - untuk step1.blade.php (Upload Files)
     $routes->get('step1', 'RekonStep1Controller::index', ['as' => 'rekon.step1']);
@@ -78,41 +78,50 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->post('step3/reports', 'RekonStep3Controller::generateReports', ['as' => 'rekon.step3.reports']);
     $routes->get('step3/download', 'RekonStep3Controller::downloadReport', ['as' => 'rekon.step3.download']);
     
-    // Process Controller - untuk Tahap 3 - Proses Rekonsiliasi menu features
-    $routes->get('process/detail-vs-rekap', 'RekonProcessController::detailVsRekap', ['as' => 'rekon.process.detail-vs-rekap']);
-    $routes->get('process/detail-vs-rekap/datatable', 'RekonProcessController::detailVsRekapDataTable', ['as' => 'rekon.process.detail-vs-rekap.datatable']);
-    $routes->post('process/detail-vs-rekap/datatable', 'RekonProcessController::detailVsRekapDataTable', ['as' => 'rekon.process.detail-vs-rekap.datatable.post']);
-    $routes->get('process/direct-jurnal-rekap', 'RekonProcessController::directJurnalRekap', ['as' => 'rekon.process.direct-jurnal-rekap']);
-    $routes->get('process/penyelesaian-dispute', 'RekonProcessController::disputeResolution', ['as' => 'rekon.process.penyelesaian-dispute']);
+    // Process Routes - New Modular Controller Structure
+    $routes->group('process', ['namespace' => 'App\Controllers\Rekon\Process'], function($routes) {
+        
+        // Detail vs Rekap Controller
+        $routes->get('detail-vs-rekap', 'DetailVsRekapController::index', ['as' => 'rekon.process.detail-vs-rekap']);
+        $routes->get('detail-vs-rekap/datatable', 'DetailVsRekapController::datatable', ['as' => 'rekon.process.detail-vs-rekap.datatable']);
+        $routes->post('detail-vs-rekap/datatable', 'DetailVsRekapController::datatable', ['as' => 'rekon.process.detail-vs-rekap.datatable.post']);
+        
+        // Direct Jurnal Controller (handles both rekap and dispute)
+        $routes->get('direct-jurnal-rekap', 'DirectJurnalController::rekap', ['as' => 'rekon.process.direct-jurnal-rekap']);
+        $routes->get('penyelesaian-dispute', 'DirectJurnalController::dispute', ['as' => 'rekon.process.penyelesaian-dispute']);
+        $routes->get('direct-jurnal/dispute/datatable', 'DirectJurnalController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable']);
+        $routes->post('direct-jurnal/dispute/datatable', 'DirectJurnalController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable.post']);
+        $routes->post('direct-jurnal/dispute/detail', 'DirectJurnalController::getDisputeDetail', ['as' => 'rekon.process.dispute.detail']);
+        $routes->post('direct-jurnal/dispute/update', 'DirectJurnalController::updateDispute', ['as' => 'rekon.process.dispute.update']);
+        
+        // Indirect Jurnal Rekap Controller
+        $routes->get('indirect-jurnal-rekap', 'IndirectJurnalRekapController::index', ['as' => 'rekon.process.indirect-jurnal-rekap']);
+        $routes->get('indirect-jurnal-rekap/datatable', 'IndirectJurnalRekapController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable']);
+        $routes->post('indirect-jurnal-rekap/datatable', 'IndirectJurnalRekapController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable.post']);
+        $routes->post('indirect-jurnal-rekap/konfirmasi', 'IndirectJurnalRekapController::konfirmasiSetoran', ['as' => 'rekon.process.indirect-jurnal-rekap.konfirmasi']);
+        
+        // Indirect Dispute Controller
+        $routes->get('indirect-dispute', 'IndirectDisputeController::index', ['as' => 'rekon.process.indirect-dispute']);
+        $routes->get('indirect-dispute/datatable', 'IndirectDisputeController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable']);
+        $routes->post('indirect-dispute/datatable', 'IndirectDisputeController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable.post']);
+        $routes->get('indirect-dispute/detail', 'IndirectDisputeController::getDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
+        $routes->post('indirect-dispute/update', 'IndirectDisputeController::update', ['as' => 'rekon.process.indirect-dispute.update']);
+        
+        // Konfirmasi Saldo CA Controller
+        $routes->get('konfirmasi-saldo-ca', 'KonfirmasiSaldoCAController::index', ['as' => 'rekon.process.konfirmasi-saldo-ca']);
+        $routes->get('konfirmasi-saldo-ca/datatable', 'KonfirmasiSaldoCAController::datatable', ['as' => 'rekon.process.konfirmasi-saldo-ca.datatable']);
+        $routes->post('konfirmasi-saldo-ca/datatable', 'KonfirmasiSaldoCAController::datatable', ['as' => 'rekon.process.konfirmasi-saldo-ca.datatable.post']);
+        $routes->get('konfirmasi-saldo-ca/detail', 'KonfirmasiSaldoCAController::getSaldoDetail', ['as' => 'rekon.process.konfirmasi-saldo-ca.detail']);
+        $routes->post('konfirmasi-saldo-ca/konfirmasi', 'KonfirmasiSaldoCAController::konfirmasi', ['as' => 'rekon.process.konfirmasi-saldo-ca.konfirmasi']);
+    });
     
-    // Dispute resolution AJAX routes
-    $routes->post('process/direct-jurnal/dispute/detail', 'RekonProcessController::getDisputeDetail', ['as' => 'rekon.process.dispute.detail']);
-    $routes->post('process/direct-jurnal/dispute/update', 'RekonProcessController::updateDispute', ['as' => 'rekon.process.dispute.update']);
-    $routes->get('process/direct-jurnal/dispute/datatable', 'RekonProcessController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable']);
-    $routes->post('process/direct-jurnal/dispute/datatable', 'RekonProcessController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable.post']);
-    
-    // Indirect Jurnal routes
-    $routes->get('process/indirect-jurnal-rekap', 'RekonProcessController::indirectJurnalRekap', ['as' => 'rekon.process.indirect-jurnal-rekap']);
-    $routes->get('process/indirect-jurnal-rekap/datatable', 'RekonProcessController::indirectJurnalRekapDataTable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable']);
-    $routes->post('process/indirect-jurnal-rekap/konfirmasi', 'RekonProcessController::konfirmasiSetoran', ['as' => 'rekon.process.indirect-jurnal-rekap.konfirmasi']);
-    $routes->get('process/indirect-dispute', 'RekonProcessController::indirectDispute', ['as' => 'rekon.process.indirect-dispute']);
-    $routes->get('process/indirect-dispute/datatable', 'RekonProcessController::indirectDisputeDataTable', ['as' => 'rekon.process.indirect-dispute.datatable']);
-    $routes->get('process/indirect-dispute/detail', 'RekonProcessController::getIndirectDisputeDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
-    $routes->post('process/indirect-dispute/update', 'RekonProcessController::updateIndirectDispute', ['as' => 'rekon.process.indirect-dispute.update']);
-    $routes->get('process/konfirmasi-saldo-ca', 'RekonProcessController::konfirmasiSaldoCA', ['as' => 'rekon.process.konfirmasi-saldo-ca']);
-    $routes->get('process/konfirmasi-saldo-ca/datatable', 'RekonProcessController::konfirmasiSaldoCADataTable', ['as' => 'rekon.process.konfirmasi-saldo-ca.datatable']);
-    $routes->get('process/konfirmasi-saldo-ca/summary', 'RekonProcessController::konfirmasiSaldoCASummary', ['as' => 'rekon.process.konfirmasi-saldo-ca.summary']);
-    $routes->post('process/konfirmasi-saldo-ca', 'RekonProcessController::submitKonfirmasiSaldoCA', ['as' => 'rekon.process.konfirmasi-saldo-ca.submit']);
-    $routes->post('process/konfirmasi-saldo-ca/bulk', 'RekonProcessController::bulkKonfirmasiSaldoCA', ['as' => 'rekon.process.konfirmasi-saldo-ca.bulk']);
-    
-    // CSRF Token refresh route
-    $routes->get('process/get-csrf-token', 'RekonProcessController::getCSRFToken', ['as' => 'rekon.process.csrf-token']);
-
     // Report Routes (existing)
     $routes->get('reports', 'RekonReport::index', ['as' => 'rekon.reports']);
     $routes->get('reports/(:segment)', 'RekonReport::index/$1', ['as' => 'rekon.reports.date']);
     $routes->get('reports/download/(:segment)/(:segment)', 'RekonReport::downloadExcel/$1/$2', ['as' => 'rekon.reports.download']);
 });
+
+$routes->get('get-csrf-token', 'CommonController::getCsrfToken');
 
 // ? Branch
 $routes->get('/unit-kerja', 'User\UnitKerjaController::index', ['as' => 'unit-kerja.index']);

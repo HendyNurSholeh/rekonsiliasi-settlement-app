@@ -334,7 +334,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
-    return $.get('{{ base_url('rekon/process/get-csrf-token') }}').then(function(response) {
+    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
