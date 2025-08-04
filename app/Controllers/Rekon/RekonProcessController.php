@@ -788,30 +788,42 @@ class RekonProcessController extends BaseController
      */
     public function updateIndirectDispute()
     {
-        $id = $this->request->getVar('id');
+        $vId = $this->request->getVar('v_id');
         $statusBiller = $this->request->getVar('status_biller');
         $statusCore = $this->request->getVar('status_core');
         $statusSettlement = $this->request->getVar('status_settlement');
         $idpartner = $this->request->getVar('idpartner');
 
-        if (!$id || $statusBiller === null || $statusCore === null || $statusSettlement === null || !$idpartner) {
+        // Debug log untuk melihat parameter yang diterima
+        log_message('info', 'Received parameters: v_id=' . $vId . ', status_biller=' . $statusBiller . ', status_core=' . $statusCore . ', status_settlement=' . $statusSettlement . ', idpartner=' . $idpartner);
+
+        if (!$vId || $statusBiller === '' || $statusCore === '' || $statusSettlement === '' || !$idpartner) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Data tidak lengkap',
+                'message' => 'Data tidak lengkap. Harap isi semua field yang diperlukan.',
                 'csrf_token' => csrf_hash()
             ]);
         }
 
         try {
             $db = \Config\Database::connect();
-            // Note: Using the same procedure as direct jurnal as specified in requirements
-            $query = $db->query("CALL p_direct_jurnal_update(?, ?, ?, ?, ?)", [
-                $id, $statusBiller, $statusCore, $statusSettlement, $idpartner
+            
+            // Call stored procedure p_update_dispute_tx sesuai arahan
+            // Parameter: ID, STATUS_AGR, STATUS_CORE, STATUS_VERIF, IDPARTNER
+            $query = "CALL p_update_dispute_tx(?, ?, ?, ?, ?)";
+            $result = $db->query($query, [
+                $vId,
+                $statusBiller,
+                $statusCore, 
+                $statusSettlement,
+                $idpartner
             ]);
+
+            log_message('info', "Called p_update_dispute_tx with params: {$vId}, {$statusBiller}, {$statusCore}, {$statusSettlement}, {$idpartner}");
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Data berhasil diupdate',
+                'message' => 'Data dispute berhasil diproses',
                 'csrf_token' => csrf_hash()
             ]);
 
@@ -819,7 +831,7 @@ class RekonProcessController extends BaseController
             log_message('error', 'Error updating indirect dispute: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengupdate data',
+                'message' => 'Terjadi kesalahan saat memproses data: ' . $e->getMessage(),
                 'csrf_token' => csrf_hash()
             ]);
         }

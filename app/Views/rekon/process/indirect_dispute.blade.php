@@ -52,7 +52,7 @@
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
+                            <button type="submit" class="btn btn-primary mr-2">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="resetFilters()">
@@ -107,7 +107,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fal fa-cogs"></i> Proses Data Dispute
+                    <i class="fal fa-wrench"></i> Proses Data Dispute
                 </h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span aria-hidden="true">&times;</span>
@@ -406,9 +406,32 @@ $(document).ready(function() {
         
         console.log('Submitting proses dispute for v_ID:', vId);
         
-        // Validasi form
-        if (!formData.get('idpartner') || !formData.get('status_biller') || !formData.get('status_core') || !formData.get('status_settlement')) {
-            showAlert('error', 'Harap lengkapi semua field yang diperlukan');
+        // Debug: Log all form data
+        console.log('Form data contents:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key + ': ' + value);
+        }
+        
+        // Validasi form dengan logging detail
+        const idpartner = formData.get('idpartner');
+        const statusBiller = formData.get('status_biller');
+        const statusCore = formData.get('status_core');
+        const statusSettlement = formData.get('status_settlement');
+        
+        console.log('Validation check:');
+        console.log('idpartner:', idpartner);
+        console.log('status_biller:', statusBiller);
+        console.log('status_core:', statusCore);
+        console.log('status_settlement:', statusSettlement);
+        
+        if (!idpartner || !statusBiller || !statusCore || !statusSettlement) {
+            let missingFields = [];
+            if (!idpartner) missingFields.push('IDPARTNER');
+            if (!statusBiller) missingFields.push('Status Biller');
+            if (!statusCore) missingFields.push('Status Core');
+            if (!statusSettlement) missingFields.push('Status Settlement');
+            
+            showAlert('error', 'Harap lengkapi field yang diperlukan: ' + missingFields.join(', '));
             return;
         }
         
@@ -528,7 +551,7 @@ function initializeDataTable() {
                 render: function(data, type, row) {
                     return `
                         <button type="button" class="btn btn-sm btn-primary" onclick="showProsesDispute('${row.v_ID}')">
-                            <i class="fal fa-cogs"></i> Proses Data Dispute
+                            <i class="fal fa-wrench"></i> Proses Data Dispute
                         </button>
                     `;
                 }
@@ -693,8 +716,8 @@ function showAlert(type, message) {
 }
 
 .badge-warning {
-    background-color: #ffc107;
-    color: #212529;
+    background-color: #d39e00;
+    color: #fff;
 }
 
 .badge-info {
