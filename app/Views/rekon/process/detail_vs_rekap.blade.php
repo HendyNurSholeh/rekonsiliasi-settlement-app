@@ -43,15 +43,13 @@
                                 <option value="tidak_ada_selisih" @if(request()->getGet('filter_selisih') == 'tidak_ada_selisih') selected @endif>Tidak Ada Selisih</option>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary">
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <a href="{{ current_url() }}?tanggal={{ $tanggalRekon }}" class="btn btn-secondary">
-                                <i class="fal fa-refresh"></i> Reset Filter
-                            </a>
+                            <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                                <i class="fal fa-undo"></i> Reset
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -401,6 +399,20 @@ function formatNumber(num) {
     // Convert string to number first, removing any existing commas
     const cleanNum = parseFloat(String(num).replace(/,/g, '')) || 0;
     return new Intl.NumberFormat('id-ID').format(cleanNum);
+}
+
+function resetFilters() {
+    $('#tanggal').val('{{ $tanggalRekon }}');
+    $('#filter_selisih').val('');
+    // Update URL params
+    const url = new URL(window.location);
+    url.searchParams.set('tanggal', '{{ $tanggalRekon }}');
+    url.searchParams.delete('filter_selisih');
+    window.history.pushState({}, '', url);
+    // Reload DataTable if exists
+    if (typeof compareTable !== 'undefined' && compareTable) {
+        compareTable.ajax.reload();
+    }
 }
 
 function showAlert(type, message) {
