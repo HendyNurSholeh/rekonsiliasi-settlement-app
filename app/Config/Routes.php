@@ -47,36 +47,33 @@ $routes->get('/dashboard', 'Dashboard::index', ['as' => 'dashboard']);
 
 // ? Rekonsiliasi Settlement Routes - 4 Controller Terpisah
 $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($routes) {
-    // Setup Controller - untuk index.blade.php
-    $routes->get('/', 'RekonSetupController::index', ['as' => 'rekon.index']);
-    $routes->post('create', 'RekonSetupController::create', ['as' => 'rekon.create']);
-    $routes->post('checkDate', 'RekonSetupController::checkDate', ['as' => 'rekon.checkDate']);
-    $routes->post('resetProcess', 'RekonSetupController::resetProcess', ['as' => 'rekon.resetProcess']);
+    // Setup Controller - untuk index.blade.php (moved to Persiapan folder)
+    $routes->get('/', 'Persiapan\SetupController::index', ['as' => 'rekon.index']);
+    $routes->post('create', 'Persiapan\SetupController::create', ['as' => 'rekon.create']);
+    $routes->post('checkDate', 'Persiapan\SetupController::checkDate', ['as' => 'rekon.checkDate']);
+    $routes->post('resetProcess', 'Persiapan\SetupController::resetProcess', ['as' => 'rekon.resetProcess']);
     
-    // CSRF Token Refresh (moved to CommonController)
-    $routes->get('get-csrf-token', 'CommonController::getCsrfToken', ['as' => 'rekon.csrf-token']);
+    // Step 1 Controller - untuk step1.blade.php (Upload Files - moved to Persiapan folder)
+    $routes->get('step1', 'Persiapan\Step1Controller::index', ['as' => 'rekon.step1']);
+    $routes->post('step1/upload', 'Persiapan\Step1Controller::uploadFiles', ['as' => 'rekon.step1.upload']);
+    $routes->post('step1/validate', 'Persiapan\Step1Controller::validateFiles', ['as' => 'rekon.step1.validate']);
+    $routes->post('step1/process', 'Persiapan\Step1Controller::processDataUpload', ['as' => 'rekon.step1.process']);
+    $routes->post('step1/status', 'Persiapan\Step1Controller::checkUploadStatus', ['as' => 'rekon.step1.status']);
+    $routes->get('step1/stats', 'Persiapan\Step1Controller::getUploadStats', ['as' => 'rekon.step1.stats']);
+    $routes->get('step1/mapping', 'Persiapan\Step1Controller::checkProductMapping', ['as' => 'rekon.step1.mapping']);
     
-    // Step 1 Controller - untuk step1.blade.php (Upload Files)
-    $routes->get('step1', 'RekonStep1Controller::index', ['as' => 'rekon.step1']);
-    $routes->post('step1/upload', 'RekonStep1Controller::uploadFiles', ['as' => 'rekon.step1.upload']);
-    $routes->post('step1/validate', 'RekonStep1Controller::validateFiles', ['as' => 'rekon.step1.validate']);
-    $routes->post('step1/process', 'RekonStep1Controller::processDataUpload', ['as' => 'rekon.step1.process']);
-    $routes->post('step1/status', 'RekonStep1Controller::checkUploadStatus', ['as' => 'rekon.step1.status']);
-    $routes->get('step1/stats', 'RekonStep1Controller::getUploadStats', ['as' => 'rekon.step1.stats']);
-    $routes->get('step1/mapping', 'RekonStep1Controller::checkProductMapping', ['as' => 'rekon.step1.mapping']);
+    // Step 2 Controller - untuk step2.blade.php (Validasi Data - moved to Persiapan folder)
+    $routes->get('step2', 'Persiapan\Step2Controller::index', ['as' => 'rekon.step2']);
+    $routes->post('step2/validate', 'Persiapan\Step2Controller::processValidation', ['as' => 'rekon.step2.validate']);
+    $routes->get('step2/preview', 'Persiapan\Step2Controller::getDataPreview', ['as' => 'rekon.step2.preview']);
+    $routes->get('step2/stats', 'Persiapan\Step2Controller::getUploadStats', ['as' => 'rekon.step2.stats']);
     
-    // Step 2 Controller - untuk step2.blade.php (Validasi Data)
-    $routes->get('step2', 'RekonStep2Controller::index', ['as' => 'rekon.step2']);
-    $routes->post('step2/validate', 'RekonStep2Controller::processValidation', ['as' => 'rekon.step2.validate']);
-    $routes->get('step2/preview', 'RekonStep2Controller::getDataPreview', ['as' => 'rekon.step2.preview']);
-    $routes->get('step2/stats', 'RekonStep2Controller::getUploadStats', ['as' => 'rekon.step2.stats']);
-    
-    // Step 3 Controller - untuk step3.blade.php (Proses Rekonsiliasi)
-    $routes->get('step3', 'RekonStep3Controller::index', ['as' => 'rekon.step3']);
-    $routes->post('step3/process', 'RekonStep3Controller::processReconciliation', ['as' => 'rekon.step3.process']);
-    $routes->get('step3/progress', 'RekonStep3Controller::getReconciliationProgress', ['as' => 'rekon.step3.progress']);
-    $routes->post('step3/reports', 'RekonStep3Controller::generateReports', ['as' => 'rekon.step3.reports']);
-    $routes->get('step3/download', 'RekonStep3Controller::downloadReport', ['as' => 'rekon.step3.download']);
+    // Step 3 Controller - untuk step3.blade.php (Proses Rekonsiliasi - moved to Persiapan folder)
+    $routes->get('step3', 'Persiapan\Step3Controller::index', ['as' => 'rekon.step3']);
+    $routes->post('step3/process', 'Persiapan\Step3Controller::processReconciliation', ['as' => 'rekon.step3.process']);
+    $routes->get('step3/progress', 'Persiapan\Step3Controller::getReconciliationProgress', ['as' => 'rekon.step3.progress']);
+    $routes->post('step3/reports', 'Persiapan\Step3Controller::generateReports', ['as' => 'rekon.step3.reports']);
+    $routes->get('step3/download', 'Persiapan\Step3Controller::downloadReport', ['as' => 'rekon.step3.download']);
     
     // Process Routes - New Modular Controller Structure
     $routes->group('process', ['namespace' => 'App\Controllers\Rekon\Process'], function($routes) {
@@ -115,10 +112,7 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         $routes->post('konfirmasi-saldo-ca/konfirmasi', 'KonfirmasiSaldoCAController::konfirmasi', ['as' => 'rekon.process.konfirmasi-saldo-ca.konfirmasi']);
     });
     
-    // Report Routes (existing)
-    $routes->get('reports', 'RekonReport::index', ['as' => 'rekon.reports']);
-    $routes->get('reports/(:segment)', 'RekonReport::index/$1', ['as' => 'rekon.reports.date']);
-    $routes->get('reports/download/(:segment)/(:segment)', 'RekonReport::downloadExcel/$1/$2', ['as' => 'rekon.reports.download']);
+    // Note: Report routes removed as RekonReport controller was deleted
 });
 
 $routes->get('get-csrf-token', 'CommonController::getCsrfToken');

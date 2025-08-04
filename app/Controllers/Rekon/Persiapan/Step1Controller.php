@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\Rekon;
+namespace App\Controllers\Rekon\Persiapan;
 
 use App\Controllers\BaseController;
 use App\Traits\HasLogActivity;
@@ -11,7 +11,7 @@ use App\Models\AgnSettlePajakModel;
 use App\Models\AgnTrxMgateModel;
 use App\Services\FileProcessingService;
 
-class RekonStep1Controller extends BaseController
+class Step1Controller extends BaseController
 {
     use HasLogActivity;
 

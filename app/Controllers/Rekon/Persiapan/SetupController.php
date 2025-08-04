@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Controllers\Rekon;
+namespace App\Controllers\Rekon\Persiapan;
 
 use App\Controllers\BaseController;
 use App\Models\ProsesModel;
 use App\Traits\HasLogActivity;
 
-class RekonSetupController extends BaseController
+class SetupController extends BaseController
 {
     use HasLogActivity;
     

@@ -321,11 +321,11 @@ function refreshCSRFToken() {
             url: '{{ site_url("get-csrf-token") }}',
             method: 'GET',
             success: function(response) {
-                if (response.success && response.csrf_hash) {
+                if (response.csrf_token) {
                     // Update semua CSRF input di form
-                    $('input[name="{{ csrf_token() }}"]').val(response.csrf_hash);
-                    console.log('CSRF token refreshed:', response.csrf_hash);
-                    resolve(response.csrf_hash);
+                    $('input[name="{{ csrf_token() }}"]').val(response.csrf_token);
+                    console.log('CSRF token refreshed:', response.csrf_token);
+                    resolve(response.csrf_token);
                 } else {
                     console.warn('Invalid CSRF refresh response');
                     reject('Invalid response');
