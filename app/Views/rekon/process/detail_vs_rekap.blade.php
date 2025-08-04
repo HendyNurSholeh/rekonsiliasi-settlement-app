@@ -256,10 +256,7 @@ $(document).ready(function() {
             console.log('Updated URL:', url.toString());
             
             // Reload DataTable with new filters
-            compareTable.ajax.reload(function(json) {
-                // Update statistics if available in response
-                updateStatistics(json);
-            });
+            compareTable.ajax.reload();
         }
     });
     
@@ -285,10 +282,7 @@ $(document).ready(function() {
             console.log('Updated URL from filter change:', url.toString());
             
             // Reload DataTable with new filters
-            compareTable.ajax.reload(function(json) {
-                // Update statistics if available in response
-                updateStatistics(json);
-            });
+            compareTable.ajax.reload();
         }
     });
 });
@@ -397,40 +391,6 @@ function initializeDataTable() {
              '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>'
     });
-}
-
-function updateStatistics(json) {
-    // Update the statistics display based on current filter
-    if (json && json.data) {
-        const data = json.data;
-        const total = data.length;
-        let countAdaSelisih = 0;
-        let countTidakAdaSelisih = 0;
-        
-        console.log('UpdateStatistics - Data received:', data);
-        console.log('UpdateStatistics - Total records:', total);
-        
-        data.forEach(function(item, index) {
-            const selisih = parseFloat(String(item.SELISIH || 0).replace(/,/g, ''));
-            console.log('Item', index, '- SELISIH:', item.SELISIH, 'Parsed:', selisih);
-            if (selisih !== 0) {
-                countAdaSelisih++;
-            } else {
-                countTidakAdaSelisih++;
-            }
-        });
-        
-        console.log('UpdateStatistics - Ada Selisih:', countAdaSelisih);
-        console.log('UpdateStatistics - Tidak Ada Selisih:', countTidakAdaSelisih);
-        
-        const akurasi = total > 0 ? Math.round((countTidakAdaSelisih / total) * 100 * 10) / 10 : 0;
-        
-        // Update the displayed statistics (note: these show filtered data, not total data)
-        $('#stat-total').text(json.recordsFiltered || total);
-        $('#stat-ada-selisih').text(countAdaSelisih);
-        $('#stat-tidak-ada-selisih').text(countTidakAdaSelisih);
-        $('#stat-akurasi').text(akurasi + '%');
-    }
 }
 
 function formatNumber(num) {
