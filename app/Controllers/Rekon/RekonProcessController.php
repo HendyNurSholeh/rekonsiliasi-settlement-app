@@ -669,18 +669,33 @@ class RekonProcessController extends BaseController
         try {
             $db = \Config\Database::connect();
             
-            // Base query - get all columns from view
-            $baseQuery = "
-                SELECT v_ID, v_TGL_FILE_REKON, IDPARTNER, TERMINALID, v_IS_DIRECT_FEE,
-                       v_GROUP_PRODUK, IDPEL, RP_BILLER_POKOK, RP_BILLER_DENDA,
-                       RP_FEE_STRUK, RP_AMOUNT_STRUK, RP_BILLER_TAG, STATUS,
-                       v_STAT_CORE_AGR, v_SETTLE_VERIFIKASI, v_SETTLE_RP_TAG, v_SETTLE_RP_FEE
-                FROM v_cek_biller_dispute_indirect 
-                WHERE v_TGL_FILE_REKON = ?
-            ";
+            // Debug: Test koneksi database dan view
+            log_message('info', "Testing connection to v_cek_biller_dispute_indirect with date: {$tanggalRekon}");
             
-            // Add filters
-            $queryParams = [$tanggalRekon];
+            // Query langsung dari view v_cek_biller_dispute_indirect
+            // Coba tanpa filter tanggal dulu untuk testing
+            $baseQuery = "SELECT * FROM v_cek_biller_dispute_indirect";
+            $queryParams = [];
+            
+            // Tambahkan filter tanggal jika ada
+            if (!empty($tanggalRekon)) {
+                $baseQuery .= " WHERE v_TGL_FILE_REKON = ?";
+                $queryParams[] = $tanggalRekon;
+            }
+            
+            // Debug: Test view tanpa filter tanggal dulu
+            $testQuery = "SELECT COUNT(*) as total FROM v_cek_biller_dispute_indirect";
+            $testResult = $db->query($testQuery);
+            $totalInView = $testResult->getRow()->total ?? 0;
+            log_message('info', "Total records in v_cek_biller_dispute_indirect: {$totalInView}");
+            
+            // Test dengan tanggal
+            $testDateQuery = "SELECT COUNT(*) as total FROM v_cek_biller_dispute_indirect WHERE v_TGL_FILE_REKON = ?";
+            $testDateResult = $db->query($testDateQuery, [$tanggalRekon]);
+            $totalWithDate = $testDateResult->getRow()->total ?? 0;
+            log_message('info', "Total records with date {$tanggalRekon}: {$totalWithDate}");
+            
+            // Add filters jika ada
             if (!empty($partner)) {
                 $baseQuery .= " AND IDPARTNER LIKE ?";
                 $queryParams[] = '%' . $partner . '%';
@@ -690,24 +705,36 @@ class RekonProcessController extends BaseController
                 $queryParams[] = '%' . $produk . '%';
             }
             
-            // Count total records
-            $totalQuery = str_replace("SELECT v_ID, v_TGL_FILE_REKON, IDPARTNER, TERMINALID, v_IS_DIRECT_FEE, v_GROUP_PRODUK, IDPEL, RP_BILLER_POKOK, RP_BILLER_DENDA, RP_FEE_STRUK, RP_AMOUNT_STRUK, RP_BILLER_TAG, STATUS, v_STAT_CORE_AGR, v_SETTLE_VERIFIKASI, v_SETTLE_RP_TAG, v_SETTLE_RP_FEE", "SELECT COUNT(*) as total", $baseQuery);
-            $totalResult = $db->query($totalQuery, $queryParams);
-            $totalRecords = $totalResult->getRow()->total;
+            // Get total records count
+            $countQuery = str_replace("SELECT *", "SELECT COUNT(*) as total", $baseQuery);
+            $countResult = $db->query($countQuery, $queryParams);
+            $totalRecords = $countResult->getRow()->total ?? 0;
             
-            // Add pagination
-            $baseQuery .= " LIMIT {$length} OFFSET {$start}";
+            log_message('info', "Final count query: {$countQuery}");
+            log_message('info', "Final count result: {$totalRecords}");
             
-            // Execute query
+            // Add ORDER BY and pagination
+            $baseQuery .= " ORDER BY v_ID DESC LIMIT {$length} OFFSET {$start}";
+            
+            // Execute main query
             $result = $db->query($baseQuery, $queryParams);
             $data = $result->getResultArray();
             
-            // Return data as is from view (no need to reformat)
+            log_message('info', "IndirectDispute Final Query: {$baseQuery}");
+            log_message('info', "IndirectDispute Query Params: " . json_encode($queryParams));
+            log_message('info', "IndirectDispute Result count: " . count($data));
+            
             return $this->response->setJSON([
                 'draw' => intval($draw),
                 'recordsTotal' => intval($totalRecords),
                 'recordsFiltered' => intval($totalRecords),
                 'data' => $data,
+                'debug' => [
+                    'totalInView' => $totalInView,
+                    'totalWithDate' => $totalWithDate,
+                    'query' => $baseQuery,
+                    'params' => $queryParams
+                ],
                 'csrf_token' => csrf_hash()
             ]);
             
@@ -718,7 +745,7 @@ class RekonProcessController extends BaseController
                 'recordsTotal' => 0,
                 'recordsFiltered' => 0,
                 'data' => [],
-                'error' => 'Terjadi kesalahan saat mengambil data',
+                'error' => 'Terjadi kesalahan saat mengambil data: ' . $e->getMessage(),
                 'csrf_token' => csrf_hash()
             ]);
         }
