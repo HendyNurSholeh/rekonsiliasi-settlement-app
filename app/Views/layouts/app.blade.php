@@ -136,6 +136,30 @@
                                             </li>
                                         </ul>
                                     </li>
+                                    
+                                    <!-- 3. Rekon Indirect Jurnal -->
+                                    <li class="@if (str_contains($route, 'rekon/process/indirect-jurnal')) active open @endif">
+                                        <a href="javascript:void(0);" title="Rekon Indirect Jurnal">
+                                            <span class="nav-link-text text-left">Rekon Indirect Jurnal</span>
+                                        </a>
+                                        <ul>
+                                            <li class="@if ($route == 'rekon/process/indirect-jurnal-rekap') active @endif">
+                                                <a href="{{ site_url('rekon/process/indirect-jurnal-rekap') }}">
+                                                    <span class="nav-link-text text-left">Rekap Tx Indirect Jurnal</span>
+                                                </a>
+                                            </li>
+                                            <li class="@if ($route == 'rekon/process/indirect-dispute') active @endif">
+                                                <a href="{{ site_url('rekon/process/indirect-dispute') }}">
+                                                    <span class="nav-link-text text-left">Penyelesaian Dispute</span>
+                                                </a>
+                                            </li>
+                                            <li class="@if ($route == 'rekon/process/konfirmasi-saldo-ca') active @endif">
+                                                <a href="{{ site_url('rekon/process/konfirmasi-saldo-ca') }}">
+                                                    <span class="nav-link-text text-left">Konfirmasi Saldo CA</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
                                 </ul>
                             </li>
                        

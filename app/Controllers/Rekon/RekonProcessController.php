@@ -540,6 +540,294 @@ class RekonProcessController extends BaseController
     }
 
     /**
+     * Rekap Tx Indirect Jurnal
+     * Menampilkan data dari procedure p_indirect_jurnal_rekap
+     */
+    public function indirectJurnalRekap()
+    {
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+
+        $data = [
+            'title' => 'Rekap Tx Indirect Jurnal',
+            'tanggalRekon' => $tanggalRekon,
+            'route' => 'rekon/process/indirect-jurnal-rekap'
+        ];
+
+        return $this->render('rekon/process/indirect_jurnal_rekap.blade.php', $data);
+    }
+
+    /**
+     * DataTables AJAX endpoint for indirect jurnal rekap
+     */
+    public function indirectJurnalRekapDataTable()
+    {
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
+        
+        // DataTables parameters
+        $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
+        $start = $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0;
+        $length = $this->request->getGet('length') ?? $this->request->getPost('length') ?? 25;
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Call the stored procedure to get data
+            $procedureQuery = $db->query("CALL p_indirect_jurnal_rekap(?)", [$tanggalRekon]);
+            $allData = $procedureQuery->getResultArray();
+            
+            // Calculate totals
+            $totalRecords = count($allData);
+            $filteredRecords = $totalRecords;
+            
+            // Apply pagination
+            $pagedData = array_slice($allData, $start, $length);
+            
+            // Format data for DataTables
+            $formattedData = [];
+            foreach ($pagedData as $row) {
+                // Remove v_tanggal_rekon from display
+                unset($row['v_tanggal_rekon']);
+                $formattedData[] = $row;
+            }
+            
+            return $this->response->setJSON([
+                'draw' => intval($draw),
+                'recordsTotal' => intval($totalRecords),
+                'recordsFiltered' => intval($filteredRecords),
+                'data' => $formattedData,
+                'csrf_token' => csrf_hash()
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in indirectJurnalRekapDataTable: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'draw' => intval($draw),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Terjadi kesalahan saat mengambil data: ' . $e->getMessage(),
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Konfirmasi Setoran
+     */
+    public function konfirmasiSetoran()
+    {
+        try {
+            $db = \Config\Database::connect();
+            $query = $db->query("CALL p_indirect_jurnal_update(?)", ['PPOB KON']);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Konfirmasi setoran berhasil diproses',
+                'csrf_token' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error in konfirmasiSetoran: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memproses konfirmasi',
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Penyelesaian Dispute Indirect
+     */
+    public function indirectDispute()
+    {
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+
+        $data = [
+            'title' => 'Penyelesaian Dispute Indirect',
+            'tanggalRekon' => $tanggalRekon,
+            'route' => 'rekon/process/indirect-dispute'
+        ];
+
+        return $this->render('rekon/process/indirect_dispute.blade.php', $data);
+    }
+
+    /**
+     * DataTables AJAX endpoint for indirect dispute
+     */
+    public function indirectDisputeDataTable()
+    {
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $partner = $this->request->getGet('partner') ?? $this->request->getPost('partner') ?? '';
+        $produk = $this->request->getGet('produk') ?? $this->request->getPost('produk') ?? '';
+        
+        // DataTables parameters
+        $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
+        $start = $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0;
+        $length = $this->request->getGet('length') ?? $this->request->getPost('length') ?? 25;
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Base query - get all columns from view
+            $baseQuery = "
+                SELECT v_ID, v_TGL_FILE_REKON, IDPARTNER, TERMINALID, v_IS_DIRECT_FEE,
+                       v_GROUP_PRODUK, IDPEL, RP_BILLER_POKOK, RP_BILLER_DENDA,
+                       RP_FEE_STRUK, RP_AMOUNT_STRUK, RP_BILLER_TAG, STATUS,
+                       v_STAT_CORE_AGR, v_SETTLE_VERIFIKASI, v_SETTLE_RP_TAG, v_SETTLE_RP_FEE
+                FROM v_cek_biller_dispute_indirect 
+                WHERE v_TGL_FILE_REKON = ?
+            ";
+            
+            // Add filters
+            $queryParams = [$tanggalRekon];
+            if (!empty($partner)) {
+                $baseQuery .= " AND IDPARTNER LIKE ?";
+                $queryParams[] = '%' . $partner . '%';
+            }
+            if (!empty($produk)) {
+                $baseQuery .= " AND v_GROUP_PRODUK LIKE ?";
+                $queryParams[] = '%' . $produk . '%';
+            }
+            
+            // Count total records
+            $totalQuery = str_replace("SELECT v_ID, v_TGL_FILE_REKON, IDPARTNER, TERMINALID, v_IS_DIRECT_FEE, v_GROUP_PRODUK, IDPEL, RP_BILLER_POKOK, RP_BILLER_DENDA, RP_FEE_STRUK, RP_AMOUNT_STRUK, RP_BILLER_TAG, STATUS, v_STAT_CORE_AGR, v_SETTLE_VERIFIKASI, v_SETTLE_RP_TAG, v_SETTLE_RP_FEE", "SELECT COUNT(*) as total", $baseQuery);
+            $totalResult = $db->query($totalQuery, $queryParams);
+            $totalRecords = $totalResult->getRow()->total;
+            
+            // Add pagination
+            $baseQuery .= " LIMIT {$length} OFFSET {$start}";
+            
+            // Execute query
+            $result = $db->query($baseQuery, $queryParams);
+            $data = $result->getResultArray();
+            
+            // Return data as is from view (no need to reformat)
+            return $this->response->setJSON([
+                'draw' => intval($draw),
+                'recordsTotal' => intval($totalRecords),
+                'recordsFiltered' => intval($totalRecords),
+                'data' => $data,
+                'csrf_token' => csrf_hash()
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in indirectDisputeDataTable: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'draw' => intval($draw),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Terjadi kesalahan saat mengambil data',
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Get indirect dispute detail
+     */
+    public function getIndirectDisputeDetail()
+    {
+        $id = $this->request->getVar('id');
+        
+        if (!$id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID tidak ditemukan',
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            $query = $db->query("
+                SELECT * FROM v_cek_biller_dispute_indirect 
+                WHERE v_ID = ?
+            ", [$id]);
+            
+            $disputeDetail = $query->getRowArray();
+            
+            if (!$disputeDetail) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data tidak ditemukan',
+                    'csrf_token' => csrf_hash()
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $disputeDetail,
+                'csrf_token' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching indirect dispute detail: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Update indirect dispute data
+     */
+    public function updateIndirectDispute()
+    {
+        $id = $this->request->getVar('id');
+        $statusBiller = $this->request->getVar('status_biller');
+        $statusCore = $this->request->getVar('status_core');
+        $statusSettlement = $this->request->getVar('status_settlement');
+        $idpartner = $this->request->getVar('idpartner');
+
+        if (!$id || $statusBiller === null || $statusCore === null || $statusSettlement === null || !$idpartner) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak lengkap',
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            // Note: Using the same procedure as direct jurnal as specified in requirements
+            $query = $db->query("CALL p_direct_jurnal_update(?, ?, ?, ?, ?)", [
+                $id, $statusBiller, $statusCore, $statusSettlement, $idpartner
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Data berhasil diupdate',
+                'csrf_token' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error updating indirect dispute: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengupdate data',
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Konfirmasi Saldo CA
+     */
+    public function konfirmasiSaldoCA()
+    {
+        $data = [
+            'title' => 'Konfirmasi Saldo CA',
+            'route' => 'rekon/process/konfirmasi-saldo-ca'
+        ];
+
+        return $this->render('rekon/process/konfirmasi_saldo_ca.blade.php', $data);
+    }
+
+    /**
      * Get fresh CSRF token
      */
     public function getCSRFToken()
@@ -548,5 +836,226 @@ class RekonProcessController extends BaseController
             'success' => true,
             'csrf_token' => csrf_hash()
         ]);
+    }
+    
+    /**
+     * Get konfirmasi saldo CA datatable
+     */
+    public function konfirmasiSaldoCADataTable()
+    {
+        try {
+            // Basic DataTable parameters
+            $start = intval($this->request->getVar('start') ?? 0);
+            $length = intval($this->request->getVar('length') ?? 10);
+            $draw = intval($this->request->getVar('draw') ?? 1);
+            
+            // Filters
+            $tanggal = $this->request->getVar('tanggal') ?? date('Y-m-d');
+            $channel = $this->request->getVar('channel') ?? '';
+            $status = $this->request->getVar('status') ?? '';
+            
+            // For now, return dummy data since we don't have actual stored procedure
+            $mockData = [
+                [
+                    'ID' => '1',
+                    'CHANNEL' => 'BCA',
+                    'TANGGAL_TRX' => $tanggal,
+                    'JUMLAH_TRANSAKSI' => 150,
+                    'TOTAL_AMOUNT' => 15000000,
+                    'SALDO_CA' => null,
+                    'STATUS_KONFIRMASI' => 'PENDING',
+                    'KETERANGAN' => '',
+                    'CREATED_AT' => date('Y-m-d H:i:s'),
+                    'UPDATED_AT' => date('Y-m-d H:i:s')
+                ],
+                [
+                    'ID' => '2',
+                    'CHANNEL' => 'MANDIRI',
+                    'TANGGAL_TRX' => $tanggal,
+                    'JUMLAH_TRANSAKSI' => 200,
+                    'TOTAL_AMOUNT' => 25000000,
+                    'SALDO_CA' => 25000000,
+                    'STATUS_KONFIRMASI' => 'CONFIRMED',
+                    'KETERANGAN' => 'Saldo sesuai dengan transaksi',
+                    'CREATED_AT' => date('Y-m-d H:i:s'),
+                    'UPDATED_AT' => date('Y-m-d H:i:s')
+                ],
+                [
+                    'ID' => '3',
+                    'CHANNEL' => 'BNI',
+                    'TANGGAL_TRX' => $tanggal,
+                    'JUMLAH_TRANSAKSI' => 75,
+                    'TOTAL_AMOUNT' => 8500000,
+                    'SALDO_CA' => 8400000,
+                    'STATUS_KONFIRMASI' => 'REJECTED',
+                    'KETERANGAN' => 'Selisih Rp 100,000 - perlu pengecekan lebih lanjut',
+                    'CREATED_AT' => date('Y-m-d H:i:s'),
+                    'UPDATED_AT' => date('Y-m-d H:i:s')
+                ]
+            ];
+            
+            // Apply filters
+            $filteredData = array_filter($mockData, function($row) use ($channel, $status) {
+                $channelMatch = empty($channel) || stripos($row['CHANNEL'], $channel) !== false;
+                $statusMatch = empty($status) || $row['STATUS_KONFIRMASI'] === $status;
+                return $channelMatch && $statusMatch;
+            });
+            
+            $totalRecords = count($mockData);
+            $filteredRecords = count($filteredData);
+            
+            // Pagination
+            $pagedData = array_slice($filteredData, $start, $length);
+            
+            return $this->response->setJSON([
+                'draw' => $draw,
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $filteredRecords,
+                'data' => array_values($pagedData)
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Konfirmasi Saldo CA DataTable Error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'draw' => intval($this->request->getVar('draw') ?? 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Terjadi kesalahan saat memuat data'
+            ]);
+        }
+    }
+    
+    /**
+     * Get konfirmasi saldo CA summary
+     */
+    public function konfirmasiSaldoCASummary()
+    {
+        try {
+            $tanggal = $this->request->getVar('tanggal') ?? date('Y-m-d');
+            $channel = $this->request->getVar('channel') ?? '';
+            $status = $this->request->getVar('status') ?? '';
+            
+            // Mock summary data
+            $summaryData = [
+                'total_pending' => 5,
+                'total_confirmed' => 3,
+                'total_rejected' => 1,
+                'total_amount' => 75000000
+            ];
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $summaryData
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Konfirmasi Saldo CA Summary Error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memuat summary data'
+            ]);
+        }
+    }
+    
+    /**
+     * Submit konfirmasi saldo CA
+     */
+    public function submitKonfirmasiSaldoCA()
+    {
+        try {
+            $validation = \Config\Services::validation();
+            $validation->setRules([
+                'id' => 'required',
+                'saldo_ca' => 'required|numeric',
+                'status' => 'required|in_list[CONFIRMED,REJECTED]',
+                'keterangan' => 'required|min_length[10]'
+            ]);
+            
+            if (!$validation->withRequest($this->request)->run()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data tidak valid: ' . implode(', ', $validation->getErrors())
+                ]);
+            }
+            
+            $id = $this->request->getPost('id');
+            $saldoCA = $this->request->getPost('saldo_ca');
+            $status = $this->request->getPost('status');
+            $keterangan = $this->request->getPost('keterangan');
+            
+            // TODO: Implement actual database update using stored procedure
+            // For now, just return success
+            
+            log_message('info', "Konfirmasi Saldo CA - ID: $id, Status: $status, Saldo: $saldoCA");
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Konfirmasi saldo berhasil disimpan'
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Submit Konfirmasi Saldo CA Error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyimpan konfirmasi'
+            ]);
+        }
+    }
+    
+    /**
+     * Bulk konfirmasi saldo CA
+     */
+    public function bulkKonfirmasiSaldoCA()
+    {
+        try {
+            $ids = $this->request->getPost('ids');
+            $status = $this->request->getPost('status');
+            $keterangan = $this->request->getPost('keterangan');
+            
+            if (empty($ids) || !is_array($ids)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada data yang dipilih'
+                ]);
+            }
+            
+            $validation = \Config\Services::validation();
+            $validation->setRules([
+                'status' => 'required|in_list[CONFIRMED,REJECTED]',
+                'keterangan' => 'required|min_length[5]'
+            ]);
+            
+            if (!$validation->withRequest($this->request)->run()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data tidak valid: ' . implode(', ', $validation->getErrors())
+                ]);
+            }
+            
+            // TODO: Implement actual bulk update using stored procedure
+            // For now, just return success
+            
+            $count = count($ids);
+            $action = $status === 'CONFIRMED' ? 'dikonfirmasi' : 'ditolak';
+            
+            log_message('info', "Bulk Konfirmasi Saldo CA - Count: $count, Status: $status");
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "$count data berhasil $action"
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Bulk Konfirmasi Saldo CA Error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memproses bulk konfirmasi'
+            ]);
+        }
     }
 }

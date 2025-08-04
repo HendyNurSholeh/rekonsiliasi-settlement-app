@@ -91,6 +91,20 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->get('process/direct-jurnal/dispute/datatable', 'RekonProcessController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable']);
     $routes->post('process/direct-jurnal/dispute/datatable', 'RekonProcessController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable.post']);
     
+    // Indirect Jurnal routes
+    $routes->get('process/indirect-jurnal-rekap', 'RekonProcessController::indirectJurnalRekap', ['as' => 'rekon.process.indirect-jurnal-rekap']);
+    $routes->get('process/indirect-jurnal-rekap/datatable', 'RekonProcessController::indirectJurnalRekapDataTable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable']);
+    $routes->post('process/indirect-jurnal-rekap/konfirmasi', 'RekonProcessController::konfirmasiSetoran', ['as' => 'rekon.process.indirect-jurnal-rekap.konfirmasi']);
+    $routes->get('process/indirect-dispute', 'RekonProcessController::indirectDispute', ['as' => 'rekon.process.indirect-dispute']);
+    $routes->get('process/indirect-dispute/datatable', 'RekonProcessController::indirectDisputeDataTable', ['as' => 'rekon.process.indirect-dispute.datatable']);
+    $routes->get('process/indirect-dispute/detail', 'RekonProcessController::getIndirectDisputeDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
+    $routes->post('process/indirect-dispute/update', 'RekonProcessController::updateIndirectDispute', ['as' => 'rekon.process.indirect-dispute.update']);
+    $routes->get('process/konfirmasi-saldo-ca', 'RekonProcessController::konfirmasiSaldoCA', ['as' => 'rekon.process.konfirmasi-saldo-ca']);
+    $routes->get('process/konfirmasi-saldo-ca/datatable', 'RekonProcessController::konfirmasiSaldoCADataTable', ['as' => 'rekon.process.konfirmasi-saldo-ca.datatable']);
+    $routes->get('process/konfirmasi-saldo-ca/summary', 'RekonProcessController::konfirmasiSaldoCASummary', ['as' => 'rekon.process.konfirmasi-saldo-ca.summary']);
+    $routes->post('process/konfirmasi-saldo-ca', 'RekonProcessController::submitKonfirmasiSaldoCA', ['as' => 'rekon.process.konfirmasi-saldo-ca.submit']);
+    $routes->post('process/konfirmasi-saldo-ca/bulk', 'RekonProcessController::bulkKonfirmasiSaldoCA', ['as' => 'rekon.process.konfirmasi-saldo-ca.bulk']);
+    
     // CSRF Token refresh route
     $routes->get('process/get-csrf-token', 'RekonProcessController::getCSRFToken', ['as' => 'rekon.process.csrf-token']);
 
