@@ -311,7 +311,7 @@
                 <div class="page-content-overlay" data-action="toggle" data-class="mobile-nav-on"></div>
                 <footer class="page-footer" role="contentinfo">
                     <div class="d-flex align-items-center flex-1 text-muted">
-                        <span class="fw-700">2025 © Devisa Manager Tools by&nbsp;<a href='https://www.bankkalsel.co.id/'
+                        <span class="fw-700">2025 © Sistem Rekonsiliasi Settlement by&nbsp;<a href='https://www.bankkalsel.co.id/'
                                 class='text-primary fw-500' title='bankkalsel.co.id'
                                 target='_blank'>bankkalsel.co.id</a></span>
                     </div>

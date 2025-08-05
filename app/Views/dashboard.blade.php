@@ -268,18 +268,12 @@
                         </h6>
                         <ul class="mb-0 small">
                             <li>Pastikan file yang diupload dalam format yang benar</li>
-                            <li>Backup data sebelum memulai proses</li>
-                            <li>Proses rekonsiliasi sebaiknya dilakukan step by step</li>
+                            <li>Proses rekonsiliasi dilakukan step by step</li>
                             <li>Hubungi administrator jika mengalami kendala</li>
+                            <li>Selalu lakukan pengecekan ulang hasil rekonsiliasi sebelum finalisasi</li>
                         </ul>
                     </div>
-                    
-                    <div class="text-center mt-3">
-                        <a href="#" class="btn btn-outline-primary btn-sm">
-                            <i class="fal fa-question-circle mr-1"></i>
-                            Bantuan & Tutorial
-                        </a>
-                    </div>
+
                 </div>
             </div>
         </div>
