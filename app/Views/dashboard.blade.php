@@ -50,15 +50,44 @@
                                     <h4 class="mb-1">Status Rekonsiliasi</h4>
                                     <p class="text-muted mb-2">
                                         @php
+                                            use Carbon\Carbon;
+
                                             $db = \Config\Database::connect();
                                             $query = $db->query("SELECT TGL_REKON FROM t_proses WHERE STATUS = 1 ORDER BY TGL_REKON DESC LIMIT 1");
                                             $result = $query->getRow();
+
+                                            // Helper untuk format tanggal Indonesia
+                                            function tanggalIndo($tanggal) {
+                                                $bulan = [
+                                                    1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                                                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                                                ];
+                                                $tgl = date('d', strtotime($tanggal));
+                                                $bln = $bulan[(int)date('m', strtotime($tanggal))];
+                                                $thn = date('Y', strtotime($tanggal));
+                                                return $tgl . ' ' . $bln . ' ' . $thn;
+                                            }
+
+                                            function hariIndo($tanggal) {
+                                                $hari = [
+                                                    'Sunday' => 'Minggu',
+                                                    'Monday' => 'Senin',
+                                                    'Tuesday' => 'Selasa',
+                                                    'Wednesday' => 'Rabu',
+                                                    'Thursday' => 'Kamis',
+                                                    'Friday' => 'Jumat',
+                                                    'Saturday' => 'Sabtu'
+                                                ];
+                                                $en = date('l', strtotime($tanggal));
+                                                return $hari[$en] ?? $en;
+                                            }
+
                                             if ($result) {
                                                 $tanggalAktif = $result->TGL_REKON;
-                                                $tanggalFormatted = date('d F Y', strtotime($tanggalAktif));
+                                                $tanggalFormatted = hariIndo($tanggalAktif) . ', ' . tanggalIndo($tanggalAktif);
                                                 $hariIni = date('Y-m-d');
                                                 $selisihHari = floor((strtotime($hariIni) - strtotime($tanggalAktif)) / (60*60*24));
-                                                
+
                                                 echo "Tanggal Aktif: <strong class='text-primary'>{$tanggalFormatted}</strong>";
                                                 if ($selisihHari == 0) {
                                                     echo " <span class='badge badge-success'>Hari Ini</span>";
@@ -81,7 +110,7 @@
                             </div>
                         </div>
                         <div class="col-lg-4 text-right">
-                            <a href="{{ site_url('rekon/persiapan') }}" class="btn btn-primary btn-lg">
+                            <a href="{{ site_url('rekon') }}" class="btn btn-primary btn-lg">
                                 <i class="fal fa-plus-circle mr-2"></i>
                                 Setup Rekonsiliasi Baru
                             </a>
@@ -106,7 +135,7 @@
                     <p class="text-muted mb-4">Ikuti langkah-langkah berikut untuk memulai proses rekonsiliasi settlement:</p>
                     <div class="row">
                         <div class="col-12 mb-3">
-                            <a href="{{ site_url('rekon/persiapan/step3') }}" class="btn btn-outline-primary btn-lg w-100 text-left py-3">
+                            <a href="{{ site_url('rekon') }}" class="btn btn-outline-primary btn-lg w-100 text-left py-3">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-primary rounded-circle text-white fw-bold mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">1</div>
                                     <div>
@@ -117,7 +146,7 @@
                             </a>
                         </div>
                         <div class="col-12 mb-3">
-                            <a href="{{ site_url('rekon/persiapan/step2') }}" class="btn btn-outline-success btn-lg w-100 text-left py-3">
+                            <a href="{{ site_url('rekon/step2') }}" class="btn btn-outline-success btn-lg w-100 text-left py-3">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-success rounded-circle text-white fw-bold mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">2</div>
                                     <div>
@@ -128,7 +157,7 @@
                             </a>
                         </div>
                         <div class="col-12">
-                            <a href="{{ site_url('rekon/persiapan/step3') }}" class="btn btn-outline-warning btn-lg w-100 text-left py-3">
+                            <a href="{{ site_url('rekon/step2') }}" class="btn btn-outline-warning btn-lg w-100 text-left py-3">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-warning rounded-circle text-white fw-bold mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">3</div>
                                     <div>
