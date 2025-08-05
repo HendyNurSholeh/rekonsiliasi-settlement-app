@@ -41,7 +41,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
-                            <button type="button" class="btn btn-secondary ms-2" onclick="resetFilters()">
+                            <button type="button" class="btn btn-secondary ml-2" onclick="resetFilters()">
                                 <i class="fal fa-undo"></i> Reset
                             </button>
                         </div>

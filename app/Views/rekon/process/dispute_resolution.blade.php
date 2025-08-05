@@ -56,7 +56,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                            <button type="button" class="btn btn-secondary ml-2" onclick="resetFilters()">
                                 <i class="fal fa-undo"></i> Reset
                             </button>
                         </div>
@@ -707,10 +707,12 @@ function showAlert(type, message) {
 }
 
 function resetFilters() {
-    $('#kode_uker').val('').trigger('change');
-    $('#status').val('').trigger('change');
-    $('#month').val('').trigger('change');
-    $('#nama_file').val('');
+   // Remove 'tanggal' parameter from URL and redirect
+   const url = new URL(window.location);
+   url.searchParams.delete('tanggal');
+   url.searchParams.delete('status_biller');
+   url.searchParams.delete('status_core');
+   window.location.href = url.pathname + url.search;
 }
 </script>
 @endpush
