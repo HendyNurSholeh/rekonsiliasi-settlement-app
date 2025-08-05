@@ -50,12 +50,6 @@
                                     <h4 class="mb-1">Status Rekonsiliasi</h4>
                                     <p class="text-muted mb-2">
                                         @php
-                                            use Carbon\Carbon;
-
-                                            $db = \Config\Database::connect();
-                                            $query = $db->query("SELECT TGL_REKON FROM t_proses WHERE STATUS = 1 ORDER BY TGL_REKON DESC LIMIT 1");
-                                            $result = $query->getRow();
-
                                             // Helper untuk format tanggal Indonesia
                                             function tanggalIndo($tanggal) {
                                                 $bulan = [
@@ -82,8 +76,8 @@
                                                 return $hari[$en] ?? $en;
                                             }
 
-                                            if ($result) {
-                                                $tanggalAktif = $result->TGL_REKON;
+                                            if ($tgl_rekon) {
+                                                $tanggalAktif = $tgl_rekon->TGL_REKON;
                                                 $tanggalFormatted = hariIndo($tanggalAktif) . ', ' . tanggalIndo($tanggalAktif);
                                                 $hariIni = date('Y-m-d');
                                                 $selisihHari = floor((strtotime($hariIni) - strtotime($tanggalAktif)) / (60*60*24));

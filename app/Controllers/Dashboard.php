@@ -18,9 +18,13 @@ class Dashboard extends BaseController
 	public function index()
 	{
 		Carbon::setLocale('id');
+		$db = \Config\Database::connect();
+        $query = $db->query("SELECT TGL_REKON FROM t_proses WHERE STATUS = 1 ORDER BY TGL_REKON DESC LIMIT 1");
+        $tgl_rekon = $query->getRow();
 		$data = [
 			'title' => 'Beranda',
 			'route' => 'dashboard',
+			'tgl_rekon' => $tgl_rekon,
 			'today' => Carbon::now()->isoFormat('dddd, D MMMM Y'),
 			'date' => Carbon::now()->format('Y-m-d'),
 		];
