@@ -668,21 +668,12 @@ function showProsesDispute(vId) {
 }
 
 function resetFilters() {
-    $('#tanggal').val('{{ $tanggalRekon }}');
-    $('#status_biller').val('');
-    $('#status_core').val('');
-    
-    // Reload table
-    if (disputeTable) {
-        disputeTable.ajax.reload();
-    }
-    
-    // Update URL
+    // Remove 'tanggal' parameter from URL and redirect
     const url = new URL(window.location);
+    url.searchParams.delete('tanggal');
     url.searchParams.delete('status_biller');
     url.searchParams.delete('status_core');
-    url.searchParams.set('tanggal', '{{ $tanggalRekon }}');
-    window.history.pushState({}, '', url);
+    window.location.href = url.pathname + url.search;
 }
 
 function formatNumber(num) {

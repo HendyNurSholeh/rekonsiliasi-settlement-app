@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('styles')
+<link rel="stylesheet" href="{{ base_url('css/rekon/process/indirect_jurnal_rekap.css') }}">
+@endpush
+
 @section('content')
 <div class="subheader">
     <h1 class="subheader-title">
@@ -36,10 +40,10 @@
                                    value="{{ $tanggalRekon }}" required>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                            <button type="button" class="btn btn-secondary ml-2" onclick="resetFilters()">
                                 <i class="fal fa-undo"></i> Reset
                             </button>
                         </div>
@@ -351,11 +355,11 @@ function showAlert(type, message) {
 }
 
 function resetFilters() {
-    $('#tanggal').val('');
+    // Remove 'tanggal' parameter from URL and redirect
+    const url = new URL(window.location);
+    url.searchParams.delete('tanggal');
+    window.location.href = url.pathname + url.search;
 }
 </script>
 @endpush
 
-@push('styles')
-<link rel="stylesheet" href="{{ base_url('css/rekon/process/indirect_jurnal_rekap.css') }}">
-@endpush
