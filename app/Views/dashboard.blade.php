@@ -1,319 +1,367 @@
 @extends('layouts.app')
 @section('content')
-    <ol class="breadcrumb page-breadcrumb">
-        <li class="breadcrumb-item">
-            <a href="{{ site_url('dashboard') }}">
-                <i class="fal fa-home mr-1"></i> Home
-            </a>
-        </li>
-        <li class="breadcrumb-item active">{{ $title }}</li>
-        <li class="position-absolute pos-right d-none d-sm-block">{{ $today }}</li>
-    </ol>
-
-    <div class="subheader">
-        <h1 class="subheader-title">
-            <i class='subheader-icon fal fa-balance-scale'></i> Rekonsiliasi <span class='fw-300'>Dashboard</span>
-        </h1>
-        <div class="subheader-block d-lg-flex align-items-center">
-            <div class="d-flex mr-4">
-                <div class="mr-2">
-                    <span class="peity-donut"
-                        data-peity="{ &quot;fill&quot;: [&quot;#28a745&quot;, &quot;#d4edda&quot;],  &quot;innerRadius&quot;: 14, &quot;radius&quot;: 20 }">8/10</span>
-                </div>
-                <div>
-                    <label class="fs-sm mb-0 mt-2 mt-md-0">Data Matched</label>
-                    <h4 class="font-weight-bold mb-0">85.5%</h4>
-                </div>
-            </div>
-            <div class="d-flex mr-0">
-                <div class="mr-2">
-                    <span class="peity-donut"
-                        data-peity="{ &quot;fill&quot;: [&quot;#007bff&quot;, &quot;#b3d9ff&quot;],  &quot;innerRadius&quot;: 14, &quot;radius&quot;: 20 }">7/10</span>
-                </div>
-                <div>
-                    <label class="fs-sm mb-0 mt-2 mt-md-0">Total Transaksi</label>
-                    <h4 class="font-weight-bold mb-0">2,847</h4>
+    <!-- Header dengan Real-time Clock -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body py-4">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="text-white">
+                                <h1 class="display-5 fw-bold mb-2">
+                                    <i class="fal fa-balance-scale mr-3"></i>
+                                    Selamat Datang di Sistem Rekonsiliasi Settlement
+                                </h1>
+                                <p class="lead mb-0 opacity-90">Bank Kalsel</p>
+                                <p class="mb-0 opacity-75">Kelola proses rekonsiliasi settlement dengan mudah dan akurat</p>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 text-right">
+                            <div class="text-white">
+                                <div class="display-4 fw-bold" id="live-clock">
+                                    {{ date('H:i:s') }}
+                                </div>
+                                <p class="h5 mb-0" id="live-date">
+                                    {{ date('l, d F Y') }}
+                                </p>
+                                <small class="opacity-75">Waktu Indonesia Tengah (WITA)</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row">
-        <div class="col-sm-6 col-xl-3">
-            <div class="p-3 bg-success-300 rounded overflow-hidden position-relative text-white mb-g">
-                <div class="">
-                    <h3 class="display-4 d-block l-h-n m-0 fw-500">
-                        1,247
-                        <small class="m-0 l-h-n">transaksi matched</small>
-                    </h3>
+    <!-- Status Rekonsiliasi Aktif -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="d-flex align-items-center">
+                                <div class="mr-4">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fal fa-calendar-check fa-2x text-white"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="mb-1">Status Rekonsiliasi</h4>
+                                    <p class="text-muted mb-2">
+                                        @php
+                                            $db = \Config\Database::connect();
+                                            $query = $db->query("SELECT TGL_REKON FROM t_proses WHERE STATUS = 1 ORDER BY TGL_REKON DESC LIMIT 1");
+                                            $result = $query->getRow();
+                                            if ($result) {
+                                                $tanggalAktif = $result->TGL_REKON;
+                                                $tanggalFormatted = date('d F Y', strtotime($tanggalAktif));
+                                                $hariIni = date('Y-m-d');
+                                                $selisihHari = floor((strtotime($hariIni) - strtotime($tanggalAktif)) / (60*60*24));
+                                                
+                                                echo "Tanggal Aktif: <strong class='text-primary'>{$tanggalFormatted}</strong>";
+                                                if ($selisihHari == 0) {
+                                                    echo " <span class='badge badge-success'>Hari Ini</span>";
+                                                } elseif ($selisihHari > 0) {
+                                                    if ($selisihHari >= 15) {
+                                                        echo " <span class='badge badge-warning text-white'>{$selisihHari} hari yang lalu</span>";
+                                                    } else {
+                                                        echo " <span class='badge badge-warning'>{$selisihHari} hari yang lalu</span>";
+                                                    }
+                                                } else {
+                                                    echo " <span class='badge badge-info'>" . abs($selisihHari) . " hari ke depan</span>";
+                                                }
+                                            } else {
+                                                echo "<span class='text-warning'>Belum ada tanggal rekonsiliasi yang aktif</span>";
+                                            }
+                                        @endphp
+                                    </p>
+                                    <small class="text-muted">Untuk memulai rekonsiliasi periode baru, silakan setup tanggal melalui menu persiapan</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 text-right">
+                            <a href="{{ site_url('rekon/persiapan') }}" class="btn btn-primary btn-lg">
+                                <i class="fal fa-plus-circle mr-2"></i>
+                                Setup Rekonsiliasi Baru
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <i class="fal fa-check-circle position-absolute pos-right pos-bottom opacity-15 mb-n1 mr-n1"
-                    style="font-size:6rem"></i>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="p-3 bg-warning-400 rounded overflow-hidden position-relative text-white mb-g">
-                <div class="">
-                    <h3 class="display-4 d-block l-h-n m-0 fw-500">
-                        Rp 2.8M
-                        <small class="m-0 l-h-n">Total Settlement</small>
-                    </h3>
-                </div>
-                <i class="fal fa-money-bill-alt position-absolute pos-right pos-bottom opacity-15  mb-n1 mr-n4"
-                    style="font-size: 6rem;"></i>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="p-3 bg-danger-200 rounded overflow-hidden position-relative text-white mb-g">
-                <div class="">
-                    <h3 class="display-4 d-block l-h-n m-0 fw-500">
-                        156
-                        <small class="m-0 l-h-n">Unmatched Records</small>
-                    </h3>
-                </div>
-                <i class="fal fa-exclamation-triangle position-absolute pos-right pos-bottom opacity-15 mb-n5 mr-n6"
-                    style="font-size: 8rem;"></i>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="p-3 bg-info-200 rounded overflow-hidden position-relative text-white mb-g">
-                <div class="">
-                    <h3 class="display-4 d-block l-h-n m-0 fw-500">
-                        98.5%
-                        <small class="m-0 l-h-n">Proses Selesai</small>
-                    </h3>
-                </div>
-                <i class="fal fa-chart-line position-absolute pos-right pos-bottom opacity-15 mb-n1 mr-n4"
-                    style="font-size: 6rem;"></i>
             </div>
         </div>
     </div>
 
-    <!-- Dashboard Panels -->
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fal fa-rocket text-primary mr-2"></i>
+                        Mulai Proses Rekonsiliasi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Ikuti langkah-langkah berikut untuk memulai proses rekonsiliasi settlement:</p>
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <a href="{{ site_url('rekon/persiapan/step3') }}" class="btn btn-outline-primary btn-lg w-100 text-left py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary rounded-circle text-white fw-bold mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">1</div>
+                                    <div>
+                                        <div class="fw-bold">Upload File Settlement</div>
+                                        <small class="text-muted text-sm">Unggah file data dari berbagai sumber</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <a href="{{ site_url('rekon/persiapan/step2') }}" class="btn btn-outline-success btn-lg w-100 text-left py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-success rounded-circle text-white fw-bold mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">2</div>
+                                    <div>
+                                        <div class="fw-bold">Validasi & Mapping Data</div>
+                                        <small class="text-muted text-sm">Periksa dan sesuaikan format data</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-12">
+                            <a href="{{ site_url('rekon/persiapan/step3') }}" class="btn btn-outline-warning btn-lg w-100 text-left py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-warning rounded-circle text-white fw-bold mr-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">3</div>
+                                    <div>
+                                        <div class="fw-bold">Konfirmasi & Proses</div>
+                                        <small class="text-muted text-sm">Finalisasi dan jalankan rekonsiliasi</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fal fa-chart-line text-success mr-2"></i>
+                        Menu Analisis & Laporan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Akses menu analisis dan laporan untuk data yang sudah diproses:</p>
+                    
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <a href="{{ site_url('rekon/process/detail-vs-rekap') }}" class="btn btn-outline-info btn-block py-3">
+                                <i class="fal fa-balance-scale fa-2x d-block mb-2"></i>
+                                <span class="fw-bold small">Laporan Detail vs Rekap</span>
+                            </a>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <a href="{{ site_url('rekon/process/direct-jurnal-rekap') }}" class="btn btn-outline-success btn-block py-3">
+                                <i class="fal fa-file-invoice fa-2x d-block mb-2"></i>
+                                <span class="fw-bold small">Rekap Tx Direct Jurnal</span>
+                            </a>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <a href="{{ site_url('rekon/process/penyelesaian-dispute') }}" class="btn btn-outline-danger btn-block py-3">
+                                <i class="fal fa-exclamation-triangle fa-2x d-block mb-2"></i>
+                                <span class="fw-bold small">Penyelesaian Dispute</span>
+                            </a>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <a href="{{ site_url('rekon/process/indirect-dispute') }}" class="btn btn-outline-warning btn-block py-3">
+                                <i class="fal fa-question-circle fa-2x d-block mb-2"></i>
+                                <span class="fw-bold small">Penyelesaian Dispute</span>
+                            </a>
+                        </div>
+                        <div class="col-12">
+                            <a href="{{ site_url('rekon/process/indirect-jurnal-rekap') }}" class="btn btn-outline-secondary btn-block py-3">
+                                <i class="fal fa-file-alt mr-2"></i>
+                                <span class="fw-bold">Rekap Tx Indirect Jurnal</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panduan & Tips -->
     <div class="row">
-        <div class="col-lg-12">
-            <div id="panel-1" class="panel">
-                <div class="panel-hdr">
-                    <h2>Grafik Rekonsiliasi Harian</h2>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fal fa-lightbulb text-warning mr-2"></i>
+                        Cara Penggunaan Sistem
+                    </h5>
                 </div>
-                <div class="panel-container show">
-                    <div class="panel-content bg-subtlelight-fade">
-                        <div id="js-checkbox-toggles" class="d-flex mb-3">
-                            <div class="custom-control custom-switch mr-2">
-                                <input type="checkbox" class="custom-control-input" name="gra-0" id="gra-0" checked="checked">
-                                <label class="custom-control-label" for="gra-0">Transaksi Matched</label>
-                            </div>
-                            <div class="custom-control custom-switch mr-2">
-                                <input type="checkbox" class="custom-control-input" name="gra-1" id="gra-1" checked="checked">
-                                <label class="custom-control-label" for="gra-1">Transaksi Unmatched</label>
-                            </div>
-                            <div class="custom-control custom-switch mr-2">
-                                <input type="checkbox" class="custom-control-input" name="gra-2" id="gra-2" checked="checked">
-                                <label class="custom-control-label" for="gra-2">Total Settlement</label>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="media">
+                                <div class="bg-primary rounded-circle text-white mr-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fal fa-upload"></i>
+                                </div>
+                                <div class="media-body">
+                                    <h6 class="fw-bold">1. Persiapan Data</h6>
+                                    <p class="text-muted small mb-0">Upload file data agregator detail, settlement education, settlement pajak (format text), dan data M-Gate (format CSV)</p>
+                                </div>
                             </div>
                         </div>
-                        <div id="flot-toggles" class="w-100 mt-4" style="height: 300px"></div>
+                        <div class="col-md-6 mb-4">
+                            <div class="media">
+                                <div class="bg-success rounded-circle text-white mr-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fal fa-cogs"></i>
+                                </div>
+                                <div class="media-body">
+                                    <h6 class="fw-bold">2. Validasi Data</h6>
+                                    <p class="text-muted small mb-0">Sistem akan memvalidasi format dan kelengkapan data, serta melakukan mapping field</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="media">
+                                <div class="bg-warning rounded-circle text-white mr-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fal fa-sync"></i>
+                                </div>
+                                <div class="media-body">
+                                    <h6 class="fw-bold">3. Proses Matching</h6>
+                                    <p class="text-muted small mb-0">Sistem akan mencocokkan data dan mengidentifikasi transaksi yang sesuai atau bermasalah</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="media">
+                                <div class="bg-danger rounded-circle text-white mr-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <i class="fal fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="media-body">
+                                    <h6 class="fw-bold">4. Resolusi Dispute</h6>
+                                    <p class="text-muted small mb-0">Tangani transaksi yang tidak match dan dokumentasikan penyelesaian dispute</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div id="panel-2" class="panel panel-locked" data-panel-sortable data-panel-collapsed data-panel-close>
-                <div class="panel-hdr">
-                    <h2>Status <span class="fw-300"><i>Settlement</i></span></h2>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fal fa-info-circle text-info mr-2"></i>
+                        Informasi Penting
+                    </h5>
                 </div>
-                <div class="panel-container show">
-                    <div class="panel-content position-relative">
-                        <div class="p-1 position-absolute pos-right pos-top mt-3 mr-3 z-index-cloud d-flex align-items-center justify-content-center">
-                            <div class="border-faded border-top-0 border-left-0 border-bottom-0 py-2 pr-4 mr-3 hidden-sm-down">
-                                <div class="text-right fw-500 l-h-n d-flex flex-column">
-                                    <div class="h3 m-0 d-flex align-items-center justify-content-end">
-                                        <div class='icon-stack mr-2'>
-                                            <i class="base base-7 icon-stack-3x opacity-100 color-success-600"></i>
-                                            <i class="base base-7 icon-stack-2x opacity-100 color-success-500"></i>
-                                            <i class="fal fa-check icon-stack-1x opacity-100 color-white"></i>
-                                        </div>
-                                        98.5% Match
-                                    </div>
-                                    <span class="m-0 fs-xs text-muted">Tingkat keberhasilan rekonsiliasi settlement hari ini</span>
-                                </div>
-                            </div>
-                            <div class="js-easy-pie-chart color-info-400 position-relative d-inline-flex align-items-center justify-content-center"
-                                data-percent="85" data-piesize="95" data-linewidth="10" data-scalelength="5">
-                                <div class="js-easy-pie-chart color-success-400 position-relative position-absolute pos-left pos-right pos-top pos-bottom d-flex align-items-center justify-content-center"
-                                    data-percent="98" data-piesize="60" data-linewidth="5" data-scalelength="1" data-scalecolor="#fff">
-                                    <div class="position-absolute pos-top pos-left pos-right pos-bottom d-flex align-items-center justify-content-center fw-500 fs-xl text-dark">
-                                        98%</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="flot-area" style="width:100%; height:300px;"></div>
+                <div class="card-body">
+                    <div class="alert alert-info border-0">
+                        <h6 class="alert-heading">
+                            <i class="fal fa-exclamation-circle mr-1"></i>
+                            Perhatian
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>Pastikan file yang diupload dalam format yang benar</li>
+                            <li>Backup data sebelum memulai proses</li>
+                            <li>Proses rekonsiliasi sebaiknya dilakukan step by step</li>
+                            <li>Hubungi administrator jika mengalami kendala</li>
+                        </ul>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div id="panel-3" class="panel panel-locked" data-panel-sortable data-panel-collapsed data-panel-close>
-                <div class="panel-hdr">
-                    <h2>Statistik <span class="fw-300"><i>Harian</i></span></h2>
-                </div>
-                <div class="panel-container show">
-                    <div class="panel-content position-relative">
-                        <div class="pb-5 pt-3">
-                            <div class="row">
-                                <div class="col-6 col-xl-3 d-sm-flex align-items-center">
-                                    <div class="p-2 mr-3 bg-success-200 rounded">
-                                        <span class="peity-bar" data-peity="{&quot;fill&quot;: [&quot;#fff&quot;], &quot;width&quot;: 27, &quot;height&quot;: 27 }">8,9,7,9,8</span>
-                                    </div>
-                                    <div>
-                                        <label class="fs-sm mb-0">Match Rate</label>
-                                        <h4 class="font-weight-bold mb-0">85.2%</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-xl-3 d-sm-flex align-items-center">
-                                    <div class="p-2 mr-3 bg-info-300 rounded">
-                                        <span class="peity-bar" data-peity="{&quot;fill&quot;: [&quot;#fff&quot;], &quot;width&quot;: 27, &quot;height&quot;: 27 }">5,7,9,8,6</span>
-                                    </div>
-                                    <div>
-                                        <label class="fs-sm mb-0">Total Files</label>
-                                        <h4 class="font-weight-bold mb-0">12</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-xl-3 d-sm-flex align-items-center">
-                                    <div class="p-2 mr-3 bg-warning-300 rounded">
-                                        <span class="peity-bar" data-peity="{&quot;fill&quot;: [&quot;#fff&quot;], &quot;width&quot;: 27, &quot;height&quot;: 27 }">3,2,1,2,1</span>
-                                    </div>
-                                    <div>
-                                        <label class="fs-sm mb-0">Pending</label>
-                                        <h4 class="font-weight-bold mb-0">3</h4>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-xl-3 d-sm-flex align-items-center">
-                                    <div class="p-2 mr-3 bg-primary-500 rounded">
-                                        <span class="peity-bar" data-peity="{&quot;fill&quot;: [&quot;#fff&quot;], &quot;width&quot;: 27, &quot;height&quot;: 27 }">6,8,7,9,8</span>
-                                    </div>
-                                    <div>
-                                        <label class="fs-sm mb-0">Processed</label>
-                                        <h4 class="font-weight-bold mb-0">9</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="flotVisit" style="width:100%; height:208px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-12">
-            <div id="panel-4" class="panel">
-                <div class="panel-hdr">
-                    <h2>Recent <span class="fw-300"><i>Settlement Records</i></span></h2>
-                </div>
-                <div class="panel-container show">
-                    <div class="panel-content">
-                        <table id="dt-basic-example" class="table table-bordered table-hover table-striped w-100">
-                            <thead class="bg-primary-200">
-                                <tr>
-                                    <th>Settlement ID</th>
-                                    <th>Tanggal</th>
-                                    <th>Merchant</th>
-                                    <th>Produk</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Match Rate</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>STL-20250131-001</td>
-                                    <td>31-01-25</td>
-                                    <td>Bank ABC</td>
-                                    <td>Education</td>
-                                    <td>Rp 150,000</td>
-                                    <td><span class="badge badge-success">Matched</span></td>
-                                    <td>100%</td>
-                                    <td><button class="btn btn-sm btn-primary">Detail</button></td>
-                                </tr>
-                                <tr>
-                                    <td>STL-20250131-002</td>
-                                    <td>31-01-25</td>
-                                    <td>Bank XYZ</td>
-                                    <td>Pajak</td>
-                                    <td>Rp 250,000</td>
-                                    <td><span class="badge badge-warning">Partial</span></td>
-                                    <td>85%</td>
-                                    <td><button class="btn btn-sm btn-warning">Review</button></td>
-                                </tr>
-                                <tr>
-                                    <td>STL-20250131-003</td>
-                                    <td>31-01-25</td>
-                                    <td>M-Gate</td>
-                                    <td>Payment</td>
-                                    <td>Rp 500,000</td>
-                                    <td><span class="badge badge-success">Matched</span></td>
-                                    <td>100%</td>
-                                    <td><button class="btn btn-sm btn-primary">Detail</button></td>
-                                </tr>
-                                <tr>
-                                    <td>STL-20250131-004</td>
-                                    <td>31-01-25</td>
-                                    <td>Bank DEF</td>
-                                    <td>Education</td>
-                                    <td>Rp 175,000</td>
-                                    <td><span class="badge badge-danger">Unmatched</span></td>
-                                    <td>0%</td>
-                                    <td><button class="btn btn-sm btn-danger">Investigate</button></td>
-                                </tr>
-                                <tr>
-                                    <td>STL-20250131-005</td>
-                                    <td>31-01-25</td>
-                                    <td>Bank GHI</td>
-                                    <td>Pajak</td>
-                                    <td>Rp 300,000</td>
-                                    <td><span class="badge badge-success">Matched</span></td>
-                                    <td>100%</td>
-                                    <td><button class="btn btn-sm btn-primary">Detail</button></td>
-                                </tr>
-                                <tr>
-                                    <td>STL-20250131-006</td>
-                                    <td>31-01-25</td>
-                                    <td>Bank JKL</td>
-                                    <td>Education</td>
-                                    <td>Rp 125,000</td>
-                                    <td><span class="badge badge-success">Matched</span></td>
-                                    <td>100%</td>
-                                    <td><button class="btn btn-sm btn-primary">Detail</button></td>
-                                </tr>
-                                <tr>
-                                    <td>STL-20250131-007</td>
-                                    <td>31-01-25</td>
-                                    <td>M-Gate</td>
-                                    <td>Payment</td>
-                                    <td>Rp 750,000</td>
-                                    <td><span class="badge badge-warning">Partial</span></td>
-                                    <td>92%</td>
-                                    <td><button class="btn btn-sm btn-warning">Review</button></td>
-                                </tr>
-                                <tr>
-                                    <td>STL-20250131-008</td>
-                                    <td>31-01-25</td>
-                                    <td>Bank MNO</td>
-                                    <td>Pajak</td>
-                                    <td>Rp 200,000</td>
-                                    <td><span class="badge badge-success">Matched</span></td>
-                                    <td>100%</td>
-                                    <td><button class="btn btn-sm btn-primary">Detail</button></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="fal fa-question-circle mr-1"></i>
+                            Bantuan & Tutorial
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+// Fungsi untuk update jam real-time
+function updateClock() {
+    const now = new Date();
+    
+    // Update jam dengan detik
+    const timeString = now.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    
+    // Update tanggal dalam bahasa Indonesia
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+    const dateString = now.toLocaleDateString('id-ID', options);
+    
+    // Update elemen DOM
+    document.getElementById('live-clock').textContent = timeString;
+    document.getElementById('live-date').textContent = dateString;
+}
+
+// Update jam saat halaman dimuat dan setiap detik
+updateClock();
+setInterval(updateClock, 1000);
+
+// Efek animasi untuk tombol
+$(document).ready(function() {
+    $('.btn').hover(
+        function() {
+            $(this).addClass('shadow');
+        },
+        function() {
+            $(this).removeClass('shadow');
+        }
+    );
+});
+</script>
+@endpush
+
+@push('styles')
+<style>
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+}
+
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+#live-clock {
+    font-family: 'Courier New', monospace;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.media {
+    transition: transform 0.2s ease-in-out;
+}
+
+.media:hover {
+    transform: translateX(5px);
+}
+</style>
+@endpush
