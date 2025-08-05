@@ -36,8 +36,11 @@
                                    value="{{ $tanggalRekon }}" required>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary me-2">
                                 <i class="fal fa-search"></i> Tampilkan Data
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                                <i class="fal fa-undo"></i> Reset
                             </button>
                         </div>
                     </div>
@@ -345,6 +348,10 @@ function showAlert(type, message) {
             $('.alert-success').fadeOut();
         }, 3000);
     }
+}
+
+function resetFilters() {
+    $('#tanggal').val('');
 }
 </script>
 @endpush

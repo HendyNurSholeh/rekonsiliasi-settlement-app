@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('styles')
+<link rel="stylesheet" href="{{ base_url('css/rekon/process/direct_jurnal_rekap.css') }}">
+@endpush
+
 @section('content')
 <div class="subheader">
     <h1 class="subheader-title">
@@ -7,7 +11,6 @@
         <small>Rekap transaksi direct jurnal untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
     </h1>
 </div>
-
 <div class="row">
     <div class="col-12">
         <div class="alert alert-info">
@@ -17,7 +20,6 @@
         </div>
     </div>
 </div>
-
 <!-- Filter Section -->
 <div class="row mb-4">
     <div class="col-12">
@@ -39,6 +41,9 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
+                            <button type="button" class="btn btn-secondary ms-2" onclick="resetFilters()">
+                                <i class="fal fa-undo"></i> Reset
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -46,7 +51,6 @@
         </div>
     </div>
 </div>
-
 <!-- Data Table -->
 <div class="row">
     <div class="col-12">
@@ -101,29 +105,14 @@
         </div>
     </div>
 </div>
-
 @endsection
-
-@push('js')
-<script>
-$(document).ready(function() {
-    @if(!empty($rekapData))
-        $('#rekapTable').DataTable({
-            responsive: true,
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
-            },
-            order: [[1, 'asc']],
-            columnDefs: [
-                { targets: [0], orderable: false }
-            ],
-            scrollX: true
-        });
-    @endif
-});
-</script>
-@endpush
-
-@push('styles')
-<link rel="stylesheet" href="{{ base_url('css/rekon/process/direct_jurnal_rekap.css') }}">
+@push('scripts')
+    <script>
+    function resetFilters() {
+        // Remove 'tanggal' parameter from URL and redirect
+        const url = new URL(window.location);
+        url.searchParams.delete('tanggal');
+        window.location.href = url.pathname + url.search;
+    }
+    </script>
 @endpush

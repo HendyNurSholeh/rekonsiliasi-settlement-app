@@ -53,8 +53,11 @@
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary me-2">
                                 <i class="fal fa-search"></i> Tampilkan Data
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                                <i class="fal fa-undo"></i> Reset
                             </button>
                         </div>
                     </div>
@@ -701,6 +704,13 @@ function showAlert(type, message) {
             $('.alert-success').fadeOut();
         }, 3000);
     }
+}
+
+function resetFilters() {
+    $('#kode_uker').val('').trigger('change');
+    $('#status').val('').trigger('change');
+    $('#month').val('').trigger('change');
+    $('#nama_file').val('');
 }
 </script>
 @endpush
