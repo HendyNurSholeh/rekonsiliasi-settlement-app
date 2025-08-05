@@ -154,7 +154,8 @@
                                                 </a>
                                             </li>
                                             <li class="@if ($route == 'rekon/process/konfirmasi-saldo-ca') active @endif">
-                                                <a href="{{ site_url('rekon/process/konfirmasi-saldo-ca') }}">
+                                                {{-- <a href="{{ site_url('rekon/process/konfirmasi-saldo-ca') }}"> --}}
+                                                <a href="#">
                                                     <span class="nav-link-text text-left">Konfirmasi Saldo CA</span>
                                                 </a>
                                             </li>
