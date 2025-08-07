@@ -108,9 +108,7 @@
                     <i class="fal fa-info-circle"></i>
                     <strong>Konfirmasi Saldo Escrow!</strong> Pastikan saldo rekening escrow sudah sesuai sebelum melakukan konfirmasi.
                 </div>
-                <i>
-                    <p id="konfirmasiMessage" class="mb-3"></p>
-                </i>
+                <p id="konfirmasiMessage" class="mb-3"></p>
                 <p class="text-muted small">
                     <i class="fal fa-lightbulb"></i>
                     Pastikan saldo fisik di rekening escrow sudah sesuai dengan nominal yang ditampilkan.
@@ -452,7 +450,7 @@ function updateSuksesTx(group) {
                 $('#konfirmasiModal').modal('hide');
                 
                 if (response.success) {
-                    showAlert('success', response.message || 'Konfirmasi saldo berhasil dilakukan dan status transaksi telah diupdate');
+                    toastr["success"](response.message || 'Konfirmasi saldo berhasil dilakukan dan status transaksi telah diupdate');
                     
                     // Update CSRF token dari response jika ada
                     if (response.csrf_token) {
@@ -465,7 +463,7 @@ function updateSuksesTx(group) {
                         rekapTable.ajax.reload();
                     }
                 } else {
-                    showAlert('error', response.message || 'Terjadi kesalahan saat melakukan konfirmasi saldo');
+                    toastr["error"](response.message || 'Terjadi kesalahan saat melakukan konfirmasi saldo');
                 }
             },
             error: function(xhr, status, error) {
@@ -489,7 +487,7 @@ function updateSuksesTx(group) {
                     errorMessage = xhr.responseJSON.message;
                 }
                 
-                showAlert('error', errorMessage);
+                toastr["error"](errorMessage);
             },
             complete: function() {
                 // Reset button state
@@ -500,7 +498,7 @@ function updateSuksesTx(group) {
         console.error('Failed to refresh CSRF before update:', error);
         $('#konfirmasiModal').modal('hide');
         $('#confirmUpdateBtn').html('<i class="fal fa-check-circle"></i> Ya, Saldo Sudah Sesuai').prop('disabled', false);
-        showAlert('error', 'Gagal memperbarui token keamanan. Halaman akan dimuat ulang.');
+        toastr["error"]('Gagal memperbarui token keamanan. Halaman akan dimuat ulang.');
         setTimeout(function() {
             location.reload();
         }, 2000);
@@ -511,44 +509,6 @@ function formatNumber(num) {
     // Convert string to number first, removing any existing commas
     const cleanNum = parseFloat(String(num).replace(/,/g, '')) || 0;
     return new Intl.NumberFormat('id-ID').format(cleanNum);
-}
-
-function showAlert(type, message) {
-    let alertClass = 'alert-info';
-    let icon = 'fa-info-circle';
-    
-    switch(type) {
-        case 'success':
-            alertClass = 'alert-success';
-            icon = 'fa-check-circle';
-            break;
-        case 'error':
-            alertClass = 'alert-danger';
-            icon = 'fa-exclamation-circle';
-            break;
-        case 'warning':
-            alertClass = 'alert-warning';
-            icon = 'fa-exclamation-triangle';
-            break;
-    }
-    
-    let alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fal ${icon}"></i> ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    `;
-    
-    $('.subheader').after(alertHtml);
-    
-    // Auto hide success alerts
-    if (type === 'success') {
-        setTimeout(function() {
-            $('.alert-success').fadeOut();
-        }, 3000);
-    }
 }
 
 function resetFilters() {
