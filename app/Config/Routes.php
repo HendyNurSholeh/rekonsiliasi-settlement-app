@@ -96,6 +96,7 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         $routes->get('indirect-jurnal-rekap/datatable', 'IndirectJurnalRekapController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable']);
         $routes->post('indirect-jurnal-rekap/datatable', 'IndirectJurnalRekapController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable.post']);
         $routes->post('indirect-jurnal-rekap/konfirmasi', 'IndirectJurnalRekapController::konfirmasiSetoran', ['as' => 'rekon.process.indirect-jurnal-rekap.konfirmasi']);
+        $routes->post('indirect-jurnal-rekap/update-sukses', 'IndirectJurnalRekapController::updateSukses', ['as' => 'rekon.process.indirect-jurnal-rekap.update-sukses']);
         
         // Indirect Dispute Controller
         $routes->get('indirect-dispute', 'IndirectDisputeController::index', ['as' => 'rekon.process.indirect-dispute']);

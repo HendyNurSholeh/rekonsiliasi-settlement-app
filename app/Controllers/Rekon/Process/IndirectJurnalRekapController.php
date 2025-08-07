@@ -87,22 +87,41 @@ class IndirectJurnalRekapController extends BaseController
     }
 
     /**
-     * Konfirmasi Setoran
+     * Update Sukses Transaksi
+     * Menjalankan procedure p_update_sukses_tx
      */
-    public function konfirmasiSetoran()
+    public function updateSukses()
     {
         try {
+            $group = $this->request->getPost('group');
+            
+            if (!$group) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Parameter group tidak ditemukan',
+                    'csrf_token' => csrf_hash()
+                ]);
+            }
+
             $db = \Config\Database::connect();
-            $query = $db->query("CALL p_indirect_jurnal_update(?)", ['PPOB KON']);
+            
+            // Call the stored procedure
+            $query = $db->query("CALL p_update_sukses_tx(?)", [$group]);
+
+            log_message('info', 'p_update_sukses_tx procedure called successfully for group: ' . $group);
 
             return $this->response->setJSON([
                 'success' => true,
+                'message' => "Konfirmasi saldo rekening escrow untuk group {$group} berhasil dilakukan",
                 'csrf_token' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
-            log_message('error', 'Error in konfirmasiSetoran: ' . $e->getMessage());
+            log_message('error', 'Error in updateSukses: ' . $e->getMessage());
+            
             return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat melakukan konfirmasi saldo: ' . $e->getMessage(),
                 'csrf_token' => csrf_hash()
             ]);
         }
