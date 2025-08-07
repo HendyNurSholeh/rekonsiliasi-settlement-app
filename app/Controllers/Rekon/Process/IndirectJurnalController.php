@@ -401,20 +401,4 @@ class IndirectJurnalController extends BaseController
             ]);
         }
     }
-
-    /**
-     * Konfirmasi Saldo CA
-     */
-    public function konfirmasiSaldoCA()
-    {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
-
-        $data = [
-            'title' => 'Konfirmasi Saldo CA',
-            'tanggalRekon' => $tanggalRekon,
-            'route' => 'rekon/process/konfirmasi-saldo-ca'
-        ];
-
-        return $this->render('rekon/process/konfirmasi_saldo_ca.blade.php', $data);
-    }
 }

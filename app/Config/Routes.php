@@ -103,13 +103,6 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         $routes->post('indirect-dispute/datatable', 'IndirectDisputeController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable.post']);
         $routes->get('indirect-dispute/detail', 'IndirectDisputeController::getDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
         $routes->post('indirect-dispute/update', 'IndirectDisputeController::update', ['as' => 'rekon.process.indirect-dispute.update']);
-        
-        // Konfirmasi Saldo CA Controller
-        $routes->get('konfirmasi-saldo-ca', 'KonfirmasiSaldoCAController::index', ['as' => 'rekon.process.konfirmasi-saldo-ca']);
-        $routes->get('konfirmasi-saldo-ca/datatable', 'KonfirmasiSaldoCAController::datatable', ['as' => 'rekon.process.konfirmasi-saldo-ca.datatable']);
-        $routes->post('konfirmasi-saldo-ca/datatable', 'KonfirmasiSaldoCAController::datatable', ['as' => 'rekon.process.konfirmasi-saldo-ca.datatable.post']);
-        $routes->get('konfirmasi-saldo-ca/detail', 'KonfirmasiSaldoCAController::getSaldoDetail', ['as' => 'rekon.process.konfirmasi-saldo-ca.detail']);
-        $routes->post('konfirmasi-saldo-ca/konfirmasi', 'KonfirmasiSaldoCAController::konfirmasi', ['as' => 'rekon.process.konfirmasi-saldo-ca.konfirmasi']);
     });
     
     // Note: Report routes removed as RekonReport controller was deleted

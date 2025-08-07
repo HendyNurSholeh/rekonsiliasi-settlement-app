@@ -452,7 +452,7 @@ $(document).ready(function() {
         }
         
         $.ajax({
-            url: '{{ base_url('rekon/process/indirect-dispute/update') }}',
+            url: `{{ base_url('rekon/process/indirect-dispute/update') }}`,
             type: 'POST',
             data: formData,
             processData: false,
