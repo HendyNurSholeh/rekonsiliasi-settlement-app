@@ -103,60 +103,66 @@
 </div>
 
 <!-- Modal Proses Data Dispute -->
-<div class="modal fade" id="modalProsesDispute" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+<div class="modal fade" id="modalProsesDispute" tabindex="-1" role="dialog" aria-labelledby="disputeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fal fa-wrench"></i> Proses Data Dispute
+                <h5 class="modal-title" id="disputeModalLabel">
+                    <i class="fal fa-edit"></i> Proses Data Dispute
                 </h5>
-                <button type="button" class="close" data-dismiss="modal">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formProsesDispute">
-                <div class="modal-body">
+            <div class="modal-body">
+                <form id="formProsesDispute">
                     <input type="hidden" id="prosesVId" name="v_id">
                     
                     <!-- Data Transaksi -->
                     <div class="card mb-3">
                         <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0"><i class="fal fa-info-circle"></i> A. Data Transaksi</h6>
+                            <h6 class="mb-0">Data Transaksi</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Partner</label>
+                                        <label>ID Partner</label>
                                         <input type="text" class="form-control" id="prosesPartner" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label>Terminal ID</label>
                                         <input type="text" class="form-control" id="prosesTerminalID" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Group Produk</label>
+                                        <label>Is Direct Fee</label>
+                                        <input type="text" class="form-control" id="prosesIsDirectFee" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-md-2">
+                                    <div class="form-group">
+                                        <label>Produk</label>
                                         <input type="text" class="form-control" id="prosesGroupProduk" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-6 mt-md-2">
                                     <div class="form-group">
-                                        <label>IDPEL</label>
+                                        <label>ID Pelanggan</label>
                                         <input type="text" class="form-control" id="prosesIDPEL" readonly>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Data Tagihan -->
                     <div class="card mb-3">
-                        <div class="card-header bg-success text-white">
-                            <h6 class="mb-0"><i class="fal fa-money-bill"></i> B. Data Tagihan</h6>
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">Data Tagihan</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
@@ -174,6 +180,18 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
+                                        <label>RP Fee Struk</label>
+                                        <input type="text" class="form-control" id="prosesFeeStruk" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-md-2">
+                                    <div class="form-group">
+                                        <label>RP Amount Struk</label>
+                                        <input type="text" class="form-control" id="prosesAmountStruk" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-md-2">
+                                    <div class="form-group">
                                         <label>RP Biller Tag</label>
                                         <input type="text" class="form-control" id="prosesBillerTag" readonly>
                                     </div>
@@ -181,20 +199,19 @@
                             </div>
                         </div>
                     </div>
-                    
                     <!-- Status Rekonsiliasi -->
-                    <div class="card mb-3">
-                        <div class="card-header bg-warning text-white">
-                            <h6 class="mb-0"><i class="fal fa-cog"></i> Status Rekonsiliasi</h6>
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">Status Rekonsiliasi</h6>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <!-- IDPARTNER Select -->
-                                <div class="col-md-12 mb-3">
+                            <!-- ID Partner (Channel) -->
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <div class="form-group">
-                                        <label for="prosesIDPartnerSelect">IDPARTNER <span class="text-danger">*</span></label>
+                                        <label>ID Partner (Channel) <span class="text-danger">*</span></label>
                                         <select class="form-control" id="prosesIDPartnerSelect" name="idpartner" required>
-                                            <option value="">Pilih Partner</option>
+                                            <option value="">Pilih Channel</option>
                                             <option value="CHANNEL KON">CHANNEL KON</option>
                                             <option value="CHANNEL SYA">CHANNEL SYA</option>
                                             <option value="VA DIGITAL KON">VA DIGITAL KON</option>
@@ -211,77 +228,65 @@
                                 </div>
                             </div>
                             
-                            <div class="row">
-                                <!-- STATUS BILLER -->
-                                <div class="col-md-4">
+                            <!-- Status Biller -->
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Biller <span class="text-danger">*</span></label>
-                                        <div class="mt-2">
+                                        <div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_biller" id="statusBiller1" value="1" required>
-                                                <label class="form-check-label" for="statusBiller1">
-                                                    <span class="badge badge-success">Sukses (1)</span>
-                                                </label>
+                                                <label class="form-check-label" for="statusBiller1">Sukses</label>
                                             </div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_biller" id="statusBiller0" value="0" required>
-                                                <label class="form-check-label" for="statusBiller0">
-                                                    <span class="badge badge-warning">Pending (0)</span>
-                                                </label>
+                                                <label class="form-check-label" for="statusBiller0">Pending</label>
                                             </div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_biller" id="statusBiller2" value="2" required>
-                                                <label class="form-check-label" for="statusBiller2">
-                                                    <span class="badge badge-danger">Gagal (2)</span>
-                                                </label>
+                                                <label class="form-check-label" for="statusBiller2">Gagal</label>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- STATUS CORE -->
-                                <div class="col-md-4">
+                            </div>
+                            
+                            <!-- Status Core -->
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Core <span class="text-danger">*</span></label>
-                                        <div class="mt-2">
-                                            <div class="form-check">
+                                        <div>
+                                            <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_core" id="statusCore1" value="1" required>
-                                                <label class="form-check-label" for="statusCore1">
-                                                    <span class="badge badge-info">Terdebet (1)</span>
-                                                </label>
+                                                <label class="form-check-label" for="statusCore1">Terdebet</label>
                                             </div>
-                                            <div class="form-check">
+                                            <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_core" id="statusCore0" value="0" required>
-                                                <label class="form-check-label" for="statusCore0">
-                                                    <span class="badge badge-danger">Tidak Terdebet (0)</span>
-                                                </label>
+                                                <label class="form-check-label" for="statusCore0">Tidak Terdebet</label>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- STATUS SETTLEMENT -->
-                                <div class="col-md-4">
+                            </div>
+                            
+                            <!-- Status Settlement -->
+                            <div class="row">
+                                <div class="col-12">
                                     <div class="form-group">
                                         <label>Status Settlement <span class="text-danger">*</span></label>
-                                        <div class="mt-2">
-                                            <div class="form-check">
+                                        <div>
+                                            <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement1" value="1" required>
-                                                <label class="form-check-label" for="statusSettlement1">
-                                                    <span class="badge badge-primary">Dilimpahkan (1)</span>
-                                                </label>
+                                                <label class="form-check-label" for="statusSettlement1">Dilimpahkan</label>
                                             </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement9" value="9" required>
-                                                <label class="form-check-label" for="statusSettlement9">
-                                                    <span class="badge badge-danger">Transaksi Gagal (9)</span>
-                                                </label>
-                                            </div>
-                                            <div class="form-check">
+                                            <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement8" value="8" required>
-                                                <label class="form-check-label" for="statusSettlement8">
-                                                    <span class="badge badge-secondary">Transaksi di Revershal (8)</span>
-                                                </label>
+                                                <label class="form-check-label" for="statusSettlement8">Transaksi di Revershal</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement9" value="9" required>
+                                                <label class="form-check-label" for="statusSettlement9">Transaksi Gagal</label>
                                             </div>
                                         </div>
                                     </div>
@@ -289,14 +294,18 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fal fa-save"></i> Simpan
-                    </button>
-                </div>
-            </form>
+                    
+                    <!-- Submit buttons inside form -->
+                    <div class="mt-3 text-right">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fal fa-times"></i> Batal
+                        </button>
+                        <button type="submit" class="btn btn-primary ml-2">
+                            <i class="fal fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -697,12 +706,15 @@ function showProsesDispute(vId) {
                     // Fill readonly fields - Data Transaksi
                     $('#prosesPartner').val(data.IDPARTNER || '');
                     $('#prosesTerminalID').val(data.TERMINALID || '');
-                    $('#prosesGroupProduk').val(data.v_GROUP_PRODUK || '');
+                    $('#prosesIsDirectFee').val(data.IS_DIRECT_FEE || '0');
+                    $('#prosesGroupProduk').val(data.v_GROUP_PRODUK || data.PRODUK || '');
                     $('#prosesIDPEL').val(data.IDPEL || '');
                     
                     // Fill readonly fields - Data Tagihan
                     $('#prosesBillerPokok').val('Rp ' + formatNumber(data.RP_BILLER_POKOK || 0));
                     $('#prosesBillerDenda').val('Rp ' + formatNumber(data.RP_BILLER_DENDA || 0));
+                    $('#prosesFeeStruk').val('Rp ' + formatNumber(data.RP_FEE_STRUK || 0));
+                    $('#prosesAmountStruk').val('Rp ' + formatNumber(data.RP_AMOUNT_STRUK || 0));
                     $('#prosesBillerTag').val('Rp ' + formatNumber(data.RP_BILLER_TAG || 0));
                     
                     // Set selected values for form fields
