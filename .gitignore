@@ -137,4 +137,4 @@ nb-configuration.xml
 
 # node modules
 /node_modules/
-*.sql
+# *.sql
