@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{{ $title }} | Devisa Manager Tools</title>
+    <title>{{ $title }} | Sistem Rekonsiliasi dan Pelimpahan Dana (SIRELA)</title>
 
     <meta name="description" content="Login">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
