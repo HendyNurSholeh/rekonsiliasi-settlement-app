@@ -219,7 +219,7 @@ class IndirectDisputeController extends BaseController
      */
     public function getDetail()
     {
-        $id = $this->request->getGet('id');
+        $id = $this->request->getPost('id') ?? $this->request->getGet('id');
         
         if (!$id) {
             return $this->response->setJSON([

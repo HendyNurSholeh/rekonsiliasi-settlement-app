@@ -102,7 +102,7 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         $routes->get('indirect-dispute', 'IndirectDisputeController::index', ['as' => 'rekon.process.indirect-dispute']);
         $routes->get('indirect-dispute/datatable', 'IndirectDisputeController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable']);
         $routes->post('indirect-dispute/datatable', 'IndirectDisputeController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable.post']);
-        $routes->get('indirect-dispute/detail', 'IndirectDisputeController::getDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
+        $routes->post('indirect-dispute/detail', 'IndirectDisputeController::getDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
         $routes->post('indirect-dispute/update', 'IndirectDisputeController::update', ['as' => 'rekon.process.indirect-dispute.update']);
     });
     
