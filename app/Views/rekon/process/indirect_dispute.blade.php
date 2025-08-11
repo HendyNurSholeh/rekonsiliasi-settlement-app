@@ -49,7 +49,7 @@
                                 <option value="">Semua Status</option>
                                 <option value="0">Tidak Terdebet</option>
                                 <option value="1">Terdebet</option>
-                                <option value="2">Belum Diproses</option>
+                                <option value="2">Belum Verif</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -523,6 +523,19 @@ $(document).ready(function() {
     $('input[name="status_settlement"]').on('change', function() {
         $(this).closest('.form-group').removeClass('has-error');
     });
+    
+    // Handle button clicks using event delegation for dynamically generated buttons
+    $(document).on('click', '.btn-proses', function(e) {
+        e.preventDefault();
+        
+        const disputeId = $(this).data('id');
+        if (!disputeId) {
+            toastr.error('ID dispute tidak ditemukan');
+            return;
+        }
+        
+        showProsesDispute(disputeId);
+    });
 });
 
 function initializeDataTable() {
@@ -601,7 +614,7 @@ function initializeDataTable() {
                 className: 'text-center',
                 render: function(data, type, row) {
                     let badgeClass = 'badge-secondary';
-                    let statusText = 'Belum Diproses';
+                    let statusText = 'Belum Verif';
                     
                     if (data == 1) {
                         badgeClass = 'badge-info';
@@ -621,11 +634,8 @@ function initializeDataTable() {
                 searchable: false,
                 className: 'text-center',
                 render: function(data, type, row) {
-                    return `
-                        <button type="button" class="btn btn-sm btn-primary" onclick="showProsesDispute('${row.v_ID}')">
-                            <i class="fal fa-wrench"></i> Proses Data Dispute
-                        </button>
-                    `;
+                    return '<button type="button" class="btn btn-sm btn-primary btn-proses" data-id="' + (row.v_ID || '') + '">' +
+                           '<i class="fal fa-tools"></i> Proses</button>';
                 }
             }
         ],
