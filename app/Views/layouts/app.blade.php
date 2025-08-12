@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>{{ $title }} | Sistem Rekonsiliasi dan Pelimpahan Dana (SIRELA)</title>
 
-    <meta name="description" content="Login">
+    <meta name="description" content="SIRELA - Sistem Rekonsiliasi dan Pelimpahan Dana Bank Kalsel">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no, minimal-ui">
     <!-- Call App Mode on ios devices -->
@@ -51,8 +51,8 @@
                     <a href="{{ site_url('dashboard') }}"
                         class="page-logo-link press-scale-down d-flex align-items-center position-relative"
                         data-toggle="modal" data-target="#modal-shortcut">
-                        <img src="{{ base_url('/img/logo.png') }}" alt="SmartAdmin WebApp" aria-roledescription="logo">
-                        <span class="page-logo-text mr-1">BANK KALSEL</span>
+                        <img src="{{ base_url('/img/logo.png') }}" alt="SIRELA" aria-roledescription="logo">
+                        <span class="page-logo-text mr-1">SIRELA</span>
                         <span class="position-absolute text-white opacity-50 small pos-top pos-right mr-2 mt-n2"></span>
                     </a>
                 </div>

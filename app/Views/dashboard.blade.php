@@ -10,10 +10,10 @@
                             <div class="text-white">
                                 <h1 class="display-5 fw-bold mb-2">
                                     <i class="fal fa-balance-scale mr-3"></i>
-                                    Selamat Datang di Sistem Rekonsiliasi Settlement
+                                    Selamat Datang di SIRELA
                                 </h1>
-                                <p class="lead mb-0 opacity-90">Bank Kalsel</p>
-                                <p class="mb-0 opacity-75">Kelola proses rekonsiliasi settlement dengan mudah dan akurat</p>
+                                <p class="lead mb-0 opacity-90">Sistem Rekonsiliasi dan Pelimpahan Dana</p>
+                                <p class="mb-0 opacity-75">Bank Kalsel - Kelola proses rekonsiliasi settlement dengan mudah dan akurat</p>
                             </div>
                         </div>
                         <div class="col-lg-4 text-right">
