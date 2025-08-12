@@ -373,10 +373,13 @@
 
         <!-- Product Mapping Table -->
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
                     <i class="fal fa-table text-primary"></i> Data Product Mapping (v_cek_group_produk)
                 </h5>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btnProsesUlang" onclick="prosesUlangPersiapan()" title="Jalankan procedure proses_data_upload untuk merefresh data mapping dan statistik">
+                    <i class="fal fa-sync-alt"></i> Proses Ulang Persiapan
+                </button>
             </div>
             <div class="card-body">
                 <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
@@ -524,6 +527,46 @@ function startReconciliation() {
         },
         error: function() {
             toastr['error']('Error saat memulai rekonsiliasi');
+            btn.prop('disabled', false).html(originalText);
+        }
+    });
+}
+
+function prosesUlangPersiapan() {
+    let btn = $('#btnProsesUlang');
+    let originalText = btn.html();
+    
+    // Disable tombol dan tampilkan loading
+    btn.prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
+    
+    // Kirim request AJAX
+    $.ajax({
+        url: '{{ base_url('rekon/step2/proses-ulang') }}',
+        type: 'POST',
+        data: {
+            tanggal_rekon: currentTanggalRekon,
+            '{{ csrf_token() }}': '{{ csrf_hash() }}'
+        },
+        dataType: 'json',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            if (response.success) {
+                toastr['success'](response.message || 'Proses ulang persiapan berhasil!');
+                
+                // Refresh halaman setelah delay
+                setTimeout(function() {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                toastr['error'](response.message || 'Gagal menjalankan proses ulang persiapan');
+                btn.prop('disabled', false).html(originalText);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error proses ulang:', xhr.responseText);
+            toastr['error']('Error saat menjalankan proses ulang persiapan: ' + error);
             btn.prop('disabled', false).html(originalText);
         }
     });

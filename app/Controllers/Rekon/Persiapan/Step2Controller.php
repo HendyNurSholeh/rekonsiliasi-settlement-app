@@ -201,6 +201,52 @@ class Step2Controller extends BaseController
     }
 
     /**
+     * Proses ulang persiapan data
+     * Menjalankan stored procedure proses_data_upload untuk refresh data
+     */
+    public function prosesUlang()
+    {
+        $tanggalRekon = $this->request->getPost('tanggal_rekon') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        
+        if (!$tanggalRekon) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tanggal rekonsiliasi tidak ditemukan'
+            ]);
+        }
+
+        try {
+            $db = \Config\Database::connect();
+            
+            // Call stored procedure p_proses_dataupload
+            log_message('info', "Calling stored procedure p_proses_dataupload with parameter: {$tanggalRekon}");
+            
+            $query = $db->query("CALL p_proses_dataupload(?)", [$tanggalRekon]);
+            
+            // Log activity
+            $this->logActivity([
+                'log_name' => 'PROSES_ULANG_PERSIAPAN',
+                'description' => "Menjalankan proses ulang persiapan data untuk tanggal {$tanggalRekon}",
+                'event' => 'PROSES_ULANG_PERSIAPAN',
+                'subject' => 'Data Preparation'
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "Proses ulang persiapan berhasil dijalankan untuk tanggal {$tanggalRekon}. Halaman akan di-refresh untuk menampilkan data terbaru."
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in prosesUlang: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menjalankan proses ulang: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Get data preview for a specific file type
      */
     public function getDataPreview()

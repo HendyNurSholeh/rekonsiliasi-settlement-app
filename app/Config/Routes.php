@@ -65,6 +65,7 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     // Step 2 Controller - untuk step2.blade.php (Validasi Data - moved to Persiapan folder)
     $routes->get('step2', 'Persiapan\Step2Controller::index', ['as' => 'rekon.step2']);
     $routes->post('step2/validate', 'Persiapan\Step2Controller::processValidation', ['as' => 'rekon.step2.validate']);
+    $routes->post('step2/proses-ulang', 'Persiapan\Step2Controller::prosesUlang', ['as' => 'rekon.step2.proses-ulang']);
     $routes->get('step2/preview', 'Persiapan\Step2Controller::getDataPreview', ['as' => 'rekon.step2.preview']);
     $routes->get('step2/stats', 'Persiapan\Step2Controller::getUploadStats', ['as' => 'rekon.step2.stats']);
     
