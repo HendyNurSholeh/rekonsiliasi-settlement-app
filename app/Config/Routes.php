@@ -82,6 +82,7 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         $routes->get('detail-vs-rekap', 'DetailVsRekapController::index', ['as' => 'rekon.process.detail-vs-rekap']);
         $routes->get('detail-vs-rekap/datatable', 'DetailVsRekapController::datatable', ['as' => 'rekon.process.detail-vs-rekap.datatable']);
         $routes->post('detail-vs-rekap/datatable', 'DetailVsRekapController::datatable', ['as' => 'rekon.process.detail-vs-rekap.datatable.post']);
+        $routes->get('detail-vs-rekap/statistics', 'DetailVsRekapController::statistics', ['as' => 'rekon.process.detail-vs-rekap.statistics']);
         
         // Direct Jurnal Controller (handles both rekap and dispute)
         $routes->get('direct-jurnal-rekap', 'DirectJurnalController::rekap', ['as' => 'rekon.process.direct-jurnal-rekap']);

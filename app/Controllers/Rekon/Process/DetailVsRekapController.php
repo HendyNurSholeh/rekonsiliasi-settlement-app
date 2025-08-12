@@ -197,4 +197,63 @@ class DetailVsRekapController extends BaseController
             ]);
         }
     }
+
+    /**
+     * AJAX endpoint for statistics
+     */
+    public function statistics()
+    {
+        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $filterSelisih = $this->request->getGet('filter_selisih') ?? '';
+        
+        try {
+            $db = \Config\Database::connect();
+            
+            // Call the stored procedure to get data
+            $query = $db->query("CALL p_compare_rekap(?)", [$tanggalRekon]);
+            $allData = $query->getResultArray();
+            
+            // Calculate statistics
+            $total = count($allData);
+            $adaSelisih = 0;
+            $tidakAdaSelisih = 0;
+            
+            foreach ($allData as $item) {
+                $selisih = (float)str_replace(',', '', $item['SELISIH'] ?? 0);
+                if ($selisih != 0) {
+                    $adaSelisih++;
+                } else {
+                    $tidakAdaSelisih++;
+                }
+            }
+            
+            // Calculate accuracy percentage
+            $akurasi = $total > 0 ? round(($tidakAdaSelisih / $total) * 100, 2) : 0;
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => [
+                    'total' => $total,
+                    'ada_selisih' => $adaSelisih,
+                    'tidak_ada_selisih' => $tidakAdaSelisih,
+                    'akurasi' => $akurasi
+                ],
+                'csrf_token' => csrf_hash()
+            ]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error in statistics: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil statistik: ' . $e->getMessage(),
+                'data' => [
+                    'total' => 0,
+                    'ada_selisih' => 0,
+                    'tidak_ada_selisih' => 0,
+                    'akurasi' => 0
+                ],
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
 }

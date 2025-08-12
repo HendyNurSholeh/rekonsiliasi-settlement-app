@@ -59,7 +59,6 @@
 </div>
 
 <!-- Statistics Section -->
-@if(!empty($compareData))
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
@@ -68,22 +67,16 @@
                     <div class="col-md-3">
                         <div class="d-flex flex-column">
                             <span class="text-muted small">Total Data</span>
-                            <h4 class="mb-0 text-primary" id="stat-total">{{ count($compareData) }}</h4>
+                            <h4 class="mb-0 text-primary" id="stat-total">
+                                <i class="fal fa-spinner fa-spin"></i>
+                            </h4>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="d-flex flex-column">
                             <span class="text-muted small">Ada Selisih</span>
                             <h4 class="mb-0 text-danger" id="stat-ada-selisih">
-                                @php
-                                    $adaSelisih = 0;
-                                    foreach($compareData as $item) {
-                                        if((float)str_replace(',', '', $item['SELISIH'] ?? 0) != 0) {
-                                            $adaSelisih++;
-                                        }
-                                    }
-                                    echo $adaSelisih;
-                                @endphp
+                                <i class="fal fa-spinner fa-spin"></i>
                             </h4>
                         </div>
                     </div>
@@ -91,15 +84,7 @@
                         <div class="d-flex flex-column">
                             <span class="text-muted small">Tidak Ada Selisih</span>
                             <h4 class="mb-0 text-success" id="stat-tidak-ada-selisih">
-                                @php
-                                    $tidakAdaSelisih = 0;
-                                    foreach($compareData as $item) {
-                                        if((float)str_replace(',', '', $item['SELISIH'] ?? 0) == 0) {
-                                            $tidakAdaSelisih++;
-                                        }
-                                    }
-                                    echo $tidakAdaSelisih;
-                                @endphp
+                                <i class="fal fa-spinner fa-spin"></i>
                             </h4>
                         </div>
                     </div>
@@ -107,11 +92,7 @@
                         <div class="d-flex flex-column">
                             <span class="text-muted small">Persentase Selesai</span>
                             <h4 class="mb-0 text-info" id="stat-akurasi">
-                                @php
-                                    $total = count($compareData);
-                                    $akurasi = $total > 0 ? round(($tidakAdaSelisih / $total) * 100, 1) : 0;
-                                    echo $akurasi . '%';
-                                @endphp
+                                <i class="fal fa-spinner fa-spin"></i>
                             </h4>
                         </div>
                     </div>
@@ -120,7 +101,6 @@
         </div>
     </div>
 </div>
-@endif
 
 <!-- Data Table -->
 <div class="row">
@@ -233,6 +213,9 @@ $(document).ready(function() {
         
         // Initialize DataTable dengan AJAX
         initializeDataTable();
+        
+        // Load initial statistics
+        updateStatistics();
     });
     
     // Handle form submit for filters
@@ -244,7 +227,7 @@ $(document).ready(function() {
         console.log('Form submit - Tanggal:', tanggal);
         console.log('Form submit - Filter Selisih:', filterSelisih);
         
-        if (tanggal && compareTable) {
+        if (tanggal) {
             // Update current URL parameters
             const url = new URL(window.location);
             url.searchParams.set('tanggal', tanggal);
@@ -257,8 +240,13 @@ $(document).ready(function() {
             
             console.log('Updated URL:', url.toString());
             
+            // Update statistics
+            updateStatistics();
+            
             // Reload DataTable with new filters
-            compareTable.ajax.reload();
+            if (compareTable) {
+                compareTable.ajax.reload();
+            }
         }
     });
     
@@ -270,7 +258,7 @@ $(document).ready(function() {
         console.log('Filter selisih changed - Tanggal:', tanggal);
         console.log('Filter selisih changed - Filter Selisih:', filterSelisih);
         
-        if (tanggal && compareTable) {
+        if (tanggal) {
             // Update current URL parameters
             const url = new URL(window.location);
             url.searchParams.set('tanggal', tanggal);
@@ -283,8 +271,13 @@ $(document).ready(function() {
             
             console.log('Updated URL from filter change:', url.toString());
             
+            // Update statistics
+            updateStatistics();
+            
             // Reload DataTable with new filters
-            compareTable.ajax.reload();
+            if (compareTable) {
+                compareTable.ajax.reload();
+            }
         }
     });
 });
@@ -401,14 +394,81 @@ function formatNumber(num) {
     return new Intl.NumberFormat('id-ID').format(cleanNum);
 }
 
+// Function to update statistics via AJAX
+function updateStatistics() {
+    const tanggal = $('#tanggal').val();
+    const filterSelisih = $('#filter_selisih').val();
+    
+    console.log('Updating statistics for tanggal:', tanggal, 'filter:', filterSelisih);
+    
+    // Show loading spinners
+    $('#stat-total').html('<i class="fal fa-spinner fa-spin"></i>');
+    $('#stat-ada-selisih').html('<i class="fal fa-spinner fa-spin"></i>');
+    $('#stat-tidak-ada-selisih').html('<i class="fal fa-spinner fa-spin"></i>');
+    $('#stat-akurasi').html('<i class="fal fa-spinner fa-spin"></i>');
+    
+    // Make AJAX request to get statistics
+    $.ajax({
+        url: '{{ base_url('rekon/process/detail-vs-rekap/statistics') }}',
+        type: 'GET',
+        data: {
+            tanggal: tanggal,
+            filter_selisih: filterSelisih
+        },
+        success: function(response) {
+            console.log('Statistics response:', response);
+            
+            if (response.success) {
+                const stats = response.data;
+                
+                // Update statistics display
+                $('#stat-total').text(stats.total);
+                $('#stat-ada-selisih').text(stats.ada_selisih);
+                $('#stat-tidak-ada-selisih').text(stats.tidak_ada_selisih);
+                $('#stat-akurasi').text(stats.akurasi + '%');
+            } else {
+                console.error('Statistics error:', response.message);
+                // Show error state
+                $('#stat-total').text('0');
+                $('#stat-ada-selisih').text('0');
+                $('#stat-tidak-ada-selisih').text('0');
+                $('#stat-akurasi').text('0%');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Statistics AJAX error:', error, xhr.responseText);
+            
+            // Show error state
+            $('#stat-total').text('0');
+            $('#stat-ada-selisih').text('0');
+            $('#stat-tidak-ada-selisih').text('0');
+            $('#stat-akurasi').text('0%');
+            
+            // Handle CSRF errors
+            if (xhr.status === 403 || xhr.status === 419) {
+                console.log('CSRF error in statistics, refreshing token...');
+                refreshCSRFToken().then(function() {
+                    console.log('CSRF refreshed, retrying statistics...');
+                    updateStatistics(); // Retry
+                });
+            }
+        }
+    });
+}
+
 function resetFilters() {
     $('#tanggal').val('{{ $tanggalRekon }}');
     $('#filter_selisih').val('');
+    
     // Update URL params
     const url = new URL(window.location);
     url.searchParams.set('tanggal', '{{ $tanggalRekon }}');
     url.searchParams.delete('filter_selisih');
     window.history.pushState({}, '', url);
+    
+    // Update statistics
+    updateStatistics();
+    
     // Reload DataTable if exists
     if (typeof compareTable !== 'undefined' && compareTable) {
         compareTable.ajax.reload();
