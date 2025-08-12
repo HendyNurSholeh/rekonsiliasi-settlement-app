@@ -49,7 +49,7 @@
                     
                     <div class="form-group">
                         <label for="tanggal_rekon" class="form-label">
-                            <strong>Tanggal Settlement</strong> 
+                            <strong>Tanggal Rekonsiliasi</strong> 
                             <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
@@ -66,7 +66,7 @@
                         </div>
                         <div class="help-block">
                             <i class="fal fa-info-circle text-info"></i> 
-                            Pilih tanggal settlement yang akan direkonsiliasi. Default: <strong>{{ isset($defaultDate) ? date('d/m/Y', strtotime($defaultDate)) : date('d/m/Y', strtotime('-1 day')) }}</strong>
+                            Pilih tanggal yang akan direkonsiliasi. Default: <strong>{{ isset($defaultDate) ? date('d/m/Y', strtotime($defaultDate)) : date('d/m/Y', strtotime('-1 day')) }}</strong>
                         </div>
                         <!-- Date status indicator -->
                         <div id="dateStatus" class="mt-2" style="display: none;"></div>
@@ -97,8 +97,8 @@
                         <ol class="list-group list-group-numbered">
                             <li class="list-group-item d-flex justify-content-between align-items-start">
                                 <div class="ms-2 me-auto">
-                                    <div class="fw-bold">Pilih Tanggal Settlement</div>
-                                    Tentukan tanggal settlement yang akan direkonsiliasi
+                                    <div class="fw-bold">Pilih Tanggal Rekonsiliasi</div>
+                                    Tentukan tanggal yang akan direkonsiliasi
                                 </div>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-start">
@@ -137,7 +137,7 @@
             </div>
             <div class="card-body">
                 <ul class="small text-muted mb-0">
-                    <li>Pastikan tanggal settlement sudah benar sebelum melanjutkan</li>
+                    <li>Pastikan tanggal rekonsiliasi sudah benar sebelum melanjutkan</li>
                     <li>Proses rekonsiliasi untuk tanggal yang sama tidak dapat dibuat dua kali</li>
                     <li>Siapkan semua file settlement sebelum memulai proses</li>
                     <li>Jangan menutup browser selama proses upload dan rekonsiliasi</li>
