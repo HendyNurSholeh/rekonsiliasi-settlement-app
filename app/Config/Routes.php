@@ -79,6 +79,14 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     // Process Routes - New Modular Controller Structure
     $routes->group('process', ['namespace' => 'App\Controllers\Rekon\Process'], function($routes) {
         
+        // Laporan Transaksi Detail Controller
+        $routes->get('laporan-transaksi-detail', 'LaporanTransaksiDetailController::index', ['as' => 'rekon.process.laporan-transaksi-detail']);
+        $routes->get('laporan-transaksi-detail/datatable', 'LaporanTransaksiDetailController::datatable', ['as' => 'rekon.process.laporan-transaksi-detail.datatable']);
+        $routes->post('laporan-transaksi-detail/datatable', 'LaporanTransaksiDetailController::datatable', ['as' => 'rekon.process.laporan-transaksi-detail.datatable.post']);
+        $routes->post('laporan-transaksi-detail/detail', 'LaporanTransaksiDetailController::getDisputeDetail', ['as' => 'rekon.process.laporan-transaksi-detail.detail']);
+        $routes->post('laporan-transaksi-detail/update', 'LaporanTransaksiDetailController::updateDispute', ['as' => 'rekon.process.laporan-transaksi-detail.update']);
+        $routes->post('laporan-transaksi-detail/verif-settlement', 'LaporanTransaksiDetailController::verifSettlement', ['as' => 'rekon.process.laporan-transaksi-detail.verif-settlement']);
+        
         // Detail vs Rekap Controller
         $routes->get('detail-vs-rekap', 'DetailVsRekapController::index', ['as' => 'rekon.process.detail-vs-rekap']);
         $routes->get('detail-vs-rekap/datatable', 'DetailVsRekapController::datatable', ['as' => 'rekon.process.detail-vs-rekap.datatable']);
