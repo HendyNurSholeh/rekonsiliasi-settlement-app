@@ -12,8 +12,8 @@
     <div class="col-12">
         <div class="alert alert-info">
             <i class="fal fa-info-circle"></i>
-            <strong>Penyelesaian Dispute</strong> 
-            <br>Menampilkan dan mengelola data dispute yang memerlukan penyelesaian manual.
+            <strong>Detail Transaksi</strong> 
+            <br>Menampilkan dan mengelola data detail transaksi yang memerlukan penyelesaian manual.
         </div>
     </div>
 </div>
@@ -30,12 +30,12 @@
             <div class="card-body">
                 <form method="GET" action="{{ current_url() }}">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="tanggal" class="form-label">Tanggal Rekonsiliasi</label>
                             <input type="date" class="form-control" id="tanggal" name="tanggal" 
                                    value="{{ $tanggalRekon }}" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="filter_status_biller" class="form-label">Status Biller</label>
                             <select class="form-control" id="filter_status_biller" name="status_biller">
                                 <option value="">Semua Status</option>
@@ -44,12 +44,20 @@
                                 <option value="2" @if(request()->getGet('status_biller') == '2') selected @endif>Gagal</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="filter_status_core" class="form-label">Status Core</label>
                             <select class="form-control" id="filter_status_core" name="status_core">
                                 <option value="">Semua Status</option>
                                 <option value="0" @if(request()->getGet('status_core') == '0') selected @endif>Tidak Terdebet</option>
                                 <option value="1" @if(request()->getGet('status_core') == '1') selected @endif>Terdebet</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filter_settle_verifikasi" class="form-label">Settlement Verifikasi</label>
+                            <select class="form-control" id="filter_settle_verifikasi" name="settle_verifikasi">
+                                <option value="">Semua Status</option>
+                                <option value="0" @if(request()->getGet('settle_verifikasi') == '0') selected @endif>Dana Belum Diverifikasi</option>
+                                <option value="1" @if(request()->getGet('settle_verifikasi') == '1') selected @endif>Dana Tersedia & Siap Settlement</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -89,6 +97,7 @@
                                 <th>RP Biller Tag</th>
                                 <th>Status Biller</th>
                                 <th>Status Core</th>
+                                <th>Settlement Verifikasi</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -97,13 +106,6 @@
                         </tbody>
                     </table>
                 </div>
-                @if(empty($disputeData))
-                    <div class="text-center py-4">
-                        <i class="fal fa-inbox fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Tidak ada data ditemukan</h5>
-                        <p class="text-muted">Silakan pilih tanggal rekonsiliasi untuk menampilkan data.</p>
-                    </div>
-                @endif
             </div>
         </div>
     </div>
@@ -392,10 +394,12 @@ $(document).ready(function() {
         const tanggal = $('#tanggal').val();
         const statusBiller = $('#filter_status_biller').val();
         const statusCore = $('#filter_status_core').val();
+        const settleVerifikasi = $('#filter_settle_verifikasi').val();
         
         console.log('Form submit - Tanggal:', tanggal);
         console.log('Form submit - Status Biller:', statusBiller);
         console.log('Form submit - Status Core:', statusCore);
+        console.log('Form submit - Settle Verifikasi:', settleVerifikasi);
         
         if (tanggal && disputeTable) {
             // Update current URL parameters
@@ -410,6 +414,11 @@ $(document).ready(function() {
                 url.searchParams.set('status_core', statusCore);
             } else {
                 url.searchParams.delete('status_core');
+            }
+            if (settleVerifikasi !== '') {
+                url.searchParams.set('settle_verifikasi', settleVerifikasi);
+            } else {
+                url.searchParams.delete('settle_verifikasi');
             }
             window.history.pushState({}, '', url);
             
@@ -434,9 +443,11 @@ function initializeDataTable() {
                 // Add status filters
                 d.status_biller = $('#filter_status_biller').val();
                 d.status_core = $('#filter_status_core').val();
+                d.settle_verifikasi = $('#filter_settle_verifikasi').val();
                 console.log('DataTable request data:', d);
                 console.log('Status Biller:', d.status_biller);
                 console.log('Status Core:', d.status_core);
+                console.log('Settle Verifikasi:', d.settle_verifikasi);
                 return d;
             },
             error: function(xhr, error, thrown) {
@@ -501,6 +512,18 @@ function initializeDataTable() {
                         return '<span class="badge badge-danger">Tidak Terdebet</span>';
                     } else {
                         return '<span class="badge badge-primary">Terdebet</span>';
+                    }
+                }
+            },
+            { 
+                data: 'v_SETTLE_VERIFIKASI', 
+                name: 'v_SETTLE_VERIFIKASI',
+                render: function(data, type, row) {
+                    const status = parseInt(data || 0);
+                    if (status === 0) {
+                        return '<span class="badge text-white" style="background-color: #f9911b;">Dana Belum Diverifikasi</span>';
+                    } else {
+                        return '<span class="badge badge-success">Dana Tersedia & Siap Settlement</span>';
                     }
                 }
             },
@@ -712,6 +735,7 @@ function resetFilters() {
    url.searchParams.delete('tanggal');
    url.searchParams.delete('status_biller');
    url.searchParams.delete('status_core');
+   url.searchParams.delete('settle_verifikasi');
    window.location.href = url.pathname + url.search;
 }
 </script>

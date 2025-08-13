@@ -23,12 +23,14 @@ class LaporanTransaksiDetailController extends BaseController
         $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         $statusBiller = $this->request->getGet('status_biller') ?? '';
         $statusCore = $this->request->getGet('status_core') ?? '';
+        $settleVerifikasi = $this->request->getGet('settle_verifikasi') ?? '';
 
         $data = [
             'title' => 'Laporan Transaksi Detail',
             'tanggalRekon' => $tanggalRekon,
             'statusBiller' => $statusBiller,
             'statusCore' => $statusCore,
+            'settleVerifikasi' => $settleVerifikasi,
             'route' => 'rekon/process/laporan-transaksi-detail'
         ];
 
@@ -44,9 +46,10 @@ class LaporanTransaksiDetailController extends BaseController
         $tanggalRekon = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
         $statusBiller = $this->request->getGet('status_biller') ?? $this->request->getPost('status_biller') ?? '';
         $statusCore = $this->request->getGet('status_core') ?? $this->request->getPost('status_core') ?? '';
+        $settleVerifikasi = $this->request->getGet('settle_verifikasi') ?? $this->request->getPost('settle_verifikasi') ?? '';
         
         // Debug log
-        log_message('info', 'DataTable parameters - Tanggal: ' . $tanggalRekon . ', Status Biller: ' . $statusBiller . ', Status Core: ' . $statusCore);
+        log_message('info', 'DataTable parameters - Tanggal: ' . $tanggalRekon . ', Status Biller: ' . $statusBiller . ', Status Core: ' . $statusCore . ', Settle Verifikasi: ' . $settleVerifikasi);
         
         // DataTables parameters
         $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
@@ -72,7 +75,8 @@ class LaporanTransaksiDetailController extends BaseController
             5 => 'RP_BILLER_TAG',
             6 => 'STATUS',
             7 => 'v_STAT_CORE_AGR',
-            8 => 'v_ID' // For action column
+            8 => 'v_SETTLE_VERIFIKASI',
+            9 => 'v_ID' // For action column
         ];
 
         try {
@@ -81,7 +85,8 @@ class LaporanTransaksiDetailController extends BaseController
             // Base query
             $baseQuery = "
                 SELECT IDPARTNER, TERMINALID, v_GROUP_PRODUK AS PRODUK, IDPEL, 
-                       RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE, v_ID
+                       RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE, 
+                       v_SETTLE_VERIFIKASI, v_ID
                 FROM v_cek_biller_dispute_direct 
                 WHERE v_TGL_FILE_REKON = ?
             ";
@@ -98,6 +103,11 @@ class LaporanTransaksiDetailController extends BaseController
                 $queryParams[] = $statusCore;
                 log_message('info', 'Adding status_core filter: ' . $statusCore);
             }
+            if ($settleVerifikasi !== '') {
+                $baseQuery .= " AND v_SETTLE_VERIFIKASI = ?";
+                $queryParams[] = $settleVerifikasi;
+                log_message('info', 'Adding settle_verifikasi filter: ' . $settleVerifikasi);
+            }
             
             // Add search conditions
             $searchConditions = [];
@@ -108,10 +118,11 @@ class LaporanTransaksiDetailController extends BaseController
                     TERMINALID LIKE ? OR 
                     v_GROUP_PRODUK LIKE ? OR 
                     IDPEL LIKE ? OR 
-                    CAST(RP_BILLER_TAG AS CHAR) LIKE ?
+                    CAST(RP_BILLER_TAG AS CHAR) LIKE ? OR
+                    CAST(v_SETTLE_VERIFIKASI AS CHAR) LIKE ?
                 )";
                 $searchTerm = "%{$searchValue}%";
-                $queryParams = array_merge($queryParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+                $queryParams = array_merge($queryParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
             }
             
             if (!empty($searchConditions)) {
@@ -133,6 +144,10 @@ class LaporanTransaksiDetailController extends BaseController
                 $totalQuery .= " AND v_STAT_CORE_AGR = ?";
                 $totalParams[] = $statusCore;
             }
+            if ($settleVerifikasi !== '') {
+                $totalQuery .= " AND v_SETTLE_VERIFIKASI = ?";
+                $totalParams[] = $settleVerifikasi;
+            }
             $totalResult = $db->query($totalQuery, $totalParams);
             $totalRecords = $totalResult->getRow()->total;
             
@@ -152,11 +167,15 @@ class LaporanTransaksiDetailController extends BaseController
                     $filteredQuery .= " AND v_STAT_CORE_AGR = ?";
                     $filteredParams[] = $statusCore;
                 }
+                if ($settleVerifikasi !== '') {
+                    $filteredQuery .= " AND v_SETTLE_VERIFIKASI = ?";
+                    $filteredParams[] = $settleVerifikasi;
+                }
                 $filteredQuery .= " AND " . implode(" AND ", $searchConditions);
                 // Add search parameters
                 if (!empty($searchValue)) {
                     $searchTerm = "%{$searchValue}%";
-                    $filteredParams = array_merge($filteredParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+                    $filteredParams = array_merge($filteredParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
                 }
                 $filteredResult = $db->query($filteredQuery, $filteredParams);
                 $filteredRecords = $filteredResult->getRow()->total;
@@ -165,7 +184,7 @@ class LaporanTransaksiDetailController extends BaseController
             }
             
             // Add ordering
-            if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 8) {
+            if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 9) {
                 $orderColumnName = $columns[$orderColumn];
                 if ($orderColumn == 3) $orderColumnName = 'v_GROUP_PRODUK'; // Handle alias
                 $baseQuery .= " ORDER BY {$orderColumnName} {$orderDir}";
@@ -195,6 +214,7 @@ class LaporanTransaksiDetailController extends BaseController
                     'RP_BILLER_TAG' => $row['RP_BILLER_TAG'] ?? '0',
                     'STATUS_BILLER' => $row['STATUS_BILLER'] ?? '0',
                     'STATUS_CORE' => $row['STATUS_CORE'] ?? '0',
+                    'v_SETTLE_VERIFIKASI' => $row['v_SETTLE_VERIFIKASI'] ?? '0',
                     'v_ID' => $row['v_ID'] ?? ''
                 ];
             }
