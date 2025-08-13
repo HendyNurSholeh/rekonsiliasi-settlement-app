@@ -166,6 +166,29 @@
                                     </li>
                                 </ul>
                             </li>
+
+                            {{-- TAHAP 4 - SETTLEMENT --}}
+                            {{-- <li class="@if (str_contains($route, 'settlement')) active open @endif">
+                                <a href="javascript:void(0);" title="Settlement" data-filter-tags="settlement jurnal">
+                                    <i class="fal fa-file-invoice-dollar"></i>
+                                    <span class="nav-link-text">Settlement</span>
+                                </a>
+                                <ul>
+                                    <!-- 1. Buat Jurnal Settlement -->
+                                    <li class="@if ($route == 'settlement/buat-jurnal') active @endif">
+                                        <a href="{{ site_url('settlement/buat-jurnal') }}">
+                                            <span class="nav-link-text text-left">Buat Jurnal Settlement</span>
+                                        </a>
+                                    </li>
+                                    
+                                    <!-- 2. Approve Jurnal Settlement -->
+                                    <li class="@if ($route == 'settlement/approve-jurnal') active @endif">
+                                        <a href="{{ site_url('settlement/approve-jurnal') }}">
+                                            <span class="nav-link-text text-left">Approve Jurnal Settlement</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li> --}}
                        
                         @if ($user || $unit_kerja || $permission || $role)
                             <li class="@if ($route == 'user' || $route == 'unit-kerja' || $route == 'permission' || $route == 'role') active open @endif">

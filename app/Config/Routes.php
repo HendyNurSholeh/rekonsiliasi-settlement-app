@@ -119,6 +119,25 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     // Note: Report routes removed as RekonReport controller was deleted
 });
 
+// ? Settlement Routes
+$routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], function($routes) {
+    
+    // Buat Jurnal Settlement Controller
+    $routes->get('buat-jurnal', 'BuatJurnalController::index', ['as' => 'settlement.buat-jurnal']);
+    $routes->get('buat-jurnal/datatable', 'BuatJurnalController::datatable', ['as' => 'settlement.buat-jurnal.datatable']);
+    $routes->post('buat-jurnal/datatable', 'BuatJurnalController::datatable', ['as' => 'settlement.buat-jurnal.datatable.post']);
+    $routes->post('buat-jurnal/validate', 'BuatJurnalController::validateSettlement', ['as' => 'settlement.buat-jurnal.validate']);
+    $routes->post('buat-jurnal/create', 'BuatJurnalController::createJurnal', ['as' => 'settlement.buat-jurnal.create']);
+    
+    // Approve Jurnal Settlement Controller
+    $routes->get('approve-jurnal', 'ApproveJurnalController::index', ['as' => 'settlement.approve-jurnal']);
+    $routes->get('approve-jurnal/datatable', 'ApproveJurnalController::datatable', ['as' => 'settlement.approve-jurnal.datatable']);
+    $routes->post('approve-jurnal/datatable', 'ApproveJurnalController::datatable', ['as' => 'settlement.approve-jurnal.datatable.post']);
+    $routes->post('approve-jurnal/detail', 'ApproveJurnalController::getDetailJurnal', ['as' => 'settlement.approve-jurnal.detail']);
+    $routes->post('approve-jurnal/process', 'ApproveJurnalController::processApproval', ['as' => 'settlement.approve-jurnal.process']);
+    $routes->get('approve-jurnal/summary', 'ApproveJurnalController::getSummary', ['as' => 'settlement.approve-jurnal.summary']);
+});
+
 $routes->get('get-csrf-token', 'CommonController::getCsrfToken');
 
 // ? Branch
