@@ -97,13 +97,6 @@
                         </tbody>
                     </table>
                 </div>
-                @if(empty($disputeData))
-                    <div class="text-center py-4">
-                        <i class="fal fa-inbox fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Tidak ada data ditemukan</h5>
-                        <p class="text-muted">Silakan pilih tanggal rekonsiliasi untuk menampilkan data.</p>
-                    </div>
-                @endif
             </div>
         </div>
     </div>
