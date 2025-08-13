@@ -52,7 +52,7 @@
                                 <option value="1" @if(request()->getGet('status_core') == '1') selected @endif>Terdebet</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="filter_settle_verifikasi" class="form-label">Settlement Verifikasi</label>
                             <select class="form-control" id="filter_settle_verifikasi" name="settle_verifikasi">
                                 <option value="">Semua Status</option>
@@ -60,7 +60,12 @@
                                 <option value="1" @if(request()->getGet('settle_verifikasi') == '1') selected @endif>Dana Tersedia & Siap Settlement</option>
                             </select>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
+                        <div class="col-md-2">
+                            <label for="filter_id_pelanggan" class="form-label">ID Pelanggan</label>
+                            <input type="text" class="form-control" id="filter_id_pelanggan" name="id_pelanggan" 
+                                   value="{{ request()->getGet('id_pelanggan') }}" placeholder="Masukkan ID Pelanggan">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>
@@ -395,11 +400,13 @@ $(document).ready(function() {
         const statusBiller = $('#filter_status_biller').val();
         const statusCore = $('#filter_status_core').val();
         const settleVerifikasi = $('#filter_settle_verifikasi').val();
+        const idPelanggan = $('#filter_id_pelanggan').val();
         
         console.log('Form submit - Tanggal:', tanggal);
         console.log('Form submit - Status Biller:', statusBiller);
         console.log('Form submit - Status Core:', statusCore);
         console.log('Form submit - Settle Verifikasi:', settleVerifikasi);
+        console.log('Form submit - ID Pelanggan:', idPelanggan);
         
         if (tanggal && disputeTable) {
             // Update current URL parameters
@@ -419,6 +426,11 @@ $(document).ready(function() {
                 url.searchParams.set('settle_verifikasi', settleVerifikasi);
             } else {
                 url.searchParams.delete('settle_verifikasi');
+            }
+            if (idPelanggan !== '') {
+                url.searchParams.set('id_pelanggan', idPelanggan);
+            } else {
+                url.searchParams.delete('id_pelanggan');
             }
             window.history.pushState({}, '', url);
             
@@ -444,10 +456,12 @@ function initializeDataTable() {
                 d.status_biller = $('#filter_status_biller').val();
                 d.status_core = $('#filter_status_core').val();
                 d.settle_verifikasi = $('#filter_settle_verifikasi').val();
+                d.id_pelanggan = $('#filter_id_pelanggan').val();
                 console.log('DataTable request data:', d);
                 console.log('Status Biller:', d.status_biller);
                 console.log('Status Core:', d.status_core);
                 console.log('Settle Verifikasi:', d.settle_verifikasi);
+                console.log('ID Pelanggan:', d.id_pelanggan);
                 return d;
             },
             error: function(xhr, error, thrown) {
@@ -736,6 +750,7 @@ function resetFilters() {
    url.searchParams.delete('status_biller');
    url.searchParams.delete('status_core');
    url.searchParams.delete('settle_verifikasi');
+   url.searchParams.delete('id_pelanggan');
    window.location.href = url.pathname + url.search;
 }
 </script>

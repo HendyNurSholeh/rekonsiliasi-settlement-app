@@ -24,6 +24,7 @@ class LaporanTransaksiDetailController extends BaseController
         $statusBiller = $this->request->getGet('status_biller') ?? '';
         $statusCore = $this->request->getGet('status_core') ?? '';
         $settleVerifikasi = $this->request->getGet('settle_verifikasi') ?? '';
+        $idPelanggan = $this->request->getGet('id_pelanggan') ?? '';
 
         $data = [
             'title' => 'Laporan Transaksi Detail',
@@ -31,6 +32,7 @@ class LaporanTransaksiDetailController extends BaseController
             'statusBiller' => $statusBiller,
             'statusCore' => $statusCore,
             'settleVerifikasi' => $settleVerifikasi,
+            'idPelanggan' => $idPelanggan,
             'route' => 'rekon/process/laporan-transaksi-detail'
         ];
 
@@ -47,9 +49,10 @@ class LaporanTransaksiDetailController extends BaseController
         $statusBiller = $this->request->getGet('status_biller') ?? $this->request->getPost('status_biller') ?? '';
         $statusCore = $this->request->getGet('status_core') ?? $this->request->getPost('status_core') ?? '';
         $settleVerifikasi = $this->request->getGet('settle_verifikasi') ?? $this->request->getPost('settle_verifikasi') ?? '';
+        $idPelanggan = $this->request->getGet('id_pelanggan') ?? $this->request->getPost('id_pelanggan') ?? '';
         
         // Debug log
-        log_message('info', 'DataTable parameters - Tanggal: ' . $tanggalRekon . ', Status Biller: ' . $statusBiller . ', Status Core: ' . $statusCore . ', Settle Verifikasi: ' . $settleVerifikasi);
+        log_message('info', 'DataTable parameters - Tanggal: ' . $tanggalRekon . ', Status Biller: ' . $statusBiller . ', Status Core: ' . $statusCore . ', Settle Verifikasi: ' . $settleVerifikasi . ', ID Pelanggan: ' . $idPelanggan);
         
         // DataTables parameters
         $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
@@ -108,6 +111,11 @@ class LaporanTransaksiDetailController extends BaseController
                 $queryParams[] = $settleVerifikasi;
                 log_message('info', 'Adding settle_verifikasi filter: ' . $settleVerifikasi);
             }
+            if ($idPelanggan !== '') {
+                $baseQuery .= " AND IDPEL LIKE ?";
+                $queryParams[] = "%{$idPelanggan}%";
+                log_message('info', 'Adding id_pelanggan filter: ' . $idPelanggan);
+            }
             
             // Add search conditions
             $searchConditions = [];
@@ -148,6 +156,10 @@ class LaporanTransaksiDetailController extends BaseController
                 $totalQuery .= " AND v_SETTLE_VERIFIKASI = ?";
                 $totalParams[] = $settleVerifikasi;
             }
+            if ($idPelanggan !== '') {
+                $totalQuery .= " AND IDPEL LIKE ?";
+                $totalParams[] = "%{$idPelanggan}%";
+            }
             $totalResult = $db->query($totalQuery, $totalParams);
             $totalRecords = $totalResult->getRow()->total;
             
@@ -170,6 +182,10 @@ class LaporanTransaksiDetailController extends BaseController
                 if ($settleVerifikasi !== '') {
                     $filteredQuery .= " AND v_SETTLE_VERIFIKASI = ?";
                     $filteredParams[] = $settleVerifikasi;
+                }
+                if ($idPelanggan !== '') {
+                    $filteredQuery .= " AND IDPEL LIKE ?";
+                    $filteredParams[] = "%{$idPelanggan}%";
                 }
                 $filteredQuery .= " AND " . implode(" AND ", $searchConditions);
                 // Add search parameters
