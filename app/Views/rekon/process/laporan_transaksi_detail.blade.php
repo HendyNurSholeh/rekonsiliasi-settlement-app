@@ -542,7 +542,7 @@ function initializeDataTable() {
                     } else if (status === 1) {
                         return '<span class="badge badge-primary">Terdebet</span>';
                     } else if (status === 2) {
-                        return '<span class="badge badge-warning">Belum Di Verifikasi</span>';
+                        return '<span class="badge text-white" style="background-color: #f9911b;">Belum Di Verifikasi</span>';
                     } else {
                         return '<span class="badge badge-light">' + status + '</span>';
                     }
