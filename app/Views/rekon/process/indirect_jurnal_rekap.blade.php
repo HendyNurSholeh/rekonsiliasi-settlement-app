@@ -424,6 +424,9 @@ function updateSuksesTx(group) {
     // Show loading state
     $('#confirmUpdateBtn').html('<i class="fal fa-spinner fa-spin"></i> Memproses Konfirmasi...').prop('disabled', true);
     
+    // Get current tanggal rekonsiliasi
+    const tanggalRekon = $('#tanggal').val() || '{{ $tanggalRekon }}';
+    
     // Refresh CSRF token dulu sebelum request
     refreshCSRFToken().then(function(newToken) {
         console.log('Using fresh CSRF token for update:', newToken);
@@ -435,6 +438,7 @@ function updateSuksesTx(group) {
         
         console.log('Sending request with data:', {
             group: group,
+            tanggal_rekon: tanggalRekon,
             csrf_test_name: currentCSRF
         });
         
@@ -443,6 +447,7 @@ function updateSuksesTx(group) {
             type: 'POST',
             data: {
                 group: group,
+                tanggal_rekon: tanggalRekon,
                 csrf_test_name: currentCSRF
             },
             success: function(response) {

@@ -88,12 +88,13 @@ class IndirectJurnalRekapController extends BaseController
 
     /**
      * Update Sukses Transaksi
-     * Menjalankan procedure p_update_sukses_tx
+     * Menjalankan procedure p_update_sukses_tx dengan parameter IDPARTNER dan TGL_FILE
      */
     public function updateSukses()
     {
         try {
             $group = $this->request->getPost('group');
+            $tanggalRekon = $this->request->getPost('tanggal_rekon') ?? $this->prosesModel->getDefaultDate();
             
             if (!$group) {
                 return $this->response->setJSON([
@@ -103,12 +104,20 @@ class IndirectJurnalRekapController extends BaseController
                 ]);
             }
 
+            if (!$tanggalRekon) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Parameter tanggal rekonsiliasi tidak ditemukan',
+                    'csrf_token' => csrf_hash()
+                ]);
+            }
+
             $db = \Config\Database::connect();
             
-            // Call the stored procedure
-            $query = $db->query("CALL p_update_sukses_tx(?)", [$group]);
+            // Call the stored procedure with IDPARTNER (sama dengan NAMA_GROUP) dan TGL_FILE
+            $query = $db->query("CALL p_update_sukses_tx(?, ?)", [$group, $tanggalRekon]);
 
-            log_message('info', 'p_update_sukses_tx procedure called successfully for group: ' . $group);
+            log_message('info', "p_update_sukses_tx procedure called successfully for IDPARTNER: {$group}, TGL_FILE: {$tanggalRekon}");
 
             return $this->response->setJSON([
                 'success' => true,
