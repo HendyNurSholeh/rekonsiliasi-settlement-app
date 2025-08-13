@@ -111,17 +111,19 @@
                                     <span class="nav-link-text">Proses Rekonsiliasi</span>
                                 </a>
                                 <ul>
-                                    <!-- 1. Laporan Transaksi Detail -->
-                                    <li class="@if ($route == 'rekon/process/laporan-transaksi-detail') active @endif">
-                                        <a href="{{ site_url('rekon/process/laporan-transaksi-detail') }}">
-                                            <span class="nav-link-text text-left">Laporan Transaksi Detail</span>
-                                        </a>
-                                    </li>
+                                    
                                     
                                     <!-- 2. Laporan Detail vs Rekap -->
                                     <li class="@if ($route == 'rekon/process/detail-vs-rekap') active @endif">
                                         <a href="{{ site_url('rekon/process/detail-vs-rekap') }}">
                                             <span class="nav-link-text text-left">Laporan Detail vs Rekap</span>
+                                        </a>
+                                    </li>
+
+                                    <!-- 1. Laporan Transaksi Detail -->
+                                    <li class="@if ($route == 'rekon/process/laporan-transaksi-detail') active @endif">
+                                        <a href="{{ site_url('rekon/process/laporan-transaksi-detail') }}">
+                                            <span class="nav-link-text text-left">Laporan Transaksi Detail</span>
                                         </a>
                                     </li>
                                     
