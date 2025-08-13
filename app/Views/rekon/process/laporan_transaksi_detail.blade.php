@@ -520,8 +520,10 @@ function initializeDataTable() {
                         return '<span class="badge text-white" style="background-color: #f9911b;">Pending</span>';
                     } else if (status === 1) {
                         return '<span class="badge badge-success">Sukses</span>';
-                    } else {
+                    } else if (status === 2) {
                         return '<span class="badge badge-danger">Gagal</span>';
+                    } else {
+                        return '<span class="badge badge-light">' + status + '</span>';
                     }
                 }
             },
@@ -532,8 +534,10 @@ function initializeDataTable() {
                     const status = parseInt(data || 0);
                     if (status === 0) {
                         return '<span class="badge badge-danger">Tidak Terdebet</span>';
-                    } else {
+                    } else if (status === 1) {
                         return '<span class="badge badge-primary">Terdebet</span>';
+                    } else {
+                        return '<span class="badge badge-light">' + status + '</span>';
                     }
                 }
             },
@@ -547,11 +551,11 @@ function initializeDataTable() {
                     } else if (status === 1) {
                         return '<span class="badge badge-success">Dilimpahkan</span>';
                     } else if (status === 8) {
-                        return '<span class="badge text-white" style="background-color: #f9911b;">Revershal</span>';
+                        return '<span class="badge badge-warning">Revershal</span>';
                     } else if (status === 9) {
                         return '<span class="badge badge-danger">Tidak Dilimpahkan</span>';
                     } else {
-                        return '<span class="badge badge-light">Unknown (' + status + ')</span>';
+                        return '<span class="badge badge-light">' + status + '</span>';
                     }
                 }
             },
