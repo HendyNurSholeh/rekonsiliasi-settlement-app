@@ -486,7 +486,13 @@ function initializeDataTable() {
                 }
             },
             { data: 'IDPARTNER', name: 'IDPARTNER' },
-            { data: 'TERMINALID', name: 'TERMINALID' },
+            { 
+                data: 'TERMINALID', 
+                name: 'TERMINALID',
+                render: function(data, type, row) {
+                    return data && data.trim() !== '' ? data : '-';
+                }
+            },
             { 
                 data: 'PRODUK', 
                 name: 'PRODUK',
@@ -615,7 +621,7 @@ function openDisputeModal(id) {
                     
                     // Fill readonly fields
                     $('#modal_idpartner').val(data.IDPARTNER || '');
-                    $('#modal_terminalid').val(data.TERMINALID || '');
+                    $('#modal_terminalid').val(data.TERMINALID && data.TERMINALID.trim() !== '' ? data.TERMINALID : '-');
                     $('#modal_is_direct_fee').val(data.v_IS_DIRECT_FEE || '');
                     $('#modal_produk').val(data.v_GROUP_PRODUK || '');
                     $('#modal_idpel').val(data.IDPEL || '');

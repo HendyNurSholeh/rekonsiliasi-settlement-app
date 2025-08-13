@@ -68,7 +68,7 @@ class LaporanTransaksiDetailController extends BaseController
         $orderColumn = isset($orderArray[0]['column']) ? $orderArray[0]['column'] : 0;
         $orderDir = isset($orderArray[0]['dir']) ? $orderArray[0]['dir'] : 'asc';
 
-        // Column mapping
+        // Column mapping untuk t_agn_detail
         $columns = [
             0 => 'v_ID', // For row number (not actual column)
             1 => 'IDPARTNER',
@@ -85,12 +85,12 @@ class LaporanTransaksiDetailController extends BaseController
         try {
             $db = \Config\Database::connect();
             
-            // Base query
+            // Base query - mengambil data dari t_agn_detail
             $baseQuery = "
                 SELECT IDPARTNER, TERMINALID, v_GROUP_PRODUK AS PRODUK, IDPEL, 
                        RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE, 
                        v_SETTLE_VERIFIKASI, v_ID
-                FROM v_cek_biller_dispute_direct 
+                FROM t_agn_detail 
                 WHERE v_TGL_FILE_REKON = ?
             ";
             
@@ -140,7 +140,7 @@ class LaporanTransaksiDetailController extends BaseController
             // Count total records without filtering (but with status filters)
             $totalQuery = "
                 SELECT COUNT(*) as total 
-                FROM v_cek_biller_dispute_direct 
+                FROM t_agn_detail 
                 WHERE v_TGL_FILE_REKON = ?
             ";
             $totalParams = [$tanggalRekon];
@@ -167,7 +167,7 @@ class LaporanTransaksiDetailController extends BaseController
             if (!empty($searchConditions)) {
                 $filteredQuery = "
                     SELECT COUNT(*) as total 
-                    FROM v_cek_biller_dispute_direct 
+                    FROM t_agn_detail 
                     WHERE v_TGL_FILE_REKON = ?
                 ";
                 $filteredParams = [$tanggalRekon];
@@ -274,7 +274,7 @@ class LaporanTransaksiDetailController extends BaseController
         try {
             $db = \Config\Database::connect();
             $query = $db->query("
-                SELECT * FROM v_cek_biller_dispute_direct 
+                SELECT * FROM t_agn_detail 
                 WHERE v_ID = ?
             ", [$id]);
             
