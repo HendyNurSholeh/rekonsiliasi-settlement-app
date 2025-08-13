@@ -56,8 +56,10 @@
                             <label for="filter_settle_verifikasi" class="form-label">Settlement Verifikasi</label>
                             <select class="form-control" id="filter_settle_verifikasi" name="settle_verifikasi">
                                 <option value="">Semua Status</option>
-                                <option value="0" @if(request()->getGet('settle_verifikasi') == '0') selected @endif>Dana Belum Diverifikasi</option>
-                                <option value="1" @if(request()->getGet('settle_verifikasi') == '1') selected @endif>Dana Tersedia & Siap Settlement</option>
+                                <option value="0" @if(request()->getGet('settle_verifikasi') == '0') selected @endif>Belum Verif</option>
+                                <option value="1" @if(request()->getGet('settle_verifikasi') == '1') selected @endif>Dilimpahkan</option>
+                                <option value="8" @if(request()->getGet('settle_verifikasi') == '8') selected @endif>Revershal</option>
+                                <option value="9" @if(request()->getGet('settle_verifikasi') == '9') selected @endif>Tidak Dilimpahkan</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -297,11 +299,11 @@
                                             </div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="settlement_revershal" value="8">
-                                                <label class="form-check-label" for="settlement_revershal">Transaksi di Revershal</label>
+                                                <label class="form-check-label" for="settlement_revershal">Revershal</label>
                                             </div>
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="status_settlement" id="settlement_gagal" value="9">
-                                                <label class="form-check-label" for="settlement_gagal">Transaksi Gagal</label>
+                                                <input class="form-check-input" type="radio" name="status_settlement" id="settlement_tidak_dilimpahkan" value="9">
+                                                <label class="form-check-label" for="settlement_tidak_dilimpahkan">Tidak Dilimpahkan</label>
                                             </div>
                                         </div>
                                     </div>
@@ -541,9 +543,15 @@ function initializeDataTable() {
                 render: function(data, type, row) {
                     const status = parseInt(data || 0);
                     if (status === 0) {
-                        return '<span class="badge text-white" style="background-color: #f9911b;">Dana Belum Diverifikasi</span>';
+                        return '<span class="badge badge-secondary">Belum Verif</span>';
+                    } else if (status === 1) {
+                        return '<span class="badge badge-success">Dilimpahkan</span>';
+                    } else if (status === 8) {
+                        return '<span class="badge badge-warning">Revershal</span>';
+                    } else if (status === 9) {
+                        return '<span class="badge badge-danger">Tidak Dilimpahkan</span>';
                     } else {
-                        return '<span class="badge badge-success">Dana Tersedia & Siap Settlement</span>';
+                        return '<span class="badge badge-light">Unknown (' + status + ')</span>';
                     }
                 }
             },
@@ -637,6 +645,15 @@ function openDisputeModal(id) {
                     // Set current values for radio buttons
                     $('input[name="status_biller"][value="' + (data.STATUS || '0') + '"]').prop('checked', true);
                     $('input[name="status_core"][value="' + (data.v_STAT_CORE_AGR || '0') + '"]').prop('checked', true);
+                    
+                    // Auto-select status settlement hanya jika bukan "Belum Verif" (0)
+                    const settleStatus = data.v_SETTLE_VERIFIKASI || '0';
+                    if (settleStatus !== '0') {
+                        $('input[name="status_settlement"][value="' + settleStatus + '"]').prop('checked', true);
+                    } else {
+                        // Jika "Belum Verif", tidak ada yang terselect
+                        $('input[name="status_settlement"]').prop('checked', false);
+                    }
                     
                     $('#disputeModal').modal('show');
                 } else {
