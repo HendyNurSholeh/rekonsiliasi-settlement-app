@@ -50,6 +50,7 @@
                                 <option value="">Semua Status</option>
                                 <option value="0" @if(request()->getGet('status_core') == '0') selected @endif>Tidak Terdebet</option>
                                 <option value="1" @if(request()->getGet('status_core') == '1') selected @endif>Terdebet</option>
+                                <option value="2" @if(request()->getGet('status_core') == '2') selected @endif>Belum Di Verifikasi</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -58,7 +59,7 @@
                                 <option value="">Semua Status</option>
                                 <option value="0" @if(request()->getGet('settle_verifikasi') == '0') selected @endif>Belum Verif</option>
                                 <option value="1" @if(request()->getGet('settle_verifikasi') == '1') selected @endif>Dilimpahkan</option>
-                                <option value="8" @if(request()->getGet('settle_verifikasi') == '8') selected @endif>Revershal</option>
+                                <option value="8" @if(request()->getGet('settle_verifikasi') == '8') selected @endif>Pengembalian ke Nasabah</option>
                                 <option value="9" @if(request()->getGet('settle_verifikasi') == '9') selected @endif>Tidak Dilimpahkan</option>
                             </select>
                         </div>
@@ -275,12 +276,16 @@
                                         <label>Status Core <span class="text-danger">*</span></label>
                                         <div>
                                             <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="status_core" id="core_tidak_terdebet" value="0">
+                                                <label class="form-check-label" for="core_tidak_terdebet">Tidak Terdebet</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_core" id="core_terdebet" value="1">
                                                 <label class="form-check-label" for="core_terdebet">Terdebet</label>
                                             </div>
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="status_core" id="core_tidak_terdebet" value="0">
-                                                <label class="form-check-label" for="core_tidak_terdebet">Tidak Terdebet</label>
+                                                <input class="form-check-input" type="radio" name="status_core" id="core_belum_verifikasi" value="2">
+                                                <label class="form-check-label" for="core_belum_verifikasi">Belum Di Verifikasi</label>
                                             </div>
                                         </div>
                                     </div>
@@ -298,8 +303,8 @@
                                                 <label class="form-check-label" for="settlement_dilimpahkan">Dilimpahkan</label>
                                             </div>
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="status_settlement" id="settlement_revershal" value="8">
-                                                <label class="form-check-label" for="settlement_revershal">Revershal</label>
+                                                <input class="form-check-input" type="radio" name="status_settlement" id="settlement_pengembalian" value="8">
+                                                <label class="form-check-label" for="settlement_pengembalian">Pengembalian ke Nasabah</label>
                                             </div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="settlement_tidak_dilimpahkan" value="9">
@@ -536,6 +541,8 @@ function initializeDataTable() {
                         return '<span class="badge badge-danger">Tidak Terdebet</span>';
                     } else if (status === 1) {
                         return '<span class="badge badge-primary">Terdebet</span>';
+                    } else if (status === 2) {
+                        return '<span class="badge badge-warning">Belum Di Verifikasi</span>';
                     } else {
                         return '<span class="badge badge-light">' + status + '</span>';
                     }
@@ -551,7 +558,7 @@ function initializeDataTable() {
                     } else if (status === 1) {
                         return '<span class="badge badge-success">Dilimpahkan</span>';
                     } else if (status === 8) {
-                        return '<span class="badge badge-warning">Revershal</span>';
+                        return '<span class="badge badge-info">Pengembalian ke Nasabah</span>';
                     } else if (status === 9) {
                         return '<span class="badge badge-danger">Tidak Dilimpahkan</span>';
                     } else {
