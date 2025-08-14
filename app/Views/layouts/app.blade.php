@@ -167,8 +167,8 @@
                                 </ul>
                             </li>
 
-                            {{-- TAHAP 4 - SETTLEMENT --}}
-                            {{-- <li class="@if (str_contains($route, 'settlement')) active open @endif">
+                            {{-- TAHAP 4 - SETTLEMENT--}}
+                            <li class="@if (str_contains($route, 'settlement')) active open @endif">
                                 <a href="javascript:void(0);" title="Settlement" data-filter-tags="settlement jurnal">
                                     <i class="fal fa-file-invoice-dollar"></i>
                                     <span class="nav-link-text">Settlement</span>
@@ -188,7 +188,7 @@
                                         </a>
                                     </li>
                                 </ul>
-                            </li> --}}
+                            </li>
                        
                         @if ($user || $unit_kerja || $permission || $role)
                             <li class="@if ($route == 'user' || $route == 'unit-kerja' || $route == 'permission' || $route == 'role') active open @endif">

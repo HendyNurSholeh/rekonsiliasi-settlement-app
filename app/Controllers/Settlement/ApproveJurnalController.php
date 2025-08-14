@@ -64,11 +64,11 @@ class ApproveJurnalController extends BaseController
             0 => 'id', // For row number
             1 => 'KD_SETTLE',
             2 => 'NAMA_PRODUK',
-            3 => 'TGL_SETTLE',
-            4 => 'TOTAL_AMOUNT',
-            5 => 'STATUS_APPROVE',
-            6 => 'USER_APPROVE',
-            7 => 'TGL_APPROVE',
+            3 => 'TGL_DATA',
+            4 => 'TOT_JURNAL_KR_ECR',
+            5 => 'STAT_APPROVER',
+            6 => 'USER_APPROVER',
+            7 => 'TGL_APPROVER',
             8 => 'id' // For action column
         ];
 
@@ -77,17 +77,17 @@ class ApproveJurnalController extends BaseController
             
             // Base query for t_settle_produk
             $baseQuery = "
-                SELECT id, KD_SETTLE, NAMA_PRODUK, TGL_SETTLE, TOTAL_AMOUNT, 
-                       STATUS_APPROVE, USER_APPROVE, TGL_APPROVE
+                SELECT id, KD_SETTLE, NAMA_PRODUK, TGL_DATA, TOT_JURNAL_KR_ECR, 
+                       STAT_APPROVER, USER_APPROVER, TGL_APPROVER
                 FROM t_settle_produk 
-                WHERE DATE(TGL_SETTLE) = ?
+                WHERE DATE(TGL_DATA) = ?
             ";
             
             // Add filters
             $queryParams = [$tanggalRekon];
             
             if ($statusApprove !== '') {
-                $baseQuery .= " AND STATUS_APPROVE = ?";
+                $baseQuery .= " AND STAT_APPROVER = ?";
                 $queryParams[] = $statusApprove;
                 log_message('info', 'Adding status_approve filter: ' . $statusApprove);
             }
@@ -97,8 +97,8 @@ class ApproveJurnalController extends BaseController
                 $baseQuery .= " AND (
                     KD_SETTLE LIKE ? OR 
                     NAMA_PRODUK LIKE ? OR 
-                    CAST(TOTAL_AMOUNT AS CHAR) LIKE ? OR
-                    USER_APPROVE LIKE ?
+                    CAST(TOT_JURNAL_KR_ECR AS CHAR) LIKE ? OR
+                    USER_APPROVER LIKE ?
                 )";
                 $searchTerm = "%{$searchValue}%";
                 $queryParams = array_merge($queryParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
@@ -108,11 +108,11 @@ class ApproveJurnalController extends BaseController
             $totalQuery = "
                 SELECT COUNT(*) as total 
                 FROM t_settle_produk 
-                WHERE DATE(TGL_SETTLE) = ?
+                WHERE DATE(TGL_DATA) = ?
             ";
             $totalParams = [$tanggalRekon];
             if ($statusApprove !== '') {
-                $totalQuery .= " AND STATUS_APPROVE = ?";
+                $totalQuery .= " AND STAT_APPROVER = ?";
                 $totalParams[] = $statusApprove;
             }
             
@@ -125,8 +125,8 @@ class ApproveJurnalController extends BaseController
                 $filteredQuery = $totalQuery . " AND (
                     KD_SETTLE LIKE ? OR 
                     NAMA_PRODUK LIKE ? OR 
-                    CAST(TOTAL_AMOUNT AS CHAR) LIKE ? OR
-                    USER_APPROVE LIKE ?
+                    CAST(TOT_JURNAL_KR_ECR AS CHAR) LIKE ? OR
+                    USER_APPROVER LIKE ?
                 )";
                 $searchTerm = "%{$searchValue}%";
                 $filteredParams = array_merge($totalParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
@@ -139,7 +139,7 @@ class ApproveJurnalController extends BaseController
                 $orderColumnName = $columns[$orderColumn];
                 $baseQuery .= " ORDER BY {$orderColumnName} {$orderDir}";
             } else {
-                $baseQuery .= " ORDER BY TGL_SETTLE DESC, id DESC";
+                $baseQuery .= " ORDER BY TGL_DATA DESC, id DESC";
             }
             
             // Add pagination
@@ -160,11 +160,11 @@ class ApproveJurnalController extends BaseController
                     'id' => $row['id'] ?? '',
                     'KD_SETTLE' => $row['KD_SETTLE'] ?? '',
                     'NAMA_PRODUK' => $row['NAMA_PRODUK'] ?? '',
-                    'TGL_SETTLE' => $row['TGL_SETTLE'] ?? '',
-                    'TOTAL_AMOUNT' => $row['TOTAL_AMOUNT'] ?? '0',
-                    'STATUS_APPROVE' => $row['STATUS_APPROVE'] ?? '0',
-                    'USER_APPROVE' => $row['USER_APPROVE'] ?? '',
-                    'TGL_APPROVE' => $row['TGL_APPROVE'] ?? '',
+                    'TGL_DATA' => $row['TGL_DATA'] ?? '',
+                    'TOT_JURNAL_KR_ECR' => $row['TOT_JURNAL_KR_ECR'] ?? '0',
+                    'STAT_APPROVER' => $row['STAT_APPROVER'] ?? '0',
+                    'USER_APPROVER' => $row['USER_APPROVER'] ?? '',
+                    'TGL_APPROVER' => $row['TGL_APPROVER'] ?? '',
                 ];
             }
             
@@ -209,7 +209,7 @@ class ApproveJurnalController extends BaseController
             
             // Get settlement product info
             $settleQuery = "
-                SELECT NAMA_PRODUK, TGL_SETTLE, TOTAL_AMOUNT
+                SELECT NAMA_PRODUK, TGL_DATA, TOT_JURNAL_KR_ECR
                 FROM t_settle_produk 
                 WHERE KD_SETTLE = ?
             ";
@@ -313,13 +313,13 @@ class ApproveJurnalController extends BaseController
             $summaryQuery = "
                 SELECT 
                     COUNT(*) as total_jurnal,
-                    SUM(CASE WHEN STATUS_APPROVE = 1 THEN 1 ELSE 0 END) as approved,
-                    SUM(CASE WHEN STATUS_APPROVE = 0 THEN 1 ELSE 0 END) as rejected,
-                    SUM(CASE WHEN STATUS_APPROVE IS NULL THEN 1 ELSE 0 END) as pending,
-                    SUM(TOTAL_AMOUNT) as total_amount,
-                    SUM(CASE WHEN STATUS_APPROVE = 1 THEN TOTAL_AMOUNT ELSE 0 END) as approved_amount
+                    SUM(CASE WHEN STAT_APPROVER = 1 THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN STAT_APPROVER = 0 THEN 1 ELSE 0 END) as rejected,
+                    SUM(CASE WHEN STAT_APPROVER IS NULL THEN 1 ELSE 0 END) as pending,
+                    SUM(TOT_JURNAL_KR_ECR) as total_amount,
+                    SUM(CASE WHEN STAT_APPROVER = 1 THEN TOT_JURNAL_KR_ECR ELSE 0 END) as approved_amount
                 FROM t_settle_produk 
-                WHERE DATE(TGL_SETTLE) = ?
+                WHERE DATE(TGL_DATA) = ?
             ";
             
             $result = $db->query($summaryQuery, [$tanggalRekon]);

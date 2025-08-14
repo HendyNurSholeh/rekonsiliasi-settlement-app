@@ -442,7 +442,7 @@ function initializeDataTable() {
             zeroRecords: "Tidak ditemukan data yang sesuai"
         },
         responsive: true,
-        searching: true,
+        searching: false,
         scrollX: true,
         autoWidth: false,
         columnDefs: [
@@ -457,7 +457,7 @@ function initializeDataTable() {
             { width: "10%", targets: 8 },   // Kode Settle
             { width: "8%", targets: 9 }     // Action
         ],
-        dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+        dom: '<"row"<"col-sm-12">>' +
              '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
         drawCallback: function(settings) {

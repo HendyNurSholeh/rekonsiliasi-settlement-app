@@ -147,10 +147,10 @@
                                 <th>No</th>
                                 <th>Kode Settle</th>
                                 <th>Nama Produk</th>
-                                <th>Tanggal Settle</th>
-                                <th>Total Amount</th>
+                                <th>Tanggal Data</th>
+                                <th>Total Jurnal (KR)</th>
                                 <th>Status Approval</th>
-                                <th>User Approve</th>
+                                <th>User Approver</th>
                                 <th>Tanggal Approve</th>
                                 <th>Action</th>
                             </tr>
@@ -199,7 +199,7 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label>Total Amount</label>
+                                    <label>Total Jurnal (KR)</label>
                                     <input type="text" class="form-control" id="modal_total_amount" readonly>
                                 </div>
                             </div>
@@ -384,8 +384,8 @@ function initializeDataTable() {
             },
             { data: 'NAMA_PRODUK', name: 'NAMA_PRODUK' },
             { 
-                data: 'TGL_SETTLE', 
-                name: 'TGL_SETTLE',
+                data: 'TGL_DATA', 
+                name: 'TGL_DATA',
                 render: function(data, type, row) {
                     if (data) {
                         return new Date(data).toLocaleDateString('id-ID');
@@ -394,16 +394,16 @@ function initializeDataTable() {
                 }
             },
             { 
-                data: 'TOTAL_AMOUNT', 
-                name: 'TOTAL_AMOUNT',
+                data: 'TOT_JURNAL_KR_ECR', 
+                name: 'TOT_JURNAL_KR_ECR',
                 render: function(data, type, row) {
                     const amount = parseFloat(String(data || 0).replace(/,/g, ''));
                     return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
                 }
             },
             { 
-                data: 'STATUS_APPROVE', 
-                name: 'STATUS_APPROVE',
+                data: 'STAT_APPROVER', 
+                name: 'STAT_APPROVER',
                 render: function(data, type, row) {
                     if (data === '1') {
                         return '<span class="badge badge-success">Disetujui</span>';
@@ -414,10 +414,10 @@ function initializeDataTable() {
                     }
                 }
             },
-            { data: 'USER_APPROVE', name: 'USER_APPROVE' },
+            { data: 'USER_APPROVER', name: 'USER_APPROVER' },
             { 
-                data: 'TGL_APPROVE', 
-                name: 'TGL_APPROVE',
+                data: 'TGL_APPROVER', 
+                name: 'TGL_APPROVER',
                 render: function(data, type, row) {
                     if (data) {
                         return new Date(data).toLocaleDateString('id-ID') + ' ' + new Date(data).toLocaleTimeString('id-ID');
@@ -431,7 +431,7 @@ function initializeDataTable() {
                 orderable: false,
                 searchable: false,
                 render: function(data, type, row) {
-                    if (row.STATUS_APPROVE === null || row.STATUS_APPROVE === '') {
+                    if (row.STAT_APPROVER === null || row.STAT_APPROVER === '') {
                         return '<button type="button" class="btn btn-sm btn-primary btn-approve" ' +
                                'data-kd-settle="' + (data || '') + '">' +
                                '<i class="fal fa-check-circle"></i> Approve</button>';
@@ -445,7 +445,7 @@ function initializeDataTable() {
         ],
         pageLength: 10,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-        order: [[3, 'desc']],
+        order: [[3, 'desc']], // TGL_DATA column (index 3)
         language: {
             processing: "Memuat data...",
             search: "Cari:",
@@ -463,8 +463,8 @@ function initializeDataTable() {
             zeroRecords: "Tidak ditemukan data yang sesuai"
         },
         responsive: true,
-        searching: true,
-        dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+        searching: false,
+        dom: '<"row"<"col-sm-12">>' +
              '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
         drawCallback: function(settings) {
@@ -501,12 +501,12 @@ function openApprovalModal(kdSettle) {
                     
                     // Fill modal header and basic info
                     const settleInfo = response.settle_info;
-                    const tglSettle = new Date(settleInfo.TGL_SETTLE).toLocaleDateString('id-ID');
+                    const tglSettle = new Date(settleInfo.TGL_DATA).toLocaleDateString('id-ID');
                     $('#modalTitle').text(`Jurnal Settlement tanggal ${tglSettle} untuk produk ${settleInfo.NAMA_PRODUK}`);
                     
                     $('#modal_kd_settle').val(kdSettle);
                     $('#modal_nama_produk').val(settleInfo.NAMA_PRODUK);
-                    $('#modal_total_amount').val(formatCurrency(settleInfo.TOTAL_AMOUNT));
+                    $('#modal_total_amount').val(formatCurrency(settleInfo.TOT_JURNAL_KR_ECR));
                     
                     // Fill detail table
                     const detailBody = $('#detailJurnalBody');
