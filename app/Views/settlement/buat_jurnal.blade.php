@@ -323,7 +323,7 @@ function initializeDataTable() {
                     const fileSettle = parseInt(data || 0);
                     switch(fileSettle) {
                         case 0: return '<span class="badge badge-secondary">Default (0)</span>';
-                        case 1: return '<span class="badge badge-warning">Pajak (1)</span>';
+                        case 1: return '<span class="badge text-white" style="background-color: #f9911b;">Pajak (1)</span>';
                         case 2: return '<span class="badge badge-info">Edu (2)</span>';
                         default: return '<span class="badge badge-light">' + data + '</span>';
                     }
@@ -408,7 +408,7 @@ function initializeDataTable() {
                                '<i class="fal fa-plus-circle"></i> Create Jurnal</button>';
                     } else {
                         const reason = row.KD_SETTLE ? 'Sudah dibuat' : 'Tidak memenuhi syarat';
-                        const badgeClass = row.KD_SETTLE ? 'badge-success' : 'badge-warning';
+                        const badgeClass = row.KD_SETTLE ? 'badge-success' : 'text-white" style="background-color: #f9911b;';
                         return '<span class="badge ' + badgeClass + '">' + reason + '</span>';
                     }
                 }
