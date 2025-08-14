@@ -540,7 +540,7 @@ function confirmCreateJurnal() {
                     showAlert('success', response.message);
                     $('#createJurnalModal').modal('hide');
                     if (buatJurnalTable) {
-                        buatJurnalTable.ajax.reload();
+                        buatJurnalTable.ajax.reload(null, false); // false = tetap di halaman yang sama
                     }
                 } else {
                     showAlert('error', response.message);
