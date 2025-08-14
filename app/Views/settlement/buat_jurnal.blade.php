@@ -15,15 +15,7 @@
             <strong>Informasi Settlement</strong> 
             <br>Modul ini berfungsi untuk membuat jurnal transaksi settlement yang kemudian akan diproses di sistem core banking. 
             <br>Produk yang dapat diproses adalah produk yang tidak memiliki dispute atau status settle verifikasinya adalah 1 (dilimpahkan) atau 9 (tidak dilimpahkan).
-            <br><br>
-            <strong>Keterangan Kolom:</strong>
-            <ul class="mb-0 mt-2">
-                <li><strong>Amount Detail:</strong> Total nominal dari transaksi detail yang telah terverifikasi</li>
-                <li><strong>Amount Rekap:</strong> Total nominal dari file rekap settlement (pajak/edu)</li>
-                <li><strong>Selisih:</strong> Perbedaan antara Amount Detail dan Amount Rekap</li>
-                <li><strong>Jum TX Dispute:</strong> Jumlah transaksi yang masih berstatus dispute</li>
-                <li><strong>Amount TX Dispute:</strong> Total nominal transaksi yang berstatus dispute</li>
-            </ul>
+        
         </div>
     </div>
 </div>
@@ -581,39 +573,20 @@ function formatNumber(num) {
 }
 
 function showAlert(type, message) {
-    let alertClass = 'alert-info';
-    let icon = 'fa-info-circle';
-    
     switch(type) {
         case 'success':
-            alertClass = 'alert-success';
-            icon = 'fa-check-circle';
+            toastr["success"](message);
             break;
         case 'error':
-            alertClass = 'alert-danger';
-            icon = 'fa-exclamation-circle';
+            toastr["error"](message);
             break;
         case 'warning':
-            alertClass = 'alert-warning';
-            icon = 'fa-exclamation-triangle';
+            toastr["warning"](message);
             break;
-    }
-    
-    let alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fal ${icon}"></i> ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    `;
-    
-    $('.subheader').after(alertHtml);
-    
-    if (type === 'success') {
-        setTimeout(function() {
-            $('.alert-success').fadeOut();
-        }, 3000);
+        case 'info':
+        default:
+            toastr["info"](message);
+            break;
     }
 }
 
