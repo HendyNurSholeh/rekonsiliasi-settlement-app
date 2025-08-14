@@ -133,37 +133,37 @@
                                     <input type="text" class="form-control" id="modal_tanggal_rekon" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-2">
                                 <div class="form-group">
                                     <label>File Settle</label>
                                     <input type="text" class="form-control" id="modal_file_settle" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-2">
                                 <div class="form-group">
                                     <label>Amount Detail</label>
                                     <input type="text" class="form-control" id="modal_amount_detail" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-2">
                                 <div class="form-group">
                                     <label>Amount Rekap</label>
                                     <input type="text" class="form-control" id="modal_amount_rekap" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-2">
                                 <div class="form-group">
                                     <label>Selisih</label>
                                     <input type="text" class="form-control" id="modal_selisih" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-2">
                                 <div class="form-group">
                                     <label>Jum TX Dispute</label>
                                     <input type="text" class="form-control" id="modal_jum_tx_dispute" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 mt-2">
                                 <div class="form-group">
                                     <label>Amount TX Dispute</label>
                                     <input type="text" class="form-control" id="modal_amount_tx_dispute" readonly>
