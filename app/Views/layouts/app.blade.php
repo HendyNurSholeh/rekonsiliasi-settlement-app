@@ -182,11 +182,11 @@
                                     </li>
                                     
                                     <!-- 2. Approve Jurnal Settlement -->
-                                    <li class="@if ($route == 'settlement/approve-jurnal') active @endif">
+                                    {{-- <li class="@if ($route == 'settlement/approve-jurnal') active @endif">
                                         <a href="{{ site_url('settlement/approve-jurnal') }}">
                                             <span class="nav-link-text text-left">Approve Jurnal Settlement</span>
                                         </a>
-                                    </li>
+                                    </li> --}}
                                 </ul>
                             </li>
                        
