@@ -29,13 +29,11 @@
 }
 
 .btn-create-jurnal {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     border: none;
     color: white;
 }
 
 .btn-create-jurnal:hover {
-    background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
     color: white;
 }
 

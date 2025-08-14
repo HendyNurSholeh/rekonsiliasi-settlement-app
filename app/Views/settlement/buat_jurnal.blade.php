@@ -403,7 +403,7 @@ function initializeDataTable() {
                 searchable: false,
                 render: function(data, type, row) {
                     if (data === 1) {
-                        return '<button type="button" class="btn btn-sm btn-success btn-create-jurnal" ' +
+                        return '<button type="button" class="btn btn-sm btn-primary btn-create-jurnal" ' +
                                'data-produk="' + (row.NAMA_PRODUK || '') + '">' +
                                '<i class="fal fa-plus-circle"></i> Create Jurnal</button>';
                     } else {
