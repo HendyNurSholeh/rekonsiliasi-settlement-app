@@ -14,7 +14,7 @@
             <i class="fal fa-info-circle"></i>
             <strong>Informasi Approval</strong> 
             <br>Halaman ini menampilkan daftar jurnal settlement yang perlu disetujui atau ditolak.
-            <br>Klik tombol "Lihat" untuk melihat detail jurnal dan melakukan proses approval (jika masih pending).
+            <br>Klik tombol "Approve" untuk melihat detail jurnal dan melakukan proses approval (jika masih pending).
         </div>
     </div>
 </div>
@@ -443,7 +443,7 @@ function initializeDataTable() {
                 render: function(data, type, row) {
                     return '<button type="button" class="btn btn-sm btn-primary btn-view-detail" ' +
                            'data-kd-settle="' + (data || '') + '">' +
-                           '<i class="fal fa-eye"></i> Detail</button>';
+                           '<i class="fal fa-check-circle"></i> Approve</button>';
                 }
             }
         ],
