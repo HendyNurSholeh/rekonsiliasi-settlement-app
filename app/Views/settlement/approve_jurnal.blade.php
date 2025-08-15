@@ -109,7 +109,6 @@
                                 <option value="">Semua Status</option>
                                 <option value="pending" @if(request()->getGet('status_approve') === 'pending') selected @endif>Pending</option>
                                 <option value="1" @if(request()->getGet('status_approve') == '1') selected @endif>Disetujui</option>
-                                <option value="0" @if(request()->getGet('status_approve') == '0') selected @endif>Ditolak</option>
                             </select>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
@@ -353,7 +352,9 @@ $(document).ready(function() {
             window.history.pushState({}, '', url);
             
             console.log('Updated URL:', url.toString());
-            approveJurnalTable.ajax.reload();
+            
+            // Reload data tetap di halaman yang sama
+            approveJurnalTable.ajax.reload(null, false);
             loadSummary();
         }
     });
@@ -603,7 +604,8 @@ function processApproval(action) {
                     toastr["success"](response.message);
                     $('#approvalModal').modal('hide');
                     if (approveJurnalTable) {
-                        approveJurnalTable.ajax.reload();
+                        // Reload data tetap di halaman yang sama
+                        approveJurnalTable.ajax.reload(null, false);
                     }
                     loadSummary();
                 } else {
