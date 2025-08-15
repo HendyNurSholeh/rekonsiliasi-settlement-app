@@ -443,7 +443,7 @@ function initializeDataTable() {
                 render: function(data, type, row) {
                     return '<button type="button" class="btn btn-sm btn-primary btn-view-detail" ' +
                            'data-kd-settle="' + (data || '') + '">' +
-                           '<i class="fal fa-eye"></i> Lihat</button>';
+                           '<i class="fal fa-eye"></i> Detail</button>';
                 }
             }
         ],
