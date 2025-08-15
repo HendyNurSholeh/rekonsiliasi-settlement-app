@@ -207,22 +207,22 @@
                     <div class="card-header bg-info text-white">
                         <h6 class="mb-0">Detail Jurnal</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-1">
                         <div class="table-responsive">
-                            <table class="table table-striped table-sm" id="detailJurnalTable">
+                            <table class="table table-striped table-sm table-compact" id="detailJurnalTable">
                                 <thead>
                                     <tr>
-                                        <th>Jenis Settle</th>
-                                        <th>ID Partner</th>
-                                        <th>Core</th>
-                                        <th>Debit Account</th>
-                                        <th>Debit Name</th>
-                                        <th>Credit Core</th>
-                                        <th>Credit Account</th>
-                                        <th>Credit Name</th>
-                                        <th>Amount</th>
-                                        <th>Description</th>
-                                        <th>Ref Number</th>
+                                        <th class="text-xs">Jenis Settle</th>
+                                        <th class="text-xs">ID Partner</th>
+                                        <th class="text-xs">Core</th>
+                                        <th class="text-xs">Debit Account</th>
+                                        <th class="text-xs">Debit Name</th>
+                                        <th class="text-xs">Credit Core</th>
+                                        <th class="text-xs">Credit Account</th>
+                                        <th class="text-xs">Credit Name</th>
+                                        <th class="text-xs">Amount</th>
+                                        <th class="text-xs">Description</th>
+                                        <th class="text-xs">Ref Number</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailJurnalBody">
@@ -520,16 +520,16 @@ function openApprovalModal(kdSettle) {
                     if (response.detail_data && response.detail_data.length > 0) {
                         response.detail_data.forEach(function(detail) {
                             const row = `
-                                <tr>
+                                <tr class="text-xs">
                                     <td>${detail.JENIS_SETTLE || ''}</td>
                                     <td>${detail.IDPARTNER || ''}</td>
-                                    <td>${detail.CORE || ''}</td>
+                                    <td class="text-center">${detail.CORE || ''}</td>
                                     <td>${detail.DEBIT_ACCOUNT || ''}</td>
                                     <td>${detail.DEBIT_NAME || ''}</td>
-                                    <td>${detail.CREDIT_CORE || ''}</td>
+                                    <td class="text-center">${detail.CREDIT_CORE || ''}</td>
                                     <td>${detail.CREDIT_ACCOUNT || ''}</td>
                                     <td>${detail.CREDIT_NAME || ''}</td>
-                                    <td class="text-right">${formatCurrency(detail.AMOUNT)}</td>
+                                    <td class="text-right text-nowrap">${formatCurrency(detail.AMOUNT)}</td>
                                     <td>${detail.DESCRIPTION || ''}</td>
                                     <td>${detail.REF_NUMBER || ''}</td>
                                 </tr>
@@ -716,13 +716,32 @@ function resetFilters() {
 }
 
 #detailJurnalTable {
-    font-size: 0.875rem;
+    font-size: 0.65rem;
 }
 
 #detailJurnalTable th {
     background-color: #f8f9fc;
     border-top: 1px solid #e3e6f0;
     font-weight: 600;
+    padding: 0.3rem 0.2rem;
+    vertical-align: middle;
+    font-size: 0.65rem;
+}
+
+#detailJurnalTable td {
+    padding: 0.3rem 0.2rem;
+    vertical-align: middle;
+    font-size: 0.65rem;
+    word-wrap: break-word;
+}
+
+.table-compact {
+    margin-bottom: 0;
+}
+
+.table-compact th,
+.table-compact td {
+    padding: 0.25rem 0.2rem;
 }
 
 .text-right {
