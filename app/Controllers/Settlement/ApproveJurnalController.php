@@ -62,14 +62,13 @@ class ApproveJurnalController extends BaseController
         // Column mapping
         $columns = [
             0 => 'id', // For row number
-            1 => 'KD_SETTLE',
+            1 => 'TGL_DATA',
             2 => 'NAMA_PRODUK',
-            3 => 'TGL_DATA',
-            4 => 'TOT_JURNAL_KR_ECR',
-            5 => 'STAT_APPROVER',
-            6 => 'USER_APPROVER',
-            7 => 'TGL_APPROVER',
-            8 => 'id' // For action column
+            3 => 'KD_SETTLE',
+            4 => 'STAT_APPROVER',
+            5 => 'USER_APPROVER',
+            6 => 'TGL_APPROVER',
+            7 => 'id' // For action column
         ];
 
         try {
@@ -87,8 +86,12 @@ class ApproveJurnalController extends BaseController
             $queryParams = [$tanggalRekon];
             
             if ($statusApprove !== '') {
-                $baseQuery .= " AND STAT_APPROVER = ?";
-                $queryParams[] = $statusApprove;
+                if ($statusApprove === 'pending') {
+                    $baseQuery .= " AND (STAT_APPROVER IS NULL OR STAT_APPROVER = '')";
+                } else {
+                    $baseQuery .= " AND STAT_APPROVER = ?";
+                    $queryParams[] = $statusApprove;
+                }
                 log_message('info', 'Adding status_approve filter: ' . $statusApprove);
             }
             
@@ -112,8 +115,12 @@ class ApproveJurnalController extends BaseController
             ";
             $totalParams = [$tanggalRekon];
             if ($statusApprove !== '') {
-                $totalQuery .= " AND STAT_APPROVER = ?";
-                $totalParams[] = $statusApprove;
+                if ($statusApprove === 'pending') {
+                    $totalQuery .= " AND (STAT_APPROVER IS NULL OR STAT_APPROVER = '')";
+                } else {
+                    $totalQuery .= " AND STAT_APPROVER = ?";
+                    $totalParams[] = $statusApprove;
+                }
             }
             
             $totalResult = $db->query($totalQuery, $totalParams);
@@ -135,7 +142,7 @@ class ApproveJurnalController extends BaseController
             }
             
             // Add ordering
-            if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 8) {
+            if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 7) {
                 $orderColumnName = $columns[$orderColumn];
                 $baseQuery .= " ORDER BY {$orderColumnName} {$orderDir}";
             } else {
@@ -162,7 +169,7 @@ class ApproveJurnalController extends BaseController
                     'NAMA_PRODUK' => $row['NAMA_PRODUK'] ?? '',
                     'TGL_DATA' => $row['TGL_DATA'] ?? '',
                     'TOT_JURNAL_KR_ECR' => $row['TOT_JURNAL_KR_ECR'] ?? '0',
-                    'STAT_APPROVER' => $row['STAT_APPROVER'] ?? '0',
+                    'STAT_APPROVER' => $row['STAT_APPROVER'] ?? null,
                     'USER_APPROVER' => $row['USER_APPROVER'] ?? '',
                     'TGL_APPROVER' => $row['TGL_APPROVER'] ?? '',
                 ];

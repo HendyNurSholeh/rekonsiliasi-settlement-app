@@ -14,7 +14,7 @@
             <i class="fal fa-info-circle"></i>
             <strong>Informasi Approval</strong> 
             <br>Halaman ini menampilkan daftar jurnal settlement yang perlu disetujui atau ditolak.
-            <br>Klik tombol "Approve" untuk melihat detail jurnal dan melakukan proses approval.
+            <br>Klik tombol "Lihat" untuk melihat detail jurnal dan melakukan proses approval (jika masih pending).
         </div>
     </div>
 </div>
@@ -107,7 +107,7 @@
                             <label for="filter_status_approve" class="form-label">Status Approval</label>
                             <select class="form-control" id="filter_status_approve" name="status_approve">
                                 <option value="">Semua Status</option>
-                                <option value="" @if(request()->getGet('status_approve') === '') selected @endif>Pending</option>
+                                <option value="pending" @if(request()->getGet('status_approve') === 'pending') selected @endif>Pending</option>
                                 <option value="1" @if(request()->getGet('status_approve') == '1') selected @endif>Disetujui</option>
                                 <option value="0" @if(request()->getGet('status_approve') == '0') selected @endif>Ditolak</option>
                             </select>
@@ -118,9 +118,6 @@
                             </button>
                             <button type="button" class="btn btn-secondary ml-2" onclick="resetFilters()">
                                 <i class="fal fa-undo"></i> Reset
-                            </button>
-                            <button type="button" class="btn btn-info ml-2" onclick="loadSummary()">
-                                <i class="fal fa-sync"></i> Refresh Summary
                             </button>
                         </div>
                     </div>
@@ -145,10 +142,9 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>No</th>
-                                <th>Kode Settle</th>
-                                <th>Nama Produk</th>
                                 <th>Tanggal Data</th>
-                                <th>Total Jurnal (KR)</th>
+                                <th>Nama Produk</th>
+                                <th>Kode Settle</th>
                                 <th>Status Approval</th>
                                 <th>User Approver</th>
                                 <th>Tanggal Approve</th>
@@ -242,12 +238,14 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     <i class="fal fa-times"></i> Tutup
                 </button>
-                <button type="button" class="btn btn-danger" onclick="processApproval('reject')">
-                    <i class="fal fa-times-circle"></i> Tolak
-                </button>
-                <button type="button" class="btn btn-success" onclick="processApproval('approve')">
-                    <i class="fal fa-check-circle"></i> Setujui
-                </button>
+                <div id="approvalButtons">
+                    <button type="button" class="btn btn-danger" onclick="processApproval('reject')">
+                        <i class="fal fa-times-circle"></i> Tolak
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="processApproval('approve')">
+                        <i class="fal fa-check-circle"></i> Setujui
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -256,7 +254,27 @@
 @endsection
 
 @push('scripts')
+<script src="{{ base_url('assets/js/toastr.min.js') }}"></script>
 <script>
+// Toastr configuration
+toastr.options = {
+    "closeButton": true,
+    "debug": false,
+    "newestOnTop": false,
+    "progressBar": true,
+    "positionClass": "toast-top-right",
+    "preventDuplicates": false,
+    "onclick": null,
+    "showDuration": "300",
+    "hideDuration": "1000",
+    "timeOut": "5000",
+    "extendedTimeOut": "1000",
+    "showEasing": "swing",
+    "hideEasing": "linear",
+    "showMethod": "fadeIn",
+    "hideMethod": "fadeOut"
+};
+
 // CSRF Management
 let currentCSRF = '{{ csrf_token() }}';
 
@@ -376,14 +394,6 @@ function initializeDataTable() {
                 }
             },
             { 
-                data: 'KD_SETTLE', 
-                name: 'KD_SETTLE',
-                render: function(data, type, row) {
-                    return '<code>' + (data || '') + '</code>';
-                }
-            },
-            { data: 'NAMA_PRODUK', name: 'NAMA_PRODUK' },
-            { 
                 data: 'TGL_DATA', 
                 name: 'TGL_DATA',
                 render: function(data, type, row) {
@@ -393,12 +403,12 @@ function initializeDataTable() {
                     return '';
                 }
             },
+            { data: 'NAMA_PRODUK', name: 'NAMA_PRODUK' },
             { 
-                data: 'TOT_JURNAL_KR_ECR', 
-                name: 'TOT_JURNAL_KR_ECR',
+                data: 'KD_SETTLE', 
+                name: 'KD_SETTLE',
                 render: function(data, type, row) {
-                    const amount = parseFloat(String(data || 0).replace(/,/g, ''));
-                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+                    return '<code>' + (data || '') + '</code>';
                 }
             },
             { 
@@ -410,7 +420,7 @@ function initializeDataTable() {
                     } else if (data === '0') {
                         return '<span class="badge badge-danger">Ditolak</span>';
                     } else {
-                        return '<span class="badge badge-warning">Pending</span>';
+                        return '<span class="badge text-white" style="background-color: #f9911b;">Pending</span>';
                     }
                 }
             },
@@ -431,21 +441,15 @@ function initializeDataTable() {
                 orderable: false,
                 searchable: false,
                 render: function(data, type, row) {
-                    if (row.STAT_APPROVER === null || row.STAT_APPROVER === '') {
-                        return '<button type="button" class="btn btn-sm btn-primary btn-approve" ' +
-                               'data-kd-settle="' + (data || '') + '">' +
-                               '<i class="fal fa-check-circle"></i> Approve</button>';
-                    } else {
-                        return '<button type="button" class="btn btn-sm btn-info btn-view-detail" ' +
-                               'data-kd-settle="' + (data || '') + '">' +
-                               '<i class="fal fa-eye"></i> Lihat Detail</button>';
-                    }
+                    return '<button type="button" class="btn btn-sm btn-primary btn-view-detail" ' +
+                           'data-kd-settle="' + (data || '') + '">' +
+                           '<i class="fal fa-eye"></i> Lihat</button>';
                 }
             }
         ],
         pageLength: 10,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-        order: [[3, 'desc']], // TGL_DATA column (index 3)
+        order: [[1, 'desc']], // TGL_DATA column (index 1)
         language: {
             processing: "Memuat data...",
             search: "Cari:",
@@ -468,7 +472,7 @@ function initializeDataTable() {
              '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
         drawCallback: function(settings) {
-            $('.btn-approve, .btn-view-detail').off('click').on('click', function() {
+            $('.btn-view-detail').off('click').on('click', function() {
                 const kdSettle = $(this).data('kd-settle');
                 openApprovalModal(kdSettle);
             });
@@ -478,7 +482,7 @@ function initializeDataTable() {
 
 function openApprovalModal(kdSettle) {
     if (!kdSettle) {
-        showAlert('error', 'Kode settle tidak ditemukan');
+        toastr["error"]('Kode settle tidak ditemukan');
         return;
     }
 
@@ -535,16 +539,36 @@ function openApprovalModal(kdSettle) {
                         detailBody.append('<tr><td colspan="11" class="text-center">Tidak ada detail jurnal</td></tr>');
                     }
                     
+                    // Check if the settlement has been approved/rejected
+                    // Get current row data from DataTable to check status
+                    let currentRowData = null;
+                    if (approveJurnalTable) {
+                        const tableData = approveJurnalTable.rows().data();
+                        for (let i = 0; i < tableData.length; i++) {
+                            if (tableData[i].KD_SETTLE === kdSettle) {
+                                currentRowData = tableData[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Show/hide approval buttons based on status
+                    if (currentRowData && (currentRowData.STAT_APPROVER === '1' || currentRowData.STAT_APPROVER === '0')) {
+                        $('#approvalButtons').hide(); // Hide approve/reject buttons if already processed
+                    } else {
+                        $('#approvalButtons').show(); // Show approve/reject buttons if still pending
+                    }
+                    
                     $('#approvalModal').modal('show');
                 } else {
-                    showAlert('error', response.message);
+                    toastr["error"](response.message);
                 }
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
-                    showAlert('error', 'Session expired. Please try again.');
+                    toastr["error"]('Session expired. Please try again.');
                 } else {
-                    showAlert('error', 'Terjadi kesalahan saat mengambil detail jurnal');
+                    toastr["error"]('Terjadi kesalahan saat mengambil detail jurnal');
                 }
             }
         });
@@ -553,17 +577,11 @@ function openApprovalModal(kdSettle) {
 
 function processApproval(action) {
     if (!currentSettleData) {
-        showAlert('error', 'Data settlement tidak ditemukan');
+        toastr["error"]('Data settlement tidak ditemukan');
         return;
     }
 
     const actionText = action === 'approve' ? 'menyetujui' : 'menolak';
-    const confirmText = action === 'approve' ? 'Apakah Anda yakin akan menyetujui jurnal settlement ini?' : 'Apakah Anda yakin akan menolak jurnal settlement ini?';
-    
-    if (!confirm(confirmText)) {
-        return;
-    }
-
     const tanggalRekon = $('#tanggal').val() || '{{ $tanggalRekon }}';
     
     refreshCSRFToken().then(function() {
@@ -582,21 +600,21 @@ function processApproval(action) {
                 }
                 
                 if (response.success) {
-                    showAlert('success', response.message);
+                    toastr["success"](response.message);
                     $('#approvalModal').modal('hide');
                     if (approveJurnalTable) {
                         approveJurnalTable.ajax.reload();
                     }
                     loadSummary();
                 } else {
-                    showAlert('error', response.message);
+                    toastr["error"](response.message);
                 }
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
-                    showAlert('error', 'Session expired. Please try again.');
+                    toastr["error"]('Session expired. Please try again.');
                 } else {
-                    showAlert('error', `Terjadi kesalahan saat ${actionText} jurnal`);
+                    toastr["error"](`Terjadi kesalahan saat ${actionText} jurnal`);
                 }
             }
         });
@@ -631,43 +649,6 @@ function formatCurrency(amount) {
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(num);
 }
 
-function showAlert(type, message) {
-    let alertClass = 'alert-info';
-    let icon = 'fa-info-circle';
-    
-    switch(type) {
-        case 'success':
-            alertClass = 'alert-success';
-            icon = 'fa-check-circle';
-            break;
-        case 'error':
-            alertClass = 'alert-danger';
-            icon = 'fa-exclamation-circle';
-            break;
-        case 'warning':
-            alertClass = 'alert-warning';
-            icon = 'fa-exclamation-triangle';
-            break;
-    }
-    
-    let alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fal ${icon}"></i> ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    `;
-    
-    $('.subheader').after(alertHtml);
-    
-    if (type === 'success') {
-        setTimeout(function() {
-            $('.alert-success').fadeOut();
-        }, 3000);
-    }
-}
-
 function resetFilters() {
     const url = new URL(window.location);
     url.searchParams.delete('tanggal');
@@ -678,6 +659,7 @@ function resetFilters() {
 @endpush
 
 @push('styles')
+<link rel="stylesheet" href="{{ base_url('assets/css/toastr.min.css') }}">
 <link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
 <style>
 .border-left-primary {
@@ -708,11 +690,11 @@ function resetFilters() {
     color: #dddfeb !important;
 }
 
-.btn-approve, .btn-view-detail {
+.btn-view-detail {
     transition: all 0.3s ease;
 }
 
-.btn-approve:hover, .btn-view-detail:hover {
+.btn-view-detail:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
