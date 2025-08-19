@@ -194,6 +194,13 @@
                                             <span class="nav-link-text text-left">Jurnal CA to Escrow</span>
                                         </a>
                                     </li>
+
+                                    <!-- 4. Jurnal Escrow to Biller PL -->
+                                    <li class="@if ($route == 'settlement/jurnal-escrow-biller-pl') active @endif">
+                                        <a href="{{ site_url('settlement/jurnal-escrow-biller-pl') }}">
+                                            <span class="nav-link-text text-left">Jurnal Escrow to Biller PL</span>
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
                        

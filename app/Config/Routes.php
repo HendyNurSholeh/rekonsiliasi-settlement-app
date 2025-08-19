@@ -140,6 +140,10 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
     // Jurnal CA to Escrow Controller
     $routes->get('jurnal-ca-escrow', 'JurnalCaEscrowController::index', ['as' => 'settlement.jurnal-ca-escrow']);
     $routes->get('jurnal-ca-escrow/datatable', 'JurnalCaEscrowController::datatable', ['as' => 'settlement.jurnal-ca-escrow.datatable']);
+    
+    // Jurnal Escrow to Biller PL Controller
+    $routes->get('jurnal-escrow-biller-pl', 'JurnalEscrowBillerPlController::index', ['as' => 'settlement.jurnal-escrow-biller-pl']);
+    $routes->get('jurnal-escrow-biller-pl/datatable', 'JurnalEscrowBillerPlController::datatable', ['as' => 'settlement.jurnal-escrow-biller-pl.datatable']);
 });
 
 $routes->get('get-csrf-token', 'CommonController::getCsrfToken');
