@@ -162,7 +162,7 @@
 
 <!-- Modal Approval -->
 <div class="modal fade" id="approvalModal" tabindex="-1" role="dialog" aria-labelledby="approvalModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-dialog modal-extra-large" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="approvalModalLabel">
@@ -664,6 +664,42 @@ function resetFilters() {
 <link rel="stylesheet" href="{{ base_url('assets/css/toastr.min.css') }}">
 <link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
 <style>
+/* Custom Modal Extra Large */
+.modal-extra-large {
+    max-width: 95vw;
+    width: 95vw;
+}
+
+.modal-extra-large .modal-content {
+    height: 90vh;
+    max-height: 90vh;
+}
+
+.modal-extra-large .modal-body {
+    max-height: calc(90vh - 160px);
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+/* Responsive behavior for smaller screens */
+@media (max-width: 768px) {
+    .modal-extra-large {
+        max-width: 98vw;
+        width: 98vw;
+        margin: 0.5rem;
+    }
+    
+    .modal-extra-large .modal-content {
+        height: 95vh;
+        max-height: 95vh;
+    }
+    
+    .modal-extra-large .modal-body {
+        max-height: calc(95vh - 140px);
+        padding: 1rem;
+    }
+}
+
 .border-left-primary {
     border-left: 0.25rem solid #4e73df !important;
 }
@@ -716,22 +752,23 @@ function resetFilters() {
 }
 
 #detailJurnalTable {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
 }
 
 #detailJurnalTable th {
     background-color: #f8f9fc;
     border-top: 1px solid #e3e6f0;
     font-weight: 600;
-    padding: 0.3rem 0.2rem;
+    padding: 0.5rem 0.4rem;
     vertical-align: middle;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
 }
 
 #detailJurnalTable td {
-    padding: 0.3rem 0.2rem;
+    padding: 0.5rem 0.4rem;
     vertical-align: middle;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     word-wrap: break-word;
 }
 
@@ -741,7 +778,7 @@ function resetFilters() {
 
 .table-compact th,
 .table-compact td {
-    padding: 0.25rem 0.2rem;
+    padding: 0.4rem 0.3rem;
 }
 
 .text-right {
@@ -751,6 +788,24 @@ function resetFilters() {
 .card {
     box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
     border: 1px solid #e3e6f0;
+}
+
+/* Improve table readability in larger modal */
+.table-responsive {
+    border-radius: 0.5rem;
+}
+
+/* Make form groups in modal more spacious */
+.modal-body .form-group {
+    margin-bottom: 1.2rem;
+}
+
+.modal-body .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.modal-body .card-body {
+    padding: 1.25rem;
 }
 </style>
 @endpush
