@@ -136,6 +136,10 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
     $routes->post('approve-jurnal/detail', 'ApproveJurnalController::getDetailJurnal', ['as' => 'settlement.approve-jurnal.detail']);
     $routes->post('approve-jurnal/process', 'ApproveJurnalController::processApproval', ['as' => 'settlement.approve-jurnal.process']);
     $routes->get('approve-jurnal/summary', 'ApproveJurnalController::getSummary', ['as' => 'settlement.approve-jurnal.summary']);
+    
+    // Jurnal CA to Escrow Controller
+    $routes->get('jurnal-ca-escrow', 'JurnalCaEscrowController::index', ['as' => 'settlement.jurnal-ca-escrow']);
+    $routes->get('jurnal-ca-escrow/datatable', 'JurnalCaEscrowController::datatable', ['as' => 'settlement.jurnal-ca-escrow.datatable']);
 });
 
 $routes->get('get-csrf-token', 'CommonController::getCsrfToken');
