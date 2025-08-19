@@ -266,13 +266,14 @@ class ApproveJurnalController extends BaseController
     {
         $kdSettle = $this->request->getPost('kd_settle');
         $tanggalRekon = $this->request->getPost('tanggal_rekon');
+        $namaProduk = $this->request->getPost('nama_produk');
         $action = $this->request->getPost('action'); // 'approve' or 'reject'
         $username = session()->get('username') ?? 'SYSTEM';
 
-        if (!$kdSettle || !$tanggalRekon || !$action) {
+        if (!$kdSettle || !$tanggalRekon || !$namaProduk || !$action) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Parameter tidak lengkap',
+                'message' => 'Parameter tidak lengkap (kd_settle, tanggal_rekon, nama_produk, action)',
                 'csrf_token' => csrf_hash()
             ]);
         }
@@ -283,13 +284,17 @@ class ApproveJurnalController extends BaseController
         try {
             $db = \Config\Database::connect();
             
-            // Call procedure to approve/reject settlement journal
-            $query = "CALL p_approve_settle_jurnal(?, ?, ?, ?)";
-            $result = $db->query($query, [$kdSettle, $tanggalRekon, $username, $approvalStatus]);
+            // Call procedure to approve/reject settlement journal with new parameters
+            // Parameters: p_kd_settle, p_nama_produk, p_tgl_data, p_user, p_status
+            $query = "CALL p_approve_settle_jurnal(?, ?, ?, ?, ?)";
+            $result = $db->query($query, [$kdSettle, $namaProduk, $tanggalRekon, $username, $approvalStatus]);
             
             if (!$result) {
                 throw new \Exception('Failed to execute p_approve_settle_jurnal procedure');
             }
+
+            // Log successful operation
+            log_message('info', "Settlement approval processed - KD_SETTLE: {$kdSettle}, NAMA_PRODUK: {$namaProduk}, ACTION: {$action}, USER: {$username}");
 
             return $this->response->setJSON([
                 'success' => true,

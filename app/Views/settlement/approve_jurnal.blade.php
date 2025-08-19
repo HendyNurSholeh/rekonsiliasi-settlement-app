@@ -585,6 +585,14 @@ function processApproval(action) {
     const actionText = action === 'approve' ? 'menyetujui' : 'menolak';
     const tanggalRekon = $('#tanggal').val() || '{{ $tanggalRekon }}';
     
+    // Get nama_produk from the current settle data
+    const namaProduk = currentSettleData.settle_info ? currentSettleData.settle_info.NAMA_PRODUK : '';
+    
+    if (!namaProduk) {
+        toastr["error"]('Nama produk tidak ditemukan. Silakan coba lagi.');
+        return;
+    }
+    
     refreshCSRFToken().then(function() {
         $.ajax({
             url: '{{ base_url('settlement/approve-jurnal/process') }}',
@@ -592,6 +600,7 @@ function processApproval(action) {
             data: { 
                 kd_settle: currentSettleData.kd_settle,
                 tanggal_rekon: tanggalRekon,
+                nama_produk: namaProduk,
                 action: action
             },
             dataType: 'json',
