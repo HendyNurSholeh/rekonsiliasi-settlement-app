@@ -22,6 +22,7 @@ class Eloquent
          'database' => $db_config->default['database'],
          'username' => $db_config->default['username'],
          'password' => $db_config->default['password'],
+         'port' => $db_config->default['port'],
          'charset' => $db_config->default['charset'],
          'collation' => $db_config->default['DBCollat'],
          'prefix' => $db_config->default['DBPrefix']

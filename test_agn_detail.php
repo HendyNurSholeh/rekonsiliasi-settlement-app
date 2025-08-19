@@ -145,8 +145,8 @@ if (count($lines) > 1) {
         'hostname' => 'localhost',
         'username' => 'root',
         'password' => '',     
-        'database' => 'bankkalsel_rekonsiliasi_settlement',
-        'port' => 3306
+        'database' => 'db_sirela',
+        'port' => 8111
     ];
     
     try {
