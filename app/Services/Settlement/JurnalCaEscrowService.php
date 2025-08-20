@@ -284,10 +284,7 @@ class JurnalCaEscrowService
 
             $response = $client->post($endpoint, [
                 'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . env('CA_ESCROW_API_TOKEN', 'dummy-token'),
-                    'X-Client-ID' => env('CLIENT_ID', 'settlement-app'),
-                    'X-Request-ID' => uniqid('REQ_', true)
+                    'Content-Type' => 'application/json'
                 ],
                 'json' => $payload
             ]);
@@ -319,7 +316,7 @@ class JurnalCaEscrowService
             }
 
         } catch (\Exception $e) {
-            log_message('error', 'External API Call Failed: {message}', [
+            log_message('error', 'External API Call Failed: ' . $e->getMessage(), [
                 'endpoint' => $endpoint ?? 'unknown',
                 'error' => $e->getMessage(),
                 'data' => $data,
