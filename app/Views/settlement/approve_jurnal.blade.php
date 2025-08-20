@@ -21,7 +21,7 @@
 
 <!-- Summary Cards -->
 <div class="row mb-4" id="summaryCards">
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card border-left-primary">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
@@ -37,7 +37,7 @@
         </div>
     </div>
     
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card border-left-success">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
@@ -53,23 +53,7 @@
         </div>
     </div>
     
-    <div class="col-md-3">
-        <div class="card border-left-danger">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Ditolak</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="rejectedJurnal">-</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fal fa-times-circle fa-2x text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card border-left-warning">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
@@ -645,7 +629,6 @@ function loadSummary() {
                 const summary = response.summary;
                 $('#totalJurnal').text(summary.total_jurnal || 0);
                 $('#approvedJurnal').text(summary.approved || 0);
-                $('#rejectedJurnal').text(summary.rejected || 0);
                 $('#pendingJurnal').text(summary.pending || 0);
             }
         },
@@ -715,10 +698,6 @@ function resetFilters() {
 
 .border-left-success {
     border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-danger {
-    border-left: 0.25rem solid #e74a3b !important;
 }
 
 .border-left-warning {

@@ -326,7 +326,6 @@ class ApproveJurnalController extends BaseController
                 SELECT 
                     COUNT(*) as total_jurnal,
                     SUM(CASE WHEN STAT_APPROVER = 1 THEN 1 ELSE 0 END) as approved,
-                    SUM(CASE WHEN STAT_APPROVER = 0 THEN 1 ELSE 0 END) as rejected,
                     SUM(CASE WHEN STAT_APPROVER IS NULL THEN 1 ELSE 0 END) as pending,
                     SUM(TOT_JURNAL_KR_ECR) as total_amount,
                     SUM(CASE WHEN STAT_APPROVER = 1 THEN TOT_JURNAL_KR_ECR ELSE 0 END) as approved_amount
