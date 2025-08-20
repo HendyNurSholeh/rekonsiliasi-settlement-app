@@ -50,7 +50,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div>
                     <table class="table table-striped table-hover table-sm" id="jurnalEscrowBillerPlTable">
                         <thead class="thead-light">
                             <tr>
@@ -67,6 +67,7 @@
                                 <th>Response Code</th>
                                 <th>Core Ref</th>
                                 <th>Core DateTime</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -242,8 +243,7 @@ function initializeDataTable() {
                 name: 'd_AMOUNT',
                 render: function(data, type, row) {
                     return formatCurrency(data);
-                },
-                className: 'text-right'
+                }
             },
             { 
                 data: 'd_CODE_RES', 
@@ -254,12 +254,15 @@ function initializeDataTable() {
                     } else if (data) {
                         return '<span class="badge badge-danger">' + data + '</span>';
                     }
-                    return data;
+                    return '<span class="badge badge-secondary">Belum Diproses</span>';
                 }
             },
             { 
                 data: 'd_CORE_REF', 
-                name: 'd_CORE_REF'
+                name: 'd_CORE_REF',
+                render: function(data, type, row) {
+                    return data || '<span class="badge badge-secondary">Belum Diproses</span>';
+                }
             },
             { 
                 data: 'd_CORE_DATETIME', 
@@ -268,7 +271,29 @@ function initializeDataTable() {
                     if (data) {
                         return new Date(data).toLocaleString('id-ID');
                     }
-                    return '';
+                    return '<span class="badge badge-secondary">Belum Diproses</span>';
+                }
+            },
+            { 
+                data: null,
+                name: 'actions',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, full, meta) {
+                    // Cek status untuk menentukan tombol yang ditampilkan
+                    if (full.d_CODE_RES && full.d_CODE_RES.startsWith('00')) {
+                        return "<div class='text-center'><span class='badge badge-success'><i class='fal fa-check'></i> Sudah Diproses</span></div>";
+                    } else if (full.d_CODE_RES && !full.d_CODE_RES.startsWith('00')) {
+                        return "<div class='text-center'>" +
+                               "<button class='btn btn-sm btn-outline-warning' onclick='prosesJurnalEscrowBiller(" + JSON.stringify(full) + ", " + meta.row + ")' id='btn-proses-eb-" + meta.row + "'>" +
+                               "<i class='fal fa-redo'></i> Proses Ulang" +
+                               "</button></div>";
+                    } else {
+                        return "<div class='text-center'>" +
+                               "<button class='btn btn-sm btn-outline-primary' onclick='prosesJurnalEscrowBiller(" + JSON.stringify(full) + ", " + meta.row + ")' id='btn-proses-eb-" + meta.row + "'>" +
+                               "<i class='fal fa-play'></i> Proses Jurnal" +
+                               "</button></div>";
+                    }
                 }
             }
         ],
@@ -308,6 +333,231 @@ function resetFilters() {
     const url = new URL(window.location);
     url.searchParams.delete('tanggal');
     window.location.href = url.pathname + url.search;
+}
+
+// Action Functions untuk Escrow Biller PL dengan Security Best Practices
+function prosesJurnalEscrowBiller(rowData, rowIndex) {
+    console.log('Proses Jurnal Escrow Biller:', rowData);
+    
+    const btnId = '#btn-proses-eb-' + rowIndex;
+    const $btn = $(btnId);
+    
+    // Validasi data
+    if (!rowData.r_KD_SETTLE || !rowData.d_NO_REF) {
+        showAlertEscrowBiller('error', 'Data tidak lengkap untuk diproses!');
+        return;
+    }
+    
+    // Cek apakah sudah diproses sukses
+    if (rowData.d_CODE_RES && rowData.d_CODE_RES.startsWith('00')) {
+        showAlertEscrowBiller('warning', 'Jurnal sudah berhasil diproses sebelumnya!');
+        return;
+    }
+    
+    // Konfirmasi dengan detail informasi
+    const isReprocess = rowData.d_CODE_RES && !rowData.d_CODE_RES.startsWith('00');
+    const confirmMessage = isReprocess 
+        ? `Apakah Anda yakin ingin memproses ULANG jurnal Escrow to Biller PL?\n\nKode Settle: ${rowData.r_KD_SETTLE}\nProduk: ${rowData.r_NAMA_PRODUK}\nAmount: ${formatCurrency(rowData.d_AMOUNT)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`
+        : `Apakah Anda yakin ingin memproses jurnal Escrow to Biller PL?\n\nKode Settle: ${rowData.r_KD_SETTLE}\nProduk: ${rowData.r_NAMA_PRODUK}\nAmount: ${formatCurrency(rowData.d_AMOUNT)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Disable button dan semua interaksi
+    $btn.prop('disabled', true);
+    disableAllActionsEscrowBiller();
+    
+    // Show loading state
+    $btn.html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
+    
+    // Show progress modal
+    showProgressModalEscrowBiller(rowData);
+    
+    // Prevent browser close/refresh
+    setBeforeUnloadWarning(true);
+    
+    // AJAX call untuk proses jurnal
+    $.ajax({
+        url: '{{ base_url('settlement/jurnal-escrow-biller-pl/proses') }}',
+        type: 'POST',
+        timeout: 120000, // 2 menit timeout
+        data: {
+            csrf_test_name: currentCSRF,
+            kd_settle: rowData.r_KD_SETTLE,
+            no_ref: rowData.d_NO_REF,
+            amount: rowData.d_AMOUNT,
+            debit_account: rowData.d_DEBIT_ACCOUNT,
+            credit_account: rowData.d_CREDIT_ACCOUNT,
+            status_kr_escrow: rowData.d_STATUS_KR_ESCROW,
+            is_reprocess: isReprocess ? 1 : 0
+        },
+        success: function(response) {
+            hideProgressModalEscrowBiller();
+            setBeforeUnloadWarning(false);
+            
+            if (response.success) {
+                showAlertEscrowBiller('success', 'Jurnal Escrow to Biller PL berhasil diproses!\nCore Ref: ' + (response.core_ref || '-'));
+                
+                // Reload table untuk update status
+                setTimeout(function() {
+                    jurnalEscrowBillerPlTable.ajax.reload(null, false);
+                }, 1500);
+            } else {
+                showAlertEscrowBiller('error', 'Gagal memproses jurnal: ' + (response.message || 'Unknown error'));
+                
+                // Reset button state
+                resetButtonStateEscrowBiller($btn, isReprocess);
+            }
+            
+            enableAllActionsEscrowBiller();
+        },
+        error: function(xhr, status, error) {
+            hideProgressModalEscrowBiller();
+            setBeforeUnloadWarning(false);
+            enableAllActionsEscrowBiller();
+            
+            let errorMessage = 'Terjadi kesalahan saat memproses jurnal';
+            
+            if (status === 'timeout') {
+                errorMessage = 'Timeout! Transaksi mungkin masih berjalan. Silakan cek status transaksi.';
+            } else if (xhr.status === 403 || xhr.status === 419) {
+                errorMessage = 'Session expired. Silakan refresh halaman dan coba lagi.';
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            
+            showAlertEscrowBiller('error', errorMessage);
+            
+            // Reset button state
+            resetButtonStateEscrowBiller($btn, isReprocess);
+            
+            console.error('Proses Jurnal Escrow Biller Error:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText,
+                error: error
+            });
+        }
+    });
+}
+
+function disableAllActionsEscrowBiller() {
+    // Disable semua tombol proses di halaman
+    $('button[id^="btn-proses-eb-"]').prop('disabled', true);
+    
+    // Disable form filter
+    $('#tanggal').prop('disabled', true);
+    $('button[type="submit"]').prop('disabled', true);
+    
+    // Disable table interactions
+    $('.dataTables_length select').prop('disabled', true);
+    $('.dataTables_paginate .paginate_button').addClass('disabled');
+}
+
+function enableAllActionsEscrowBiller() {
+    // Enable kembali semua tombol dan form
+    $('button[id^="btn-proses-eb-"]').prop('disabled', false);
+    $('#tanggal').prop('disabled', false);
+    $('button[type="submit"]').prop('disabled', false);
+    $('.dataTables_length select').prop('disabled', false);
+    $('.dataTables_paginate .paginate_button').removeClass('disabled');
+}
+
+function resetButtonStateEscrowBiller($btn, isReprocess) {
+    if (isReprocess) {
+        $btn.html('<i class="fal fa-redo"></i> Proses Ulang');
+    } else {
+        $btn.html('<i class="fal fa-play"></i> Proses Jurnal');
+    }
+    $btn.prop('disabled', false);
+}
+
+function showProgressModalEscrowBiller(rowData) {
+    const modalContent = `
+        <div class="modal fade" id="progressModalEscrowBiller" tabindex="-1" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fal fa-cog fa-spin"></i> Memproses Transaksi Escrow to Biller PL
+                        </h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="mb-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                        <h6>Sedang memproses jurnal:</h6>
+                        <div class="alert alert-info">
+                            <strong>Kode Settle:</strong> ${rowData.r_KD_SETTLE}<br>
+                            <strong>Amount:</strong> ${formatCurrency(rowData.d_AMOUNT)}<br>
+                            <strong>Produk:</strong> ${rowData.r_NAMA_PRODUK}<br>
+                            <strong>Status KR Escrow:</strong> ${rowData.d_STATUS_KR_ESCROW || '-'}
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fal fa-exclamation-triangle"></i>
+                            <strong>PENTING:</strong><br>
+                            Jangan tutup atau refresh browser!<br>
+                            Transaksi sedang berlangsung...
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(modalContent);
+    $('#progressModalEscrowBiller').modal('show');
+}
+
+function hideProgressModalEscrowBiller() {
+    $('#progressModalEscrowBiller').modal('hide');
+    setTimeout(function() {
+        $('#progressModalEscrowBiller').remove();
+    }, 500);
+}
+
+function showAlertEscrowBiller(type, message) {
+    // Implementasi alert yang lebih baik
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger', 
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    };
+    
+    const alertHtml = `
+        <div class="alert ${alertClass[type]} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            <strong>${type.charAt(0).toUpperCase() + type.slice(1)}!</strong> ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    $('body').append(alertHtml);
+    
+    // Auto hide after 5 seconds
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 5000);
+}
+
+function setBeforeUnloadWarning(enable) {
+    if (enable) {
+        window.onbeforeunload = function() {
+            return "Transaksi sedang berlangsung! Jika Anda menutup halaman ini, transaksi mungkin gagal.";
+        };
+    } else {
+        window.onbeforeunload = null;
+    }
 }
 </script>
 @endpush

@@ -70,6 +70,7 @@
                                 <th>Response Code</th>
                                 <th>Core Ref</th>
                                 <th>Core DateTime</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -215,8 +216,7 @@ function initializeDataTable() {
                 responsivePriority: 4, // Medium priority
                 render: function(data, type, row) {
                     return formatCurrency(data);
-                },
-                className: 'text-right'
+                }
             },
             { 
                 data: 'r_TOTAL_JURNAL', 
@@ -279,8 +279,7 @@ function initializeDataTable() {
                 responsivePriority: 10006, // Medium-low priority
                 render: function(data, type, row) {
                     return formatCurrency(data);
-                },
-                className: 'text-right'
+                }
             },
             { 
                 data: 'd_CODE_RES', 
@@ -292,13 +291,16 @@ function initializeDataTable() {
                     } else if (data) {
                         return '<span class="badge badge-danger">' + data + '</span>';
                     }
-                    return data;
+                    return '<span class="badge badge-secondary">Belum Diproses</span>';
                 }
             },
             { 
                 data: 'd_CORE_REF', 
                 name: 'd_CORE_REF',
-                responsivePriority: 10008 // Hidden in responsive - goes to details
+                responsivePriority: 10008, // Hidden in responsive - goes to details
+                render: function(data, type, row) {
+                    return data || '<span class="badge badge-secondary">Belum Diproses</span>';
+                }
             },
             { 
                 data: 'd_CORE_DATETIME', 
@@ -308,9 +310,33 @@ function initializeDataTable() {
                     if (data) {
                         return new Date(data).toLocaleString('id-ID');
                     }
-                    return '';
+                    return '<span class="badge badge-secondary">Belum Diproses</span>';
+                }
+            },
+            { 
+                data: null,
+                name: 'actions',
+                orderable: false,
+                searchable: false,
+                responsivePriority: 10010, // Always visible
+                render: function(data, type, full, meta) {
+                    // Cek status untuk menentukan tombol yang ditampilkan
+                    if (full.d_CODE_RES && full.d_CODE_RES.startsWith('00')) {
+                        return "<div class='text-center'><span class='badge badge-success'><i class='fal fa-check'></i> Sudah Diproses</span></div>";
+                    } else if (full.d_CODE_RES && !full.d_CODE_RES.startsWith('00')) {
+                        return "<div class='text-center'>" +
+                               "<button class='btn btn-sm btn-outline-warning' onclick='prosesJurnal(" + JSON.stringify(full) + ", " + meta.row + ")' id='btn-proses-" + meta.row + "'>" +
+                               "<i class='fal fa-redo'></i> Proses Ulang" +
+                               "</button></div>";
+                    } else {
+                        return "<div class='text-center'>" +
+                               "<button class='btn btn-sm btn-outline-primary' onclick='prosesJurnal(" + JSON.stringify(full) + ", " + meta.row + ")' id='btn-proses-" + meta.row + "'>" +
+                               "<i class='fal fa-play'></i> Proses Jurnal" +
+                               "</button></div>";
+                    }
                 }
             }
+            
         ],
         pageLength: 10,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
@@ -348,6 +374,229 @@ function resetFilters() {
     const url = new URL(window.location);
     url.searchParams.delete('tanggal');
     window.location.href = url.pathname + url.search;
+}
+
+// Action Functions dengan Security Best Practices
+function prosesJurnal(rowData, rowIndex) {
+    console.log('Proses Jurnal:', rowData);
+    
+    const btnId = '#btn-proses-' + rowIndex;
+    const $btn = $(btnId);
+    
+    // Validasi data
+    if (!rowData.r_KD_SETTLE || !rowData.d_NO_REF) {
+        showAlert('error', 'Data tidak lengkap untuk diproses!');
+        return;
+    }
+    
+    // Cek apakah sudah diproses sukses
+    if (rowData.d_CODE_RES && rowData.d_CODE_RES.startsWith('00')) {
+        showAlert('warning', 'Jurnal sudah berhasil diproses sebelumnya!');
+        return;
+    }
+    
+    // Konfirmasi dengan detail informasi
+    const isReprocess = rowData.d_CODE_RES && !rowData.d_CODE_RES.startsWith('00');
+    const confirmMessage = isReprocess 
+        ? `Apakah Anda yakin ingin memproses ULANG jurnal?\n\nKode Settle: ${rowData.r_KD_SETTLE}\nProduk: ${rowData.r_NAMA_PRODUK}\nAmount: ${formatCurrency(rowData.d_AMOUNT)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`
+        : `Apakah Anda yakin ingin memproses jurnal?\n\nKode Settle: ${rowData.r_KD_SETTLE}\nProduk: ${rowData.r_NAMA_PRODUK}\nAmount: ${formatCurrency(rowData.d_AMOUNT)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Disable button dan semua interaksi
+    $btn.prop('disabled', true);
+    disableAllActions();
+    
+    // Show loading state
+    $btn.html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
+    
+    // Show progress modal
+    showProgressModal(rowData);
+    
+    // Prevent browser close/refresh
+    setBeforeUnloadWarning(true);
+    
+    // AJAX call untuk proses jurnal
+    $.ajax({
+        url: '{{ base_url('settlement/jurnal-ca-escrow/proses') }}',
+        type: 'POST',
+        timeout: 120000, // 2 menit timeout
+        data: {
+            csrf_test_name: currentCSRF,
+            kd_settle: rowData.r_KD_SETTLE,
+            no_ref: rowData.d_NO_REF,
+            amount: rowData.d_AMOUNT,
+            debit_account: rowData.d_DEBIT_ACCOUNT,
+            credit_account: rowData.d_CREDIT_ACCOUNT,
+            is_reprocess: isReprocess ? 1 : 0
+        },
+        success: function(response) {
+            hideProgressModal();
+            setBeforeUnloadWarning(false);
+            
+            if (response.success) {
+                showAlert('success', 'Jurnal berhasil diproses!\nCore Ref: ' + (response.core_ref || '-'));
+                
+                // Reload table untuk update status
+                setTimeout(function() {
+                    jurnalCaEscrowTable.ajax.reload(null, false);
+                }, 1500);
+            } else {
+                showAlert('error', 'Gagal memproses jurnal: ' + (response.message || 'Unknown error'));
+                
+                // Reset button state
+                resetButtonState($btn, isReprocess);
+            }
+            
+            enableAllActions();
+        },
+        error: function(xhr, status, error) {
+            hideProgressModal();
+            setBeforeUnloadWarning(false);
+            enableAllActions();
+            
+            let errorMessage = 'Terjadi kesalahan saat memproses jurnal';
+            
+            if (status === 'timeout') {
+                errorMessage = 'Timeout! Transaksi mungkin masih berjalan. Silakan cek status transaksi.';
+            } else if (xhr.status === 403 || xhr.status === 419) {
+                errorMessage = 'Session expired. Silakan refresh halaman dan coba lagi.';
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            
+            showAlert('error', errorMessage);
+            
+            // Reset button state
+            resetButtonState($btn, isReprocess);
+            
+            console.error('Proses Jurnal Error:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText,
+                error: error
+            });
+        }
+    });
+}
+
+function disableAllActions() {
+    // Disable semua tombol proses di halaman
+    $('button[id^="btn-proses-"]').prop('disabled', true);
+    
+    // Disable form filter
+    $('#tanggal').prop('disabled', true);
+    $('button[type="submit"]').prop('disabled', true);
+    
+    // Disable table interactions
+    $('.dataTables_length select').prop('disabled', true);
+    $('.dataTables_paginate .paginate_button').addClass('disabled');
+}
+
+function enableAllActions() {
+    // Enable kembali semua tombol dan form
+    $('button[id^="btn-proses-"]').prop('disabled', false);
+    $('#tanggal').prop('disabled', false);
+    $('button[type="submit"]').prop('disabled', false);
+    $('.dataTables_length select').prop('disabled', false);
+    $('.dataTables_paginate .paginate_button').removeClass('disabled');
+}
+
+function resetButtonState($btn, isReprocess) {
+    if (isReprocess) {
+        $btn.html('<i class="fal fa-redo"></i> Proses Ulang');
+    } else {
+        $btn.html('<i class="fal fa-play"></i> Proses Jurnal');
+    }
+    $btn.prop('disabled', false);
+}
+
+function showProgressModal(rowData) {
+    const modalContent = `
+        <div class="modal fade" id="progressModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fal fa-cog fa-spin"></i> Memproses Transaksi
+                        </h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="mb-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                        <h6>Sedang memproses jurnal:</h6>
+                        <div class="alert alert-info">
+                            <strong>Kode Settle:</strong> ${rowData.r_KD_SETTLE}<br>
+                            <strong>Amount:</strong> ${formatCurrency(rowData.d_AMOUNT)}<br>
+                            <strong>Produk:</strong> ${rowData.r_NAMA_PRODUK}
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fal fa-exclamation-triangle"></i>
+                            <strong>PENTING:</strong><br>
+                            Jangan tutup atau refresh browser!<br>
+                            Transaksi sedang berlangsung...
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(modalContent);
+    $('#progressModal').modal('show');
+}
+
+function hideProgressModal() {
+    $('#progressModal').modal('hide');
+    setTimeout(function() {
+        $('#progressModal').remove();
+    }, 500);
+}
+
+function setBeforeUnloadWarning(enable) {
+    if (enable) {
+        window.onbeforeunload = function() {
+            return "Transaksi sedang berlangsung! Jika Anda menutup halaman ini, transaksi mungkin gagal.";
+        };
+    } else {
+        window.onbeforeunload = null;
+    }
+}
+
+function showAlert(type, message) {
+    // Implementasi alert yang lebih baik (bisa diganti dengan toastr/sweet alert)
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger', 
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    };
+    
+    const alertHtml = `
+        <div class="alert ${alertClass[type]} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            <strong>${type.charAt(0).toUpperCase() + type.slice(1)}!</strong> ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    $('body').append(alertHtml);
+    
+    // Auto hide after 5 seconds
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 5000);
 }
 </script>
 @endpush

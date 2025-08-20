@@ -155,4 +155,144 @@ class JurnalEscrowBillerPlController extends BaseController
             ]);
         }
     }
+
+    /**
+     * Dummy endpoint untuk proses jurnal Escrow to Biller PL
+     * Simulasi pemrosesan transaksi finansial
+     */
+    public function proses()
+    {
+        // Validasi CSRF
+        if (!$this->validate(['csrf_test_name' => 'required'])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'CSRF token tidak valid'
+            ])->setStatusCode(403);
+        }
+
+        // Validasi input
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'kd_settle' => 'required|min_length[1]',
+            'no_ref' => 'required|min_length[1]',
+            'amount' => 'required|numeric',
+            'debit_account' => 'required',
+            'credit_account' => 'required',
+            'status_kr_escrow' => 'required'
+        ]);
+
+        if (!$validation->withRequest($this->request)->run()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data input tidak valid: ' . implode(', ', $validation->getErrors())
+            ])->setStatusCode(400);
+        }
+
+        // Ambil data dari request
+        $kdSettle = $this->request->getPost('kd_settle');
+        $noRef = $this->request->getPost('no_ref');
+        $amount = $this->request->getPost('amount');
+        $debitAccount = $this->request->getPost('debit_account');
+        $creditAccount = $this->request->getPost('credit_account');
+        $statusKrEscrow = $this->request->getPost('status_kr_escrow');
+        $isReprocess = $this->request->getPost('is_reprocess', FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            // Log untuk audit trail
+            log_message('info', 'Jurnal Escrow to Biller PL Process Started', [
+                'kd_settle' => $kdSettle,
+                'no_ref' => $noRef,
+                'amount' => $amount,
+                'status_kr_escrow' => $statusKrEscrow,
+                'is_reprocess' => $isReprocess,
+                'user_agent' => $this->request->getUserAgent()->getAgentString(),
+                'ip_address' => $this->request->getIPAddress()
+            ]);
+
+            // Simulasi delay processing (2-4 detik untuk Escrow to Biller PL)
+            $processingTime = rand(2, 4);
+            sleep($processingTime);
+
+            // Simulasi success rate berdasarkan status KR Escrow
+            $successRate = match($statusKrEscrow) {
+                'Sukses' => rand(1, 100) <= 90, // 90% sukses jika status sukses
+                'Sukses Sebagian' => rand(1, 100) <= 70, // 70% sukses jika sebagian
+                'Belum Proses' => rand(1, 100) <= 60, // 60% sukses jika belum proses
+                default => rand(1, 100) <= 50 // 50% default
+            };
+
+            if ($successRate) {
+                // Generate dummy core reference untuk Escrow to Biller PL
+                $coreRef = 'EBP' . date('YmdHis') . rand(1000, 9999);
+                
+                // Response sukses
+                $response = [
+                    'success' => true,
+                    'message' => 'Jurnal Escrow to Biller PL berhasil diproses',
+                    'core_ref' => $coreRef,
+                    'response_code' => '00',
+                    'processing_time' => $processingTime,
+                    'status_kr_escrow' => $statusKrEscrow,
+                    'timestamp' => date('Y-m-d H:i:s'),
+                    'csrf_token' => csrf_hash()
+                ];
+
+                log_message('info', 'Jurnal Escrow to Biller PL Process Success', [
+                    'kd_settle' => $kdSettle,
+                    'core_ref' => $coreRef,
+                    'status_kr_escrow' => $statusKrEscrow,
+                    'processing_time' => $processingTime
+                ]);
+
+            } else {
+                // Simulasi berbagai jenis error spesifik untuk Escrow to Biller PL
+                $errorCodes = [
+                    ['code' => '10', 'message' => 'Escrow balance insufficient - Saldo escrow tidak mencukupi'],
+                    ['code' => '11', 'message' => 'Biller account blocked - Rekening biller diblokir'],
+                    ['code' => '12', 'message' => 'Invalid KR Escrow status - Status KR Escrow tidak valid'],
+                    ['code' => '13', 'message' => 'Settlement processing failed - Proses settlement gagal'],
+                    ['code' => '14', 'message' => 'PL system unavailable - Sistem PL tidak tersedia'],
+                    ['code' => '15', 'message' => 'Transaction already processed - Transaksi sudah diproses']
+                ];
+
+                $randomError = $errorCodes[array_rand($errorCodes)];
+
+                $response = [
+                    'success' => false,
+                    'message' => $randomError['message'],
+                    'response_code' => $randomError['code'],
+                    'processing_time' => $processingTime,
+                    'status_kr_escrow' => $statusKrEscrow,
+                    'timestamp' => date('Y-m-d H:i:s'),
+                    'csrf_token' => csrf_hash()
+                ];
+
+                log_message('warning', 'Jurnal Escrow to Biller PL Process Failed', [
+                    'kd_settle' => $kdSettle,
+                    'error_code' => $randomError['code'],
+                    'error_message' => $randomError['message'],
+                    'status_kr_escrow' => $statusKrEscrow,
+                    'processing_time' => $processingTime
+                ]);
+            }
+
+            return $this->response->setJSON($response);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Jurnal Escrow to Biller PL Process Exception: ' . $e->getMessage(), [
+                'kd_settle' => $kdSettle,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+                'response_code' => '99',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'csrf_token' => csrf_hash()
+            ])->setStatusCode(500);
+        }
+    }
 }

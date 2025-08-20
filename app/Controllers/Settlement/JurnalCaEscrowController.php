@@ -4,14 +4,17 @@ namespace App\Controllers\Settlement;
 
 use App\Controllers\BaseController;
 use App\Models\ProsesModel;
+use App\Services\Settlement\JurnalCaEscrowService;
 
 class JurnalCaEscrowController extends BaseController
 {
     protected $prosesModel;
+    protected $jurnalService;
 
     public function __construct()
     {
         $this->prosesModel = new ProsesModel();
+        $this->jurnalService = new JurnalCaEscrowService();
     }
 
     /**
@@ -156,6 +159,95 @@ class JurnalCaEscrowController extends BaseController
                 'recordsFiltered' => 0,
                 'data' => [],
                 'error' => 'Terjadi kesalahan saat mengambil data: ' . $e->getMessage(),
+                'csrf_token' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Proses jurnal CA to Escrow menggunakan Service layer
+     * Implementasi best practices untuk financial transactions
+     */
+    public function proses()
+    {
+        try {
+            // Validasi CSRF token
+            if (!$this->validate(['csrf_test_name' => 'required'])) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Token CSRF tidak valid'
+                ])->setStatusCode(403);
+            }
+
+            // Kumpulkan data request untuk service
+            $requestData = [
+                'kd_settle' => $this->request->getPost('kd_settle'),
+                'no_ref' => $this->request->getPost('no_ref'),
+                'amount' => $this->request->getPost('amount'),
+                'debit_account' => $this->request->getPost('debit_account'),
+                'credit_account' => $this->request->getPost('credit_account'),
+                'is_reprocess' => $this->request->getPost('is_reprocess', FILTER_VALIDATE_BOOLEAN),
+                'ip_address' => $this->request->getIPAddress(),
+                'user_agent' => $this->request->getUserAgent()->getAgentString()
+            ];
+
+            // Proses melalui service layer
+            $result = $this->jurnalService->prosesJurnal($requestData);
+
+            // Tambahkan CSRF token baru untuk request berikutnya
+            $result['csrf_token'] = csrf_hash();
+
+            return $this->response->setJSON($result);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'JurnalCaEscrowController::proses() error: ' . $e->getMessage(), [
+                'request_data' => $this->request->getPost(),
+                'ip_address' => $this->request->getIPAddress(),
+                'user_agent' => $this->request->getUserAgent()->getAgentString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi administrator.',
+                'response_code' => '99',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'csrf_token' => csrf_hash()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Get status transaksi untuk monitoring
+     */
+    public function status()
+    {
+        try {
+            $kdSettle = $this->request->getGet('kd_settle');
+            $noRef = $this->request->getGet('no_ref');
+
+            if (empty($kdSettle) || empty($noRef)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Parameter tidak lengkap'
+                ]);
+            }
+
+            $status = $this->jurnalService->getTransactionStatus($kdSettle, $noRef);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $status,
+                'csrf_token' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'JurnalCaEscrowController::status() error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal mengambil status transaksi',
                 'csrf_token' => csrf_hash()
             ]);
         }
