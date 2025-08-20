@@ -34,13 +34,18 @@ class Filters extends BaseConfig
 	public array $globals = [
 		'before' => [
 			// 'honeypot',
-			'csrf',
+			'csrf' => [
+				'except' => [
+					'api/*',
+				]
+			],
 			// 'invalidchars', 
 			'userAuth' => [
 				'except' => [
 					'login',
 					'logout',
 					'refresh/captcha',
+					'api/*',
 				]
 			],
 			'isFirstLogin' => [
@@ -49,6 +54,7 @@ class Filters extends BaseConfig
 					'logout',
 					'profile',
 					'refresh/captcha',
+					'api/*'
 				]
 			]
 		],

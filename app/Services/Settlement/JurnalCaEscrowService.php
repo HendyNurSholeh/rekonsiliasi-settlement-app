@@ -3,6 +3,7 @@
 namespace App\Services\Settlement;
 
 use App\Models\Settlement\JurnalCaEscrowModel;
+use App\Models\Settlement\SettlementMessageModel;
 use CodeIgniter\Database\Database;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Validation\Validation;
@@ -15,6 +16,7 @@ use CodeIgniter\HTTP\CURLRequest;
 class JurnalCaEscrowService
 {
     protected $model;
+    protected $settlementModel;
     protected $db;
     protected $validation;
     protected $request;
@@ -23,6 +25,7 @@ class JurnalCaEscrowService
     public function __construct()
     {
         $this->model = new JurnalCaEscrowModel();
+        $this->settlementModel = new SettlementMessageModel();
         $this->db = \Config\Database::connect();
         $this->validation = \Config\Services::validation();
         $this->request = \Config\Services::request();
@@ -242,13 +245,25 @@ class JurnalCaEscrowService
      */
     private function updateJurnalData(array $data, array $response): void
     {
-        $updateData = [
-            'd_CODE_RES' => $response['response_code'],
-            'd_CORE_REF' => $response['core_ref'],
-            'd_CORE_DATETIME' => date('Y-m-d H:i:s')
-        ];
+        // Update ke tabel settlement utama menggunakan model baru
+        $this->settlementModel->updateSettlementResponse(
+            $data['kd_settle'],
+            $data['no_ref'],
+            [
+                'response_code' => $response['response_code'],
+                'core_ref' => $response['core_ref'],
+                'message' => $response['message'],
+                'timestamp' => date('Y-m-d H:i:s')
+            ]
+        );
 
-        $this->model->updateJurnalByRef($data['kd_settle'], $data['no_ref'], $updateData);
+        // Log update untuk debugging
+        log_message('info', 'Settlement data updated successfully', [
+            'kd_settle' => $data['kd_settle'],
+            'no_ref' => $data['no_ref'],
+            'response_code' => $response['response_code'],
+            'core_ref' => $response['core_ref']
+        ]);
     }
 
     /**
@@ -284,10 +299,7 @@ class JurnalCaEscrowService
 
             $response = $client->post($endpoint, [
                 'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . env('CA_ESCROW_API_TOKEN', 'dummy-token'),
-                    'X-Client-ID' => env('CLIENT_ID', 'settlement-app'),
-                    'X-Request-ID' => uniqid('REQ_', true)
+                    'Content-Type' => 'application/json'
                 ],
                 'json' => $payload
             ]);
@@ -319,7 +331,7 @@ class JurnalCaEscrowService
             }
 
         } catch (\Exception $e) {
-            log_message('error', 'External API Call Failed: {message}', [
+            log_message('error', 'External API Call Failed: ' . $e->getMessage(), [
                 'endpoint' => $endpoint ?? 'unknown',
                 'error' => $e->getMessage(),
                 'data' => $data,
@@ -400,5 +412,40 @@ class JurnalCaEscrowService
     public function getExternalApiUrl(): string
     {
         return $this->externalApiBaseUrl;
+    }
+
+    /**
+     * Get settlement data untuk diproses
+     * 
+     * @param string $kdSettle
+     * @param string $refNumber
+     * @return array|null
+     */
+    public function getSettlementData(string $kdSettle, string $refNumber): ?array
+    {
+        return $this->settlementModel->getSettlementByRef($kdSettle, $refNumber);
+    }
+
+    /**
+     * Cek apakah settlement sudah diproses sebelumnya
+     * 
+     * @param string $kdSettle
+     * @param string $refNumber
+     * @return bool
+     */
+    public function isSettlementAlreadyProcessed(string $kdSettle, string $refNumber): bool
+    {
+        return $this->settlementModel->isSettlementProcessed($kdSettle, $refNumber);
+    }
+
+    /**
+     * Get account mapping untuk settlement CA to Escrow
+     * 
+     * @param string $kdSettle
+     * @return array
+     */
+    public function getCA2EscrowAccountMapping(string $kdSettle): array
+    {
+        return $this->settlementModel->getAccountMapping($kdSettle, 'CA-ESCR');
     }
 }

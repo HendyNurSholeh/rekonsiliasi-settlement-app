@@ -222,10 +222,10 @@
                     <i class="fal fa-times"></i> Tutup
                 </button>
                 <div id="approvalButtons">
-                    <button type="button" class="btn btn-danger" onclick="processApproval('reject')">
+                    <button type="button" class="btn btn-danger" id="rejectBtn" onclick="processApproval('reject')">
                         <i class="fal fa-times-circle"></i> Tolak
                     </button>
-                    <button type="button" class="btn btn-success" onclick="processApproval('approve')">
+                    <button type="button" class="btn btn-success" id="approveBtn" onclick="processApproval('approve')">
                         <i class="fal fa-check-circle"></i> Setujui
                     </button>
                 </div>
@@ -458,16 +458,23 @@ function initializeDataTable() {
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
         drawCallback: function(settings) {
             $('.btn-view-detail').off('click').on('click', function() {
-                const kdSettle = $(this).data('kd-settle');
-                openApprovalModal(kdSettle);
+                const $btn = $(this);
+                const kdSettle = $btn.data('kd-settle');
+                
+                // Disable button immediately
+                $btn.prop('disabled', true);
+                
+                openApprovalModal(kdSettle, $btn);
             });
         }
     });
 }
 
-function openApprovalModal(kdSettle) {
+function openApprovalModal(kdSettle, $btn) {
     if (!kdSettle) {
         toastr["error"]('Kode settle tidak ditemukan');
+        // Re-enable button on error
+        if ($btn) $btn.prop('disabled', false);
         return;
     }
 
@@ -545,8 +552,13 @@ function openApprovalModal(kdSettle) {
                     }
                     
                     $('#approvalModal').modal('show');
+                    
+                    // Re-enable button when modal opens
+                    if ($btn) $btn.prop('disabled', false);
                 } else {
                     toastr["error"](response.message);
+                    // Re-enable button on error
+                    if ($btn) $btn.prop('disabled', false);
                 }
             },
             error: function(xhr) {
@@ -555,6 +567,8 @@ function openApprovalModal(kdSettle) {
                 } else {
                     toastr["error"]('Terjadi kesalahan saat mengambil detail jurnal');
                 }
+                // Re-enable button on error
+                if ($btn) $btn.prop('disabled', false);
             }
         });
     });
@@ -575,6 +589,21 @@ function processApproval(action) {
     if (!namaProduk) {
         toastr["error"]('Nama produk tidak ditemukan. Silakan coba lagi.');
         return;
+    }
+    
+    // Get button references and disable them
+    const $approveBtn = $('#approveBtn');
+    const $rejectBtn = $('#rejectBtn');
+    
+    // Disable both buttons immediately
+    $approveBtn.prop('disabled', true);
+    $rejectBtn.prop('disabled', true);
+    
+    // Update button text based on action
+    if (action === 'approve') {
+        $approveBtn.html('<i class="fal fa-spinner fa-spin"></i> Menyetujui...');
+    } else {
+        $rejectBtn.html('<i class="fal fa-spinner fa-spin"></i> Menolak...');
     }
     
     refreshCSRFToken().then(function() {
@@ -604,6 +633,10 @@ function processApproval(action) {
                 } else {
                     toastr["error"](response.message);
                 }
+                
+                // Re-enable buttons and restore original text
+                $approveBtn.prop('disabled', false).html('<i class="fal fa-check-circle"></i> Setujui');
+                $rejectBtn.prop('disabled', false).html('<i class="fal fa-times-circle"></i> Tolak');
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
@@ -611,6 +644,10 @@ function processApproval(action) {
                 } else {
                     toastr["error"](`Terjadi kesalahan saat ${actionText} jurnal`);
                 }
+                
+                // Re-enable buttons and restore original text on error
+                $approveBtn.prop('disabled', false).html('<i class="fal fa-check-circle"></i> Setujui');
+                $rejectBtn.prop('disabled', false).html('<i class="fal fa-times-circle"></i> Tolak');
             }
         });
     });

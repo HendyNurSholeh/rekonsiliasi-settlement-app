@@ -187,7 +187,7 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     <i class="fal fa-times"></i> Batal
                 </button>
-                <button type="button" class="btn btn-primary" onclick="confirmCreateJurnal()">
+                <button type="button" class="btn btn-primary" id="confirmCreateJurnalBtn" onclick="confirmCreateJurnal()">
                     <i class="fal fa-check"></i> Ya, Buat Jurnal
                 </button>
             </div>
@@ -454,16 +454,23 @@ function initializeDataTable() {
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
         drawCallback: function(settings) {
             $('.btn-create-jurnal').off('click').on('click', function() {
-                const namaProduk = $(this).data('produk');
-                openCreateJurnalModal(namaProduk);
+                const $btn = $(this);
+                const namaProduk = $btn.data('produk');
+                
+                // Disable button immediately
+                $btn.prop('disabled', true);
+                
+                openCreateJurnalModal(namaProduk, $btn);
             });
         }
     });
 }
 
-function openCreateJurnalModal(namaProduk) {
+function openCreateJurnalModal(namaProduk, $btn) {
     if (!namaProduk) {
         showAlert('error', 'Nama produk tidak ditemukan');
+        // Re-enable button on error
+        if ($btn) $btn.prop('disabled', false);
         return;
     }
 
@@ -498,8 +505,13 @@ function openCreateJurnalModal(namaProduk) {
                     $('#modal_amount_tx_dispute').val(response.data.AMOUNT_TX_DISPUTE || response.data.AMOUNT_TX_DISPURE || '0');
                     
                     $('#createJurnalModal').modal('show');
+                    
+                    // Re-enable button when modal opens
+                    if ($btn) $btn.prop('disabled', false);
                 } else {
                     showAlert('error', response.message);
+                    // Re-enable button on error
+                    if ($btn) $btn.prop('disabled', false);
                 }
             },
             error: function(xhr) {
@@ -508,6 +520,8 @@ function openCreateJurnalModal(namaProduk) {
                 } else {
                     showAlert('error', 'Terjadi kesalahan saat validasi data');
                 }
+                // Re-enable button on error
+                if ($btn) $btn.prop('disabled', false);
             }
         });
     });
@@ -521,6 +535,10 @@ function confirmCreateJurnal() {
 
     const namaProduk = $('#modal_nama_produk').val();
     const tanggalRekon = $('#modal_tanggal_rekon').val();
+    const $confirmBtn = $('#confirmCreateJurnalBtn');
+    
+    // Disable button immediately
+    $confirmBtn.prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Membuat Jurnal...');
     
     refreshCSRFToken().then(function() {
         $.ajax({
@@ -545,6 +563,9 @@ function confirmCreateJurnal() {
                 } else {
                     showAlert('error', response.message);
                 }
+                
+                // Re-enable button
+                $confirmBtn.prop('disabled', false).html('<i class="fal fa-check"></i> Ya, Buat Jurnal');
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
@@ -556,6 +577,9 @@ function confirmCreateJurnal() {
                     }
                     showAlert('error', errorMsg);
                 }
+                
+                // Re-enable button on error
+                $confirmBtn.prop('disabled', false).html('<i class="fal fa-check"></i> Ya, Buat Jurnal');
             }
         });
     });
