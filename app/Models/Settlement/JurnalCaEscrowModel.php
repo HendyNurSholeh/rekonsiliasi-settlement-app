@@ -69,46 +69,6 @@ class JurnalCaEscrowModel extends Model
     }
 
     /**
-     * Update data jurnal di tabel utama berdasarkan referensi
-     * Asumsi: ada tabel jurnal_ca_escrow yang menyimpan data utama
-     * 
-     * @param string $kdSettle
-     * @param string $noRef
-     * @param array $data
-     * @return bool
-     */
-    public function updateJurnalByRef(string $kdSettle, string $noRef, array $data): bool
-    {
-        try {
-            $db = \Config\Database::connect();
-            
-            // Update menggunakan stored procedure atau direct update
-            // Sesuaikan dengan struktur database yang ada
-            $sql = "UPDATE jurnal_ca_escrow 
-                    SET d_CODE_RES = ?, d_CORE_REF = ?, d_CORE_DATETIME = ?
-                    WHERE r_KD_SETTLE = ? AND d_NO_REF = ?";
-            
-            $query = $db->query($sql, [
-                $data['d_CODE_RES'],
-                $data['d_CORE_REF'], 
-                $data['d_CORE_DATETIME'],
-                $kdSettle,
-                $noRef
-            ]);
-
-            return $query !== false;
-
-        } catch (\Exception $e) {
-            log_message('error', 'Failed to update jurnal data', [
-                'kd_settle' => $kdSettle,
-                'no_ref' => $noRef,
-                'error' => $e->getMessage()
-            ]);
-            return false;
-        }
-    }
-
-    /**
      * Get history transaksi untuk audit trail
      * 
      * @param string $kdSettle
