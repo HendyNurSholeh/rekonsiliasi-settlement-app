@@ -40,7 +40,7 @@ class SettlementController extends ResourceController
             // === SIMULASI SUKSES ===
             return $this->respond([
                 'success' => true,
-                'message' => 'Fund transfer completed successfully',
+                'message' => 'success',
                 'core_ref' => $this->generateCoreReference(),
                 'response_code' => '00',
                 'timestamp' => date('Y-m-d H:i:s'),

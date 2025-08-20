@@ -602,7 +602,6 @@ function showAlert(type, message) {
 @endpush
 
 @push('styles')
-<link rel="stylesheet" href="{{ base_url('assets/css/toastr.min.css') }}">
 <link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
 <style>
 .card {
