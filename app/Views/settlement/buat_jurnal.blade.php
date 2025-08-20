@@ -550,7 +550,11 @@ function confirmCreateJurnal() {
                 if (xhr.status === 403) {
                     showAlert('error', 'Session expired. Please try again.');
                 } else {
-                    showAlert('error', 'Terjadi kesalahan saat membuat jurnal');
+                    let errorMsg = 'Terjadi kesalahan saat membuat jurnal';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    showAlert('error', errorMsg);
                 }
             }
         });
