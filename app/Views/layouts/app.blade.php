@@ -203,6 +203,26 @@
                                     </li> -->
                                 </ul>
                             </li>
+
+                            {{-- Rekon Bi-fast Menu --}}
+                            <li class="@if (str_contains($route, 'rekon-bifast')) active open @endif">
+                                <a href="javascript:void(0);" title="Rekon Bi-fast" data-filter-tags="rekon bifast">
+                                    <i class="fal fa-exchange"></i>
+                                    <span class="nav-link-text">Rekon Bi-fast</span>
+                                </a>
+                                <ul>
+                                    <li class="@if ($route == 'rekon-bifast/rekap') active @endif">
+                                        <a href="{{ site_url('rekon-bifast/rekap') }}">
+                                            <span class="nav-link-text text-left">Rekap Bi-fast</span>
+                                        </a>
+                                    </li>
+                                    <li class="@if ($route == 'rekon-bifast/dispute') active @endif">
+                                        <a href="{{ site_url('rekon-bifast/dispute') }}">
+                                            <span class="nav-link-text text-left">Penyelesaian Dispute</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                        
                         @if ($user || $unit_kerja || $permission || $role)
                             <li class="@if ($route == 'user' || $route == 'unit-kerja' || $route == 'permission' || $route == 'role') active open @endif">

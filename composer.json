@@ -9,6 +9,7 @@
         "codeigniter4/framework": "^4.0",
         "eftec/bladeone": "^4.9",
         "illuminate/database": "^10.19",
+        "phpoffice/phpspreadsheet": "^5.0",
         "seunmatt/codeigniter-log-viewer": "^2.0"
     },
     "require-dev": {

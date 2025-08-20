@@ -156,6 +156,7 @@ $routes->group('api/settlement', ['namespace' => 'App\Controllers\Api'], functio
 });
 
 $routes->get('get-csrf-token', 'CommonController::getCsrfToken');
+$routes->get('get-new-csrf-token', 'Rekon\RekonController::getCsrfToken');
 
 // ? Branch
 $routes->get('/unit-kerja', 'User\UnitKerjaController::index', ['as' => 'unit-kerja.index']);
@@ -278,6 +279,9 @@ $routes->get('/monitoring_transaksi/print', 'User\MonitoringTransaksiController:
 $routes->get('/api/currency-conversions', 'User\CurrencyConversionController::getAll');
 $routes->get('/api/jenis-transaksi', 'User\UnderlyingController::jenisTransaksi');
 
+
+$routes->get('/rekon-bifast/rekap', 'Rekon\RekonController::index', ['as' => 'rekon-bifast.rekap']);
+$routes->post('/rekon-bifast/upload', 'Rekon\RekonController::upload', ['as' => 'rekon-bifast.upload']);
 /*
  * --------------------------------------------------------------------
  * Additional Routing
