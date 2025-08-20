@@ -403,7 +403,7 @@ function initializeDataTable() {
                     if (data === '1') {
                         return '<span class="badge badge-success">Disetujui</span>';
                     } else if (data === '0') {
-                        return '<span class="badge badge-danger">Ditolak</span>';
+                        return '<span class="badge badge-secondary">-</span>';
                     } else {
                         return '<span class="badge text-white" style="background-color: #f9911b;">Pending</span>';
                     }
