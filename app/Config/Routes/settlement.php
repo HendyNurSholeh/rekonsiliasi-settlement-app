@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * Settlement Routes
+ * 
+ * File ini berisi routes untuk:
+ * - Buat Jurnal Settlement
+ * - Approve Jurnal Settlement
+ * - Jurnal CA to Escrow (Transfer dana dari CA ke Escrow)
+ * - Jurnal Escrow to Biller PL (Transfer dana dari Escrow ke Biller)
+ * - Mock API untuk simulasi transfer dana
+ */
+
+// ============================================================================
+// SETTLEMENT ROUTES GROUP
+// ============================================================================
+// Namespace: App\Controllers\Settlement
+
+$routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], function($routes) {
+    
+    // ========================================================================
+    // BUAT JURNAL SETTLEMENT
+    // ========================================================================
+    // Routes untuk membuat jurnal settlement baru
+    
+    $routes->get('buat-jurnal', 'BuatJurnalController::index', ['as' => 'settlement.buat-jurnal']);
+    $routes->get('buat-jurnal/datatable', 'BuatJurnalController::datatable', ['as' => 'settlement.buat-jurnal.datatable']);
+    $routes->post('buat-jurnal/datatable', 'BuatJurnalController::datatable', ['as' => 'settlement.buat-jurnal.datatable.post']);
+    $routes->post('buat-jurnal/validate', 'BuatJurnalController::validateSettlement', ['as' => 'settlement.buat-jurnal.validate']);
+    $routes->post('buat-jurnal/create', 'BuatJurnalController::createJurnal', ['as' => 'settlement.buat-jurnal.create']);
+    
+    // ========================================================================
+    // APPROVE JURNAL SETTLEMENT
+    // ========================================================================
+    // Routes untuk approval jurnal settlement
+    
+    $routes->get('approve-jurnal', 'ApproveJurnalController::index', ['as' => 'settlement.approve-jurnal']);
+    $routes->get('approve-jurnal/datatable', 'ApproveJurnalController::datatable', ['as' => 'settlement.approve-jurnal.datatable']);
+    $routes->post('approve-jurnal/datatable', 'ApproveJurnalController::datatable', ['as' => 'settlement.approve-jurnal.datatable.post']);
+    $routes->post('approve-jurnal/detail', 'ApproveJurnalController::getDetailJurnal', ['as' => 'settlement.approve-jurnal.detail']);
+    $routes->post('approve-jurnal/process', 'ApproveJurnalController::processApproval', ['as' => 'settlement.approve-jurnal.process']);
+    $routes->get('approve-jurnal/summary', 'ApproveJurnalController::getSummary', ['as' => 'settlement.approve-jurnal.summary']);
+    
+    // ========================================================================
+    // JURNAL CA TO ESCROW
+    // ========================================================================
+    // Routes untuk transfer dana dari Customer Account ke Escrow
+    
+    $routes->get('jurnal-ca-escrow', 'JurnalCaEscrowController::index', ['as' => 'settlement.jurnal-ca-escrow']);
+    $routes->get('jurnal-ca-escrow/datatable', 'JurnalCaEscrowController::datatable', ['as' => 'settlement.jurnal-ca-escrow.datatable']);
+    $routes->post('jurnal-ca-escrow/proses', 'JurnalCaEscrowController::proses', ['as' => 'settlement.jurnal-ca-escrow.proses']);
+    $routes->get('jurnal-ca-escrow/status', 'JurnalCaEscrowController::status', ['as' => 'settlement.jurnal-ca-escrow.status']);
+    
+    // ========================================================================
+    // JURNAL ESCROW TO BILLER PL
+    // ========================================================================
+    // Routes untuk transfer dana dari Escrow ke Biller (Pemerintah Lokal)
+    
+    $routes->get('jurnal-escrow-biller-pl', 'JurnalEscrowBillerPlController::index', ['as' => 'settlement.jurnal-escrow-biller-pl']);
+    $routes->get('jurnal-escrow-biller-pl/datatable', 'JurnalEscrowBillerPlController::datatable', ['as' => 'settlement.jurnal-escrow-biller-pl.datatable']);
+    $routes->post('jurnal-escrow-biller-pl/proses', 'JurnalEscrowBillerPlController::proses', ['as' => 'settlement.jurnal-escrow-biller-pl.proses']);
+});
+
+// ============================================================================
+// MOCK API TRANSFER DANA
+// ============================================================================
+// API simulasi untuk testing transfer dana ke core banking
+// PENTING: Ini HANYA untuk testing/development!
+
+$routes->group('api/settlement', ['namespace' => 'App\Controllers\Api'], function($routes) {
+    // SATU-SATUNYA endpoint simulasi - untuk transfer dana ke core banking
+    $routes->post('ca-escrow/process', 'SettlementController::process');
+});
