@@ -48,7 +48,10 @@ class JurnalCaEscrowController extends BaseController
         // DataTables parameters
         $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
         $start = $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0;
-        $length = $this->request->getGet('length') ?? $this->request->getPost('length') ?? 25;
+        $length = $this->request->getGet('length') ?? $this->request->getPost('length') ?? 15; // Ubah default ke 15
+        
+        // Debug log parameters
+        log_message('info', 'DataTable Parameters - Draw: ' . $draw . ', Start: ' . $start . ', Length: ' . $length);
         
         // Handle search parameter
         $searchArray = $this->request->getGet('search') ?? $this->request->getPost('search') ?? [];
@@ -135,10 +138,13 @@ class JurnalCaEscrowController extends BaseController
             $totalRecords = count($processedData);
             $filteredRecords = count($filteredData);
             
-            // Apply pagination
+            // Debug log untuk troubleshooting pagination
+            log_message('info', 'Pagination Debug - Total Parent Rows: ' . $totalRecords . ', Filtered: ' . $filteredRecords . ', Start: ' . $start . ', Length: ' . $length);
+            
+            // Apply pagination pada parent level saja
             $pagedData = array_slice($filteredData, $start, $length);
             
-            // Format data for DataTables with child rows
+            // Format data for DataTables - kirim parent dan child rows tapi recordsTotal tetap parent saja
             $formattedData = [];
             foreach ($pagedData as $parentRow) {
                 
@@ -166,7 +172,7 @@ class JurnalCaEscrowController extends BaseController
                 
                 $formattedData[] = $formattedParent;
                 
-                // Add child rows
+                // Add child rows untuk dikirim ke frontend (untuk disimpan di childDataMap)
                 foreach ($parentRow['child_rows'] as $childRow) {
                     $formattedChild = [
                         'r_KD_SETTLE' => '',
@@ -196,9 +202,22 @@ class JurnalCaEscrowController extends BaseController
             
             return $this->response->setJSON([
                 'draw' => intval($draw),
-                'recordsTotal' => intval($totalRecords),
-                'recordsFiltered' => intval($filteredRecords),
-                'data' => $formattedData,
+                'recordsTotal' => intval($totalRecords), // Total parent rows tanpa filter
+                'recordsFiltered' => intval($filteredRecords), // Parent rows setelah filter
+                'data' => $formattedData, // Parent + child data
+                'debug' => [
+                    'rawDataCount' => count($rawData),
+                    'processedParentCount' => $totalRecords,
+                    'filteredParentCount' => $filteredRecords,
+                    'pagedParentCount' => count($pagedData),
+                    'formattedDataCount' => count($formattedData),
+                    'pagination' => [
+                        'start' => $start,
+                        'length' => $length,
+                        'currentPage' => floor($start / $length) + 1,
+                        'totalPages' => ceil($filteredRecords / $length)
+                    ]
+                ],
                 'csrf_token' => csrf_hash()
             ]);
             

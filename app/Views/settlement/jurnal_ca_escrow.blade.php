@@ -121,13 +121,24 @@ $(document).ajaxError(function(event, xhr, settings) {
 });
 
 function refreshCSRFToken() {
+    console.log('Attempting to refresh CSRF token...');
+    console.log('Current CSRF before refresh:', currentCSRF);
+    
     return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+        console.log('CSRF refresh response:', response);
+        
         if (response.csrf_token) {
+            const oldToken = currentCSRF;
             currentCSRF = response.csrf_token;
-            console.log('New CSRF token:', currentCSRF);
+            console.log('CSRF token refreshed from:', oldToken, 'to:', currentCSRF);
+            
+            // Update all forms with new token
+            $('input[name="csrf_test_name"]').val(currentCSRF);
+        } else {
+            console.warn('No CSRF token in refresh response');
         }
     }).catch(function(error) {
-        console.error('Failed to refresh CSRF:', error);
+        console.error('Failed to refresh CSRF token:', error);
         setTimeout(function() {
             if (confirm('Session expired. Reload page?')) {
                 location.reload();
@@ -136,13 +147,31 @@ function refreshCSRFToken() {
     });
 }
 
+// Function untuk cleanup state processing yang tertinggal
+function cleanupProcessingState() {
+    // Remove semua class processing dan hidden
+    $('.btn-processing').removeClass('btn-processing');
+    $('.btn-hidden-temp').removeClass('btn-hidden-temp').show();
+    
+    // Enable semua button
+    $('.child-details-container button').prop('disabled', false);
+    
+    console.log('Processing state cleaned up');
+}
+
 // DataTable instance
 let jurnalCaEscrowTable;
+// State untuk menyimpan baris yang sedang di-expand
+let expandedRows = new Set();
 
 $(document).ready(function() {
     // Refresh CSRF token saat page load
     refreshCSRFToken().then(function() {
         console.log('CSRF token refreshed on page load');
+        
+        // Cleanup any leftover processing states
+        cleanupProcessingState();
+        
         initializeDataTable();
     });
     
@@ -206,9 +235,21 @@ function initializeDataTable() {
                     }
                 });
                 
-                // Update counts for pagination
-                json.recordsTotal = parentRows.length;
-                json.recordsFiltered = parentRows.length;
+                // Debug log untuk pagination
+                console.log('DataTable pagination debug:', {
+                    recordsTotal: json.recordsTotal,
+                    recordsFiltered: json.recordsFiltered,
+                    parentRowsCount: parentRows.length,
+                    totalDataReceived: json.data.length,
+                    debugInfo: json.debug || 'No debug info from server'
+                });
+                
+                // Pastikan recordsTotal dan recordsFiltered sesuai dengan parent rows yang ditampilkan
+                console.log('Pagination calculation check:', {
+                    shouldShowPagination: json.recordsFiltered > 15,
+                    totalPages: Math.ceil(json.recordsFiltered / 15),
+                    currentRecordsShown: parentRows.length
+                });
                 
                 return parentRows;
             }
@@ -305,7 +346,7 @@ function initializeDataTable() {
             }
         ],
         pageLength: 15,
-        lengthChange: false,
+        lengthChange: false, // Kembali ke setting asli
         order: [[1, 'asc']],
         language: {
             processing: "Memuat data...",
@@ -327,6 +368,26 @@ function initializeDataTable() {
         searching: false,
         dom: '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+        drawCallback: function(settings) {
+            // Log info setelah tabel di-render
+            var api = this.api();
+            var pageInfo = api.page.info();
+            console.log('DataTable Draw Callback:', {
+                recordsTotal: pageInfo.recordsTotal,
+                recordsDisplay: pageInfo.recordsDisplay,
+                page: pageInfo.page,
+                pages: pageInfo.pages,
+                start: pageInfo.start,
+                end: pageInfo.end,
+                length: pageInfo.length
+            });
+            
+            // Re-initialize tooltips setelah draw
+            initializeTooltips();
+            
+            // Restore expanded rows setelah reload
+            restoreExpandedRows();
+        },
         createdRow: function(row, data, dataIndex) {
             $(row).addClass('parent-row');
             $(row).attr('data-kd-settle', data.r_KD_SETTLE);
@@ -347,6 +408,10 @@ function initializeDataTable() {
                 tr.removeClass('shown');
                 expandBtn.removeClass('fa-minus-square').addClass('fa-plus-square');
                 expandBtn.attr('title', 'Klik untuk melihat detail transaksi');
+                
+                // Remove dari expandedRows
+                expandedRows.delete(kdSettle);
+                console.log('Row collapsed:', kdSettle, 'Current expanded rows:', Array.from(expandedRows));
             });
         } else {
             // Close any other open rows first
@@ -358,6 +423,12 @@ function initializeDataTable() {
                         .removeClass('fa-minus-square')
                         .addClass('fa-plus-square')
                         .attr('title', 'Klik untuk melihat detail transaksi');
+                    
+                    // Remove dari expandedRows
+                    const nodeKdSettle = $(this.node()).attr('data-kd-settle');
+                    if (nodeKdSettle) {
+                        expandedRows.delete(nodeKdSettle);
+                    }
                 }
             });
             
@@ -368,7 +439,9 @@ function initializeDataTable() {
             expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
             expandBtn.attr('title', 'Klik untuk menyembunyikan detail');
             
-            // Animate the appearance
+                // Add ke expandedRows
+                expandedRows.add(kdSettle);
+                console.log('Row expanded:', kdSettle, 'Current expanded rows:', Array.from(expandedRows));            // Animate the appearance
             $('.child-details-container').hide().fadeIn(300);
             
             // Initialize tooltips for the new content
@@ -378,6 +451,26 @@ function initializeDataTable() {
     
     // Initialize tooltips on page load
     initializeTooltips();
+    
+    // Prevent double click on all process buttons globally
+    $(document).on('click', '.child-details-container button', function(e) {
+        const $btn = $(this);
+        if ($btn.prop('disabled') || $btn.hasClass('btn-processing') || $btn.hasClass('btn-hidden-temp')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Prevented click on disabled/processing/hidden button');
+            return false;
+        }
+        
+        // Cek apakah ada proses lain yang sedang berjalan
+        if ($('.btn-processing').length > 0 && !$btn.hasClass('btn-processing')) {
+            e.preventDefault();
+            e.stopPropagation();
+            showAlert('warning', 'Ada transaksi lain yang sedang diproses. Silakan tunggu hingga selesai.');
+            console.log('Prevented click - another process is running');
+            return false;
+        }
+    });
     
     // Keyboard shortcuts
     $(document).keydown(function(e) {
@@ -403,6 +496,35 @@ function initializeTooltips() {
             delay: { show: 500, hide: 100 }
         });
     }
+}
+
+// Function untuk restore expanded rows setelah reload
+function restoreExpandedRows() {
+    // Tunggu sebentar untuk memastikan DOM sudah ready
+    setTimeout(function() {
+        expandedRows.forEach(function(kdSettle) {
+            // Cari row dengan kd_settle yang sesuai
+            const $row = $('tr[data-kd-settle="' + kdSettle + '"]');
+            if ($row.length > 0) {
+                const row = jurnalCaEscrowTable.row($row);
+                const expandBtn = $row.find('.expand-btn');
+                
+                // Expand row jika belum expanded
+                if (!row.child.isShown() && expandBtn.length > 0) {
+                    const childData = window.childDataMap[kdSettle] || [];
+                    row.child(formatChildRows(childData, kdSettle)).show();
+                    $row.addClass('shown');
+                    expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
+                    expandBtn.attr('title', 'Klik untuk menyembunyikan detail');
+                    
+                    console.log('Restored expanded state for:', kdSettle);
+                }
+            }
+        });
+        
+        // Initialize tooltips untuk expanded content
+        initializeTooltips();
+    }, 200);
 }
 
 // Function to format child rows
@@ -517,13 +639,13 @@ function formatChildRows(childData, kdSettle) {
             actionButton = '<span class="badge badge-success small">Selesai</span>';
         } else if (child.d_CODE_RES && !child.d_CODE_RES.startsWith('00')) {
             actionButton = "<button class='btn btn-xs btn-outline-warning' " +
-                          "onclick='prosesJurnalChild(" + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
+                          "onclick='handleProsesClick(this, " + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
                           "id='btn-child-" + index + "' title='Proses ulang transaksi'>" +
                           "<i class='fal fa-redo me-1'></i>Ulang" +
                           "</button>";
         } else {
             actionButton = "<button class='btn btn-xs btn-outline-primary' " +
-                          "onclick='prosesJurnalChild(" + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
+                          "onclick='handleProsesClick(this, " + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
                           "id='btn-child-" + index + "' title='Proses transaksi'>" +
                           "<i class='fal fa-play me-1'></i>Proses" +
                           "</button>";
@@ -568,11 +690,21 @@ function toggleAllRows(expand = true) {
             this.child(formatChildRows(childData, kdSettle)).show();
             tr.addClass('shown');
             expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
+            
+            // Add ke expandedRows
+            if (kdSettle) {
+                expandedRows.add(kdSettle);
+            }
         } else if (!expand && this.child.isShown()) {
             // Collapse row
             this.child.hide();
             tr.removeClass('shown');
             expandBtn.removeClass('fa-minus-square').addClass('fa-plus-square');
+            
+            // Remove dari expandedRows
+            if (kdSettle) {
+                expandedRows.delete(kdSettle);
+            }
         }
     });
     
@@ -610,6 +742,12 @@ function searchInDetails(searchTerm) {
             this.child(formatChildRows(childData, kdSettle)).show();
             tr.addClass('shown');
             expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
+            
+            // Add ke expandedRows
+            if (kdSettle) {
+                expandedRows.add(kdSettle);
+            }
+            
             found = true;
         }
     });
@@ -626,27 +764,120 @@ function searchInDetails(searchTerm) {
 function refreshTableData() {
     if (jurnalCaEscrowTable) {
         showAlert('info', 'Memuat ulang data...');
+        console.log('Manual refresh with preserved expand state for:', Array.from(expandedRows));
         jurnalCaEscrowTable.ajax.reload(function() {
             showAlert('success', 'Data berhasil dimuat ulang!');
             // Re-initialize tooltips after reload
             setTimeout(() => initializeTooltips(), 500);
-        }, false);
+        }, false); // false = stay on current page, expanded rows akan di-restore otomatis oleh drawCallback
     }
 }
 
 // Action Functions dengan Security Best Practices
-function prosesJurnalChild(childData, kdSettle) {
-    console.log('Proses Jurnal Child:', childData, 'KD Settle:', kdSettle);
+
+// Function untuk handle click button dengan prevent double click
+function handleProsesClick(buttonElement, childData, kdSettle) {
+    const $btn = $(buttonElement);
+    
+    // Cek apakah button sudah disabled (prevent double click)
+    if ($btn.prop('disabled')) {
+        console.log('Button already disabled, preventing double click');
+        return false;
+    }
+    
+    // Cek apakah ada proses lain yang sedang berjalan
+    if ($('.btn-processing').length > 0) {
+        console.log('Another process is running, preventing new process');
+        showAlert('warning', 'Ada transaksi lain yang sedang diproses. Silakan tunggu hingga selesai.');
+        return false;
+    }
+    
+    // Disable dan hide SEMUA button proses di seluruh halaman
+    hideAllProcessButtons();
+    
+    // Disable button dan ubah tampilan untuk button yang diklik
+    $btn.prop('disabled', true);
+    const originalHtml = $btn.html();
+    $btn.html('<i class="fal fa-spinner fa-spin me-1"></i>Memproses...');
+    $btn.addClass('btn-processing');
+    $btn.show(); // Pastikan button yang sedang diproses tetap terlihat
+    
+    // Simpan original state untuk restore nanti
+    $btn.data('original-html', originalHtml);
+    
+    console.log('All process buttons hidden, current button processing...');
+    
+    // Reset button state jika ada error atau selesai
+    const resetButton = function() {
+        setTimeout(function() {
+            $btn.prop('disabled', false);
+            $btn.html(originalHtml);
+            $btn.removeClass('btn-processing');
+            
+            // Show kembali semua button proses
+            showAllProcessButtons();
+            
+            console.log('All buttons restored, ready for next process');
+        }, 1000); // Delay 1 detik sebelum enable kembali
+    };
+    
+    // Call prosesJurnalChild dengan callback untuk reset button
+    prosesJurnalChild(childData, kdSettle, 0, resetButton);
+    
+    return false; // Prevent default action
+}
+
+// Function untuk hide semua button proses
+function hideAllProcessButtons() {
+    $('.child-details-container button').each(function() {
+        const $btn = $(this);
+        if (!$btn.hasClass('btn-processing')) {
+            $btn.hide();
+            $btn.addClass('btn-hidden-temp');
+        }
+    });
+    console.log('All process buttons hidden');
+}
+
+// Function untuk show kembali semua button proses
+function showAllProcessButtons() {
+    $('.child-details-container button.btn-hidden-temp').each(function() {
+        const $btn = $(this);
+        $btn.show();
+        $btn.removeClass('btn-hidden-temp');
+    });
+    console.log('All process buttons restored');
+}
+
+function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallback = null) {
+    console.log('Proses Jurnal Child:', childData, 'KD Settle:', kdSettle, 'Retry:', retryCount);
+    
+    // Maksimal 3 percobaan
+    if (retryCount > 2) {
+        console.log('Max retry attempts exceeded');
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: 'Maksimal percobaan telah tercapai. Silakan refresh halaman dan coba lagi.'
+        });
+        return;
+    }
     
     // Validasi data
     if (!childData.d_NO_REF || !kdSettle) {
         showAlert('error', 'Data tidak valid untuk diproses! Pastikan memilih detail transaksi.');
+        if (resetButtonCallback) {
+            resetButtonCallback();
+        }
         return;
     }
     
     // Cek apakah sudah diproses sukses
     if (childData.d_CODE_RES && childData.d_CODE_RES.startsWith('00')) {
         showAlert('warning', 'Jurnal sudah berhasil diproses sebelumnya!');
+        if (resetButtonCallback) {
+            resetButtonCallback();
+        }
         return;
     }
     
@@ -657,6 +888,10 @@ function prosesJurnalChild(childData, kdSettle) {
         : `Apakah Anda yakin ingin memproses jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nDebit Name: ${childData.d_DEBIT_NAME || '-'}\nCredit: ${childData.d_CREDIT_ACCOUNT}\nCredit Name: ${childData.d_CREDIT_NAME || '-'}\nCore Ref: ${childData.d_CORE_REF || '-'}\nCore DateTime: ${childData.d_CORE_DATETIME || '-'}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
     
     if (!confirm(confirmMessage)) {
+        // User membatalkan, restore semua button
+        if (resetButtonCallback) {
+            resetButtonCallback();
+        }
         return;
     }
     
@@ -669,6 +904,11 @@ function prosesJurnalChild(childData, kdSettle) {
     
     // Prevent browser close/refresh
     setBeforeUnloadWarning(true);
+    
+    // Store variables for error handler
+    const currentChildData = childData;
+    const currentKdSettle = kdSettle;
+    const currentRetryCount = retryCount;
     
     // AJAX call untuk proses jurnal
     $.ajax({
@@ -688,25 +928,59 @@ function prosesJurnalChild(childData, kdSettle) {
             core_datetime: childData.d_CORE_DATETIME,
             is_reprocess: isReprocess ? 1 : 0
         },
+        beforeSend: function(xhr, settings) {
+            console.log('Sending AJAX request with CSRF token:', currentCSRF);
+            console.log('Request data:', settings.data);
+        },
         success: function(response) {
+            console.log('AJAX success response received:', response);
+            
             hideProgressModal();
             setBeforeUnloadWarning(false);
+            
+            // Update CSRF token dari response jika ada
+            if (response.csrf_token) {
+                console.log('Updating CSRF token from:', currentCSRF, 'to:', response.csrf_token);
+                currentCSRF = response.csrf_token;
+                console.log('CSRF token updated after process:', currentCSRF);
+            }
             
             if (response.success) {
                 showAlert('success', 'Jurnal berhasil diproses!\nCore Ref: ' + (response.core_ref || '-'));
                 
-                // Reload table untuk update status
+                // Reset button state
+                if (resetButtonCallback) {
+                    resetButtonCallback();
+                }
+                
+                // Reload table untuk update status dengan mempertahankan expand state
                 setTimeout(function() {
-                    jurnalCaEscrowTable.ajax.reload(null, false);
+                    console.log('Reloading table with preserved expand state for:', Array.from(expandedRows));
+                    jurnalCaEscrowTable.ajax.reload(null, false); // false = stay on current page
                 }, 1500);
             } else {
                 showAlert('error', 'Gagal memproses jurnal: ' + (response.message || 'Unknown error'));
+                
+                // Reset button state on error
+                if (resetButtonCallback) {
+                    resetButtonCallback();
+                }
             }
             
             enableAllActions();
             $('.child-details-container button').prop('disabled', false);
         },
         error: function(xhr, status, error) {
+            console.log('AJAX error details:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText,
+                readyState: xhr.readyState,
+                currentCSRF: currentCSRF,
+                ajaxStatus: status,
+                error: error
+            });
+            
             hideProgressModal();
             setBeforeUnloadWarning(false);
             enableAllActions();
@@ -717,18 +991,55 @@ function prosesJurnalChild(childData, kdSettle) {
             if (status === 'timeout') {
                 errorMessage = 'Timeout! Transaksi mungkin masih berjalan. Silakan cek status transaksi.';
             } else if (xhr.status === 403 || xhr.status === 419) {
-                errorMessage = 'Session expired. Silakan refresh halaman dan coba lagi.';
+                console.log('CSRF Token expired during process, refreshing... Retry count:', currentRetryCount);
+                
+                if (currentRetryCount < 2) {
+                    // Refresh CSRF token dan retry (tanpa reset button karena akan retry)
+                    refreshCSRFToken().then(function() {
+                        console.log('CSRF token refreshed, retrying process... Attempt:', currentRetryCount + 1);
+                        setTimeout(function() {
+                            prosesJurnalChild(currentChildData, currentKdSettle, currentRetryCount + 1, resetButtonCallback);
+                        }, 500);
+                    }).catch(function(refreshError) {
+                        showAlert('error', 'Gagal memperbaharui token. Silakan refresh halaman.');
+                        console.error('Failed to refresh CSRF after 403:', refreshError);
+                        
+                        // Reset button on CSRF refresh error
+                        if (resetButtonCallback) {
+                            resetButtonCallback();
+                        }
+                    });
+                    return; // Exit without showing error message
+                } else {
+                    errorMessage = 'Session expired. Maksimal percobaan tercapai. Silakan refresh halaman.';
+                    // Reset button after max retry
+                    if (resetButtonCallback) {
+                        resetButtonCallback();
+                    }
+                }
             } else if (xhr.responseJSON && xhr.responseJSON.message) {
                 errorMessage = xhr.responseJSON.message;
+                
+                // Update CSRF token jika ada di response error
+                if (xhr.responseJSON.csrf_token) {
+                    currentCSRF = xhr.responseJSON.csrf_token;
+                    console.log('CSRF token updated from error response:', currentCSRF);
+                }
             }
             
             showAlert('error', errorMessage);
+            
+            // Reset button state on any error
+            if (resetButtonCallback) {
+                resetButtonCallback();
+            }
             
             console.error('Proses Jurnal Error:', {
                 status: xhr.status,
                 statusText: xhr.statusText,
                 response: xhr.responseText,
-                error: error
+                error: error,
+                currentCSRF: currentCSRF
             });
         }
     });
@@ -745,8 +1056,9 @@ function prosesJurnal(rowData, rowIndex) {
 }
 
 function disableAllActions() {
-    // Disable semua tombol proses di halaman
-    $('button[id^="btn-proses-"]').prop('disabled', true);
+    // Disable semua tombol proses di halaman (yang tidak sedang processing)
+    $('button[id^="btn-proses-"]:not(.btn-processing)').prop('disabled', true);
+    $('.child-details-container button:not(.btn-processing)').prop('disabled', true);
     
     // Disable form filter
     $('#tanggal').prop('disabled', true);
@@ -758,8 +1070,9 @@ function disableAllActions() {
 }
 
 function enableAllActions() {
-    // Enable kembali semua tombol dan form
-    $('button[id^="btn-proses-"]').prop('disabled', false);
+    // Enable kembali semua tombol dan form, kecuali yang sedang processing
+    $('button[id^="btn-proses-"]:not(.btn-processing)').prop('disabled', false);
+    $('.child-details-container button:not(.btn-processing):not(.btn-hidden-temp)').prop('disabled', false);
     $('#tanggal').prop('disabled', false);
     $('button[type="submit"]').prop('disabled', false);
     $('.dataTables_length select').prop('disabled', false);
@@ -808,7 +1121,10 @@ function showProgressModal(childData, kdSettle) {
                             <i class="fal fa-exclamation-triangle"></i>
                             <strong>PENTING:</strong><br>
                             Jangan tutup atau refresh browser!<br>
-                            Transaksi sedang berlangsung...
+                            Transaksi sedang berlangsung...<br>
+                            <small class="text-muted">
+                                <i class="fal fa-lock"></i> Tombol proses lainnya disembunyikan untuk mencegah konflik
+                            </small>
                         </div>
                         <div class="progress">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" 
@@ -1060,9 +1376,40 @@ tr.shown td {
     transition: all 0.15s ease;
 }
 
-.btn-xs:hover {
+.btn-xs:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* Button processing state */
+.btn-processing {
+    background-color: #f8f9fa !important;
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+.btn-processing:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Disabled button state */
+.btn-xs:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Hidden button state - completely invisible */
+.btn-hidden-temp {
+    display: none !important;
+}
+
+/* Processing indicator styling */
+.btn-processing .fa-spinner {
+    animation: spin 1s linear infinite;
 }
 
 /* Code styling dengan background subtle */
@@ -1119,11 +1466,6 @@ code {
 
 /* DataTable custom styling */
 .dataTables_wrapper .dataTables_info {
-    font-size: 0.875rem;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-    padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
 }
 
