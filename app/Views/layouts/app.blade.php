@@ -189,18 +189,18 @@
                                     </li>
 
                                     <!-- 3. Jurnal CA to Escrow -->
-                                    <li class="@if ($route == 'settlement/jurnal-ca-escrow') active @endif">
+                                    <!-- <li class="@if ($route == 'settlement/jurnal-ca-escrow') active @endif">
                                         <a href="{{ site_url('settlement/jurnal-ca-escrow') }}">
                                             <span class="nav-link-text text-left">Jurnal CA to Escrow</span>
                                         </a>
-                                    </li>
+                                    </li> -->
 
                                     <!-- 4. Jurnal Escrow to Biller PL -->
-                                    <li class="@if ($route == 'settlement/jurnal-escrow-biller-pl') active @endif">
+                                    <!-- <li class="@if ($route == 'settlement/jurnal-escrow-biller-pl') active @endif">
                                         <a href="{{ site_url('settlement/jurnal-escrow-biller-pl') }}">
                                             <span class="nav-link-text text-left">Jurnal Escrow to Biller PL</span>
                                         </a>
-                                    </li>
+                                    </li> -->
                                 </ul>
                             </li>
 

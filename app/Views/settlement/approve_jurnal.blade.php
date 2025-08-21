@@ -355,6 +355,7 @@ function initializeDataTable() {
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
                 d.status_approve = $('#filter_status_approve').val();
                 console.log('DataTable request data:', d);
+                console.log('Pagination - Start:', d.start, 'Length:', d.length, 'Draw:', d.draw);
                 return d;
             },
             error: function(xhr, error, thrown) {
@@ -366,6 +367,16 @@ function initializeDataTable() {
                         approveJurnalTable.ajax.reload();
                     });
                 }
+            },
+            dataSrc: function(json) {
+                console.log('DataTable response:', json);
+                console.log('Records Total:', json.recordsTotal, 'Records Filtered:', json.recordsFiltered);
+                console.log('Data length:', json.data ? json.data.length : 0);
+                if (json.data && json.data.length > 0) {
+                    console.log('First record ID:', json.data[0].id);
+                    console.log('Last record ID:', json.data[json.data.length - 1].id);
+                }
+                return json.data;
             }
         },
         columns: [
@@ -435,6 +446,9 @@ function initializeDataTable() {
         pageLength: 10,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         order: [[1, 'desc']], // TGL_DATA column (index 1)
+        orderMulti: false, // Disable multi-column sorting
+        stateSave: false, // Disable state saving to avoid pagination issues
+        deferRender: true, // Improve performance for large datasets
         language: {
             processing: "Memuat data...",
             search: "Cari:",

@@ -74,7 +74,6 @@ class ApproveJurnalController extends BaseController
         try {
             $db = \Config\Database::connect();
             
-            // Base query for t_settle_produk
             $baseQuery = "
                 SELECT id, KD_SETTLE, NAMA_PRODUK, TGL_DATA, TOT_JURNAL_KR_ECR, 
                        STAT_APPROVER, USER_APPROVER, TGL_APPROVER
@@ -107,9 +106,8 @@ class ApproveJurnalController extends BaseController
                 $queryParams = array_merge($queryParams, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
             }
             
-            // Count total records
             $totalQuery = "
-                SELECT COUNT(*) as total 
+                SELECT COUNT(id) as total 
                 FROM t_settle_produk 
                 WHERE DATE(TGL_DATA) = ?
             ";
@@ -129,7 +127,7 @@ class ApproveJurnalController extends BaseController
             // Count filtered records
             $filteredRecords = $totalRecords;
             if (!empty($searchValue)) {
-                $filteredQuery = $totalQuery . " AND (
+                $filteredQuery = str_replace('COUNT(id)', 'COUNT(id)', $totalQuery) . " AND (
                     KD_SETTLE LIKE ? OR 
                     NAMA_PRODUK LIKE ? OR 
                     CAST(TOT_JURNAL_KR_ECR AS CHAR) LIKE ? OR
@@ -141,11 +139,13 @@ class ApproveJurnalController extends BaseController
                 $filteredRecords = $filteredResult->getRow()->total;
             }
             
-            // Add ordering
+            // Add ordering with consistent sorting
             if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 7) {
                 $orderColumnName = $columns[$orderColumn];
-                $baseQuery .= " ORDER BY {$orderColumnName} {$orderDir}";
+                // Always add id as secondary sort for consistent pagination
+                $baseQuery .= " ORDER BY {$orderColumnName} {$orderDir}, id DESC";
             } else {
+                // Default ordering with id to ensure consistent pagination
                 $baseQuery .= " ORDER BY TGL_DATA DESC, id DESC";
             }
             
@@ -155,10 +155,21 @@ class ApproveJurnalController extends BaseController
             // Log the final query
             log_message('info', 'Final approve jurnal query: ' . $baseQuery);
             log_message('info', 'Query parameters: ' . json_encode($queryParams));
+            log_message('info', 'Pagination - Start: ' . $start . ', Length: ' . $length);
+            log_message('info', 'Total Records: ' . $totalRecords . ', Filtered Records: ' . $filteredRecords);
             
             // Execute query
             $result = $db->query($baseQuery, $queryParams);
             $data = $result->getResultArray();
+
+            log_message('info', 'Data fetched count: ' . count($data));
+            // Only log first few records to avoid spam
+            if (count($data) > 0) {
+                log_message('info', 'First record: ' . json_encode($data[0]));
+                if (count($data) > 1) {
+                    log_message('info', 'Last record: ' . json_encode($data[count($data) - 1]));
+                }
+            }
             
             // Format data for DataTables
             $formattedData = [];
