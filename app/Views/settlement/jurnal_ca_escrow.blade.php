@@ -45,36 +45,40 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fal fa-table"></i> Data Jurnal CA to Escrow
-                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fal fa-table"></i> Data Jurnal CA to Escrow
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleAllRows(true)" title="Expand semua detail">
+                            <i class="fal fa-expand-arrows-alt"></i> Expand All
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleAllRows(false)" title="Collapse semua detail">
+                            <i class="fal fa-compress-arrows-alt"></i> Collapse All
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="refreshTableData()" title="Refresh data tabel">
+                            <i class="fal fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-striped table-hover table-sm" id="jurnalCaEscrowTable">
                         <thead class="thead-light">
                             <tr>
-                                <th>No</th>
-                                <th>Kode Settle</th>
-                                <th>Nama Produk</th>
-                                <th>Amount Escrow</th>
-                                <th>Total Jurnal</th>
-                                <th>Jurnal Pending</th>
-                                <th>Jurnal Sukses</th>
-                                <th>No. Ref</th>
-                                <th>Debit Account</th>
-                                <th>Debit Name</th>
-                                <th>Credit Account</th>
-                                <th>Credit Name</th>
-                                <th>Amount</th>
-                                <th>Response Code</th>
-                                <th>Core Ref</th>
-                                <th>Core DateTime</th>
-                                <th>Actions</th>
+                                <th width="5%">No</th>
+                                <th width="20%">Kode Settle</th>
+                                <th width="25%">Nama Produk</th>
+                                <th width="15%">Amount Escrow</th>
+                                <th width="10%">Total</th>
+                                <th width="10%">Pending</th>
+                                <th width="10%">Sukses</th>
+                                <th width="5%">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Data akan dimuat via AJAX -->
+                            <!-- Data akan dimuat via AJAX dengan struktur parent-child -->
                         </tbody>
                     </table>
                 </div>
@@ -184,163 +188,125 @@ function initializeDataTable() {
                         jurnalCaEscrowTable.ajax.reload();
                     });
                 }
+            },
+            dataSrc: function(json) {
+                // Store child data globally for use in row details
+                window.childDataMap = {};
+                
+                // Filter hanya parent rows untuk display utama
+                const parentRows = json.data.filter(row => row.is_parent);
+                
+                // Group child rows by parent
+                json.data.forEach(row => {
+                    if (!row.is_parent && row.parent_kd_settle) {
+                        if (!window.childDataMap[row.parent_kd_settle]) {
+                            window.childDataMap[row.parent_kd_settle] = [];
+                        }
+                        window.childDataMap[row.parent_kd_settle].push(row);
+                    }
+                });
+                
+                // Update counts for pagination
+                json.recordsTotal = parentRows.length;
+                json.recordsFiltered = parentRows.length;
+                
+                return parentRows;
             }
         },
         columns: [
             { 
-                data: null,
-                name: 'no',
+                className: 'details-control text-center',
                 orderable: false,
                 searchable: false,
-                responsivePriority: 1, // Always visible
+                data: null,
+                width: '5%',
                 render: function(data, type, row, meta) {
-                    return meta.row + meta.settings._iDisplayStart + 1;
+                    if (row.has_children) {
+                        return '<i class="fal fa-plus-square expand-btn text-primary" ' +
+                               'style="cursor: pointer; font-size: 1.1em;" ' +
+                               'title="Klik untuk melihat detail transaksi"></i>';
+                    }
+                    return '<span class="text-muted">' + (meta.row + 1) + '</span>';
                 }
             },
             { 
                 data: 'r_KD_SETTLE', 
                 name: 'r_KD_SETTLE',
-                responsivePriority: 2, // High priority - visible on most screens
+                width: '20%',
                 render: function(data, type, row) {
-                    return '<code>' + (data || '') + '</code>';
+                    return '<strong><code>' + (data || '') + '</code></strong>';
                 }
             },
             { 
                 data: 'r_NAMA_PRODUK', 
                 name: 'r_NAMA_PRODUK',
-                responsivePriority: 3 // Medium priority
+                width: '25%',
+                render: function(data, type, row) {
+                    return '<strong>' + (data || '') + '</strong>';
+                }
             },
             { 
                 data: 'r_AMOUNT_ESCROW', 
                 name: 'r_AMOUNT_ESCROW',
-                responsivePriority: 4, // Medium priority
+                width: '15%',
+                className: 'text-end',
                 render: function(data, type, row) {
-                    return formatCurrency(data);
+                    return '<strong class="text-primary">' + formatCurrency(data) + '</strong>';
                 }
             },
             { 
                 data: 'r_TOTAL_JURNAL', 
                 name: 'r_TOTAL_JURNAL',
-                responsivePriority: 5, // Hidden in responsive - goes to details
-                className: 'text-center'
+                className: 'text-center',
+                width: '10%',
+                render: function(data, type, row) {
+                    return '<span class="badge badge-info">' + (data || '0') + '</span>';
+                }
             },
             { 
                 data: 'r_JURNAL_PENDING', 
                 name: 'r_JURNAL_PENDING',
-                responsivePriority: 6, // Medium priority
                 className: 'text-center',
+                width: '10%',
                 render: function(data, type, row) {
-                    if (parseInt(data) > 0) {
-                        return '<span class="badge badge-warning">' + data + '</span>';
+                    const count = parseInt(data || 0);
+                    if (count > 0) {
+                        return '<span class="badge badge-warning">' + count + '</span>';
                     }
-                    return data;
+                    return '<span class="badge badge-light">0</span>';
                 }
             },
             { 
                 data: 'r_JURNAL_SUKSES', 
                 name: 'r_JURNAL_SUKSES',
-                responsivePriority: 7, // Medium priority
                 className: 'text-center',
+                width: '10%',
                 render: function(data, type, row) {
-                    if (parseInt(data) > 0) {
-                        return '<span class="badge badge-success">' + data + '</span>';
+                    const count = parseInt(data || 0);
+                    if (count > 0) {
+                        return '<span class="badge badge-success">' + count + '</span>';
                     }
-                    return data;
-                }
-            },
-            { 
-                data: 'd_NO_REF', 
-                name: 'd_NO_REF',
-                responsivePriority: 10001 // Hidden in responsive - goes to details
-            },
-            { 
-                data: 'd_DEBIT_ACCOUNT', 
-                name: 'd_DEBIT_ACCOUNT',
-                responsivePriority: 10002 // Hidden in responsive - goes to details
-            },
-            { 
-                data: 'd_DEBIT_NAME', 
-                name: 'd_DEBIT_NAME',
-                responsivePriority: 10003 // Hidden in responsive - goes to details
-            },
-            { 
-                data: 'd_CREDIT_ACCOUNT', 
-                name: 'd_CREDIT_ACCOUNT',
-                responsivePriority: 10004 // Hidden in responsive - goes to details
-            },
-            { 
-                data: 'd_CREDIT_NAME', 
-                name: 'd_CREDIT_NAME',
-                responsivePriority: 10005 // Hidden in responsive - goes to details
-            },
-            { 
-                data: 'd_AMOUNT', 
-                name: 'd_AMOUNT',
-                responsivePriority: 10006, // Medium-low priority
-                render: function(data, type, row) {
-                    return formatCurrency(data);
-                }
-            },
-            { 
-                data: 'd_CODE_RES', 
-                name: 'd_CODE_RES',
-                responsivePriority: 10007, // Lower priority
-                render: function(data, type, row) {
-                    if (data && data.startsWith('00')) {
-                        return '<span class="badge badge-success">' + data + '</span>';
-                    } else if (data) {
-                        return '<span class="badge badge-danger">' + data + '</span>';
-                    }
-                    return '<span class="badge badge-secondary">Belum Diproses</span>';
-                }
-            },
-            { 
-                data: 'd_CORE_REF', 
-                name: 'd_CORE_REF',
-                responsivePriority: 10008, // Hidden in responsive - goes to details
-                render: function(data, type, row) {
-                    return data || '<span class="badge badge-secondary">Belum Diproses</span>';
-                }
-            },
-            { 
-                data: 'd_CORE_DATETIME', 
-                name: 'd_CORE_DATETIME',
-                responsivePriority: 10009, // Hidden in responsive - goes to details
-                render: function(data, type, row) {
-                    if (data) {
-                        return new Date(data).toLocaleString('id-ID');
-                    }
-                    return '<span class="badge badge-secondary">Belum Diproses</span>';
+                    return '<span class="badge badge-light">0</span>';
                 }
             },
             { 
                 data: null,
-                name: 'actions',
+                name: 'summary',
                 orderable: false,
                 searchable: false,
-                responsivePriority: 10010, // Always visible
-                render: function(data, type, full, meta) {
-                    // Cek status untuk menentukan tombol yang ditampilkan
-                    if (full.d_CODE_RES && full.d_CODE_RES.startsWith('00')) {
-                        return "<div class='text-center'><span class='badge badge-success'><i class='fal fa-check'></i> Sudah Diproses</span></div>";
-                    } else if (full.d_CODE_RES && !full.d_CODE_RES.startsWith('00')) {
-                        return "<div class='text-center'>" +
-                               "<button class='btn btn-sm btn-outline-warning' onclick='prosesJurnal(" + JSON.stringify(full) + ", " + meta.row + ")' id='btn-proses-" + meta.row + "'>" +
-                               "<i class='fal fa-redo'></i> Proses Ulang" +
-                               "</button></div>";
-                    } else {
-                        return "<div class='text-center'>" +
-                               "<button class='btn btn-sm btn-outline-primary' onclick='prosesJurnal(" + JSON.stringify(full) + ", " + meta.row + ")' id='btn-proses-" + meta.row + "'>" +
-                               "<i class='fal fa-play'></i> Proses Jurnal" +
-                               "</button></div>";
-                    }p
+                className: 'text-center',
+                width: '5%',
+                render: function(data, type, row) {
+                    if (row.child_count > 0) {
+                        return '<small class="text-muted">' + row.child_count + ' detail</small>';
+                    }
+                    return '<small class="text-muted">-</small>';
                 }
             }
-            
         ],
-        pageLength: 10,
-        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-        order: [[1, 'asc']], // KD_SETTLE column (index 1)
+        pageLength: 15,
+        lengthMenu: [[10, 15, 25, 50], [10, 15, 25, 50]],
+        order: [[1, 'asc']],
         language: {
             processing: "Memuat data...",
             search: "Cari:",
@@ -357,14 +323,209 @@ function initializeDataTable() {
             emptyTable: "Tidak ada data yang tersedia",
             zeroRecords: "Tidak ditemukan data yang sesuai"
         },
-        responsive: true,
-        searching: false,
-        dom: '<"row"<"col-sm-12">>' +
+        responsive: false,
+        searching: true,
+        dom: '<"row"<"col-sm-4"l><"col-sm-4 text-center"><"col-sm-4"f>>' +
              '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+        createdRow: function(row, data, dataIndex) {
+            $(row).addClass('parent-row');
+            $(row).attr('data-kd-settle', data.r_KD_SETTLE);
+        }
+    });
+    
+    // Add event listener for opening and closing details
+    $('#jurnalCaEscrowTable tbody').on('click', 'td.details-control', function () {
+        const tr = $(this).closest('tr');
+        const row = jurnalCaEscrowTable.row(tr);
+        const kdSettle = tr.attr('data-kd-settle');
+        const expandBtn = $(this).find('.expand-btn');
+        
+        if (row.child.isShown()) {
+            // This row is already open - close it with animation
+            $('.child-details-container').fadeOut(200, function() {
+                row.child.hide();
+                tr.removeClass('shown');
+                expandBtn.removeClass('fa-minus-square').addClass('fa-plus-square');
+                expandBtn.attr('title', 'Klik untuk melihat detail transaksi');
+            });
+        } else {
+            // Close any other open rows first
+            jurnalCaEscrowTable.rows().every(function() {
+                if (this.child.isShown()) {
+                    this.child.hide();
+                    $(this.node()).removeClass('shown');
+                    $(this.node()).find('.expand-btn')
+                        .removeClass('fa-minus-square')
+                        .addClass('fa-plus-square')
+                        .attr('title', 'Klik untuk melihat detail transaksi');
+                }
+            });
+            
+            // Open this row
+            const childData = window.childDataMap[kdSettle] || [];
+            row.child(formatChildRows(childData, kdSettle)).show();
+            tr.addClass('shown');
+            expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
+            expandBtn.attr('title', 'Klik untuk menyembunyikan detail');
+            
+            // Animate the appearance
+            $('.child-details-container').hide().fadeIn(300);
+            
+            // Initialize tooltips for the new content
+            initializeTooltips();
+        }
+    });
+    
+    // Initialize tooltips on page load
+    initializeTooltips();
+    
+    // Keyboard shortcuts
+    $(document).keydown(function(e) {
+        // Ctrl + E = Expand all
+        if (e.ctrlKey && e.keyCode === 69) {
+            e.preventDefault();
+            toggleAllRows(true);
+        }
+        // Ctrl + R = Refresh (override browser default)
+        if (e.ctrlKey && e.keyCode === 82) {
+            e.preventDefault();
+            refreshTableData();
+        }
+        // Ctrl + Shift + C = Collapse all
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+            e.preventDefault();
+            toggleAllRows(false);
+        }
     });
 }
 
+// Function to initialize tooltips
+function initializeTooltips() {
+    // Initialize Bootstrap tooltips if available
+    if (typeof $().tooltip === 'function') {
+        $('[title]').tooltip({
+            placement: 'top',
+            delay: { show: 500, hide: 100 }
+        });
+    }
+}
+
+// Function to format child rows
+function formatChildRows(childData, kdSettle) {
+    if (!childData || childData.length === 0) {
+        return '<div class="child-details-container">' +
+               '<div class="p-3 text-center text-muted">' +
+               '<i class="fal fa-info-circle me-2"></i>' +
+               '<em>Tidak ada detail transaksi</em>' +
+               '</div></div>';
+    }
+    
+    let html = '<div class="child-details-container">';
+    
+    // Header dengan informasi jumlah detail
+    html += '<div class="child-details-header">';
+    html += '<i class="fal fa-list-alt"></i>';
+    html += 'Detail Transaksi (' + childData.length + ' item)';
+    html += '</div>';
+    
+    // Table detail dengan styling compact
+    html += '<div class="px-2 pb-2">';
+    html += '<div class="table-responsive">';
+    html += '<table class="table table-sm table-hover child-table">';
+    html += '<thead>';
+    html += '<tr>';
+    html += '<th style="width: 18%">No. Referensi</th>';
+    html += '<th style="width: 16%">Debit Account</th>';
+    html += '<th style="width: 16%">Credit Account</th>';
+    html += '<th style="width: 14%">Nominal</th>';
+    html += '<th style="width: 12%">Status</th>';
+    html += '<th style="width: 12%">Core Ref</th>';
+    html += '<th style="width: 12%">Aksi</th>';
+    html += '</tr>';
+    html += '</thead>';
+    html += '<tbody>';
+    
+    childData.forEach(function(child, index) {
+        html += '<tr>';
+        
+        // No Ref - tampilkan apa adanya
+        html += '<td>';
+        html += '<code>' + (child.d_NO_REF || '-') + '</code>';
+        html += '</td>';
+        
+        // Debit Account - tampilkan apa adanya
+        html += '<td>';
+        html += '<code>' + (child.d_DEBIT_ACCOUNT || '-') + '</code>';
+        html += '</td>';
+        
+        // Credit Account - tampilkan apa adanya
+        html += '<td>';
+        html += '<code>' + (child.d_CREDIT_ACCOUNT || '-') + '</code>';
+        html += '</td>';
+        
+        // Amount - tampilkan dengan format currency
+        html += '<td class="text-end">';
+        html += '<strong class="text-dark">' + formatCurrency(child.d_AMOUNT || 0) + '</strong>';
+        html += '</td>';
+        
+        // Status - tampilkan apa adanya dengan badge sederhana
+        html += '<td class="text-center">';
+        let statusBadge = '';
+        if (child.d_CODE_RES && child.d_CODE_RES.startsWith('00')) {
+            statusBadge = '<span class="badge badge-success small">' + child.d_CODE_RES + '</span>';
+        } else if (child.d_CODE_RES) {
+            statusBadge = '<span class="badge badge-danger small">' + child.d_CODE_RES + '</span>';
+        } else {
+            statusBadge = '<span class="badge badge-secondary small">Pending</span>';
+        }
+        html += statusBadge;
+        html += '</td>';
+        
+        // Core Ref - tampilkan apa adanya dengan truncate untuk data panjang
+        html += '<td>';
+        const coreRef = child.d_CORE_REF || '-';
+        if (coreRef.length > 12) {
+            html += '<span title="' + coreRef + '">' + coreRef.substring(0, 12) + '...</span>';
+        } else {
+            html += '<span>' + coreRef + '</span>';
+        }
+        html += '</td>';
+        
+        // Actions - sederhana tanpa icon yang berlebihan
+        html += '<td class="text-center">';
+        let actionButton = '';
+        if (child.d_CODE_RES && child.d_CODE_RES.startsWith('00')) {
+            actionButton = '<span class="badge badge-success small">Selesai</span>';
+        } else if (child.d_CODE_RES && !child.d_CODE_RES.startsWith('00')) {
+            actionButton = "<button class='btn btn-xs btn-outline-warning' " +
+                          "onclick='prosesJurnalChild(" + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
+                          "id='btn-child-" + index + "' title='Proses ulang transaksi'>" +
+                          "Ulang" +
+                          "</button>";
+        } else {
+            actionButton = "<button class='btn btn-xs btn-outline-primary' " +
+                          "onclick='prosesJurnalChild(" + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
+                          "id='btn-child-" + index + "' title='Proses transaksi'>" +
+                          "Proses" +
+                          "</button>";
+        }
+        html += actionButton;
+        html += '</td>';
+        
+        html += '</tr>';
+    });
+    
+    html += '</tbody>';
+    html += '</table>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    return html;
+}
+
+// Function untuk format currency - digunakan hanya untuk parent rows dan konfirmasi
 function formatCurrency(amount) {
     const num = parseFloat(String(amount || 0).replace(/,/g, ''));
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(num);
@@ -376,44 +537,113 @@ function resetFilters() {
     window.location.href = url.pathname + url.search;
 }
 
-// Action Functions dengan Security Best Practices
-function prosesJurnal(rowData, rowIndex) {
-    console.log('Proses Jurnal:', rowData);
+// Function untuk expand/collapse semua rows
+function toggleAllRows(expand = true) {
+    jurnalCaEscrowTable.rows().every(function() {
+        const tr = $(this.node());
+        const kdSettle = tr.attr('data-kd-settle');
+        const expandBtn = tr.find('.expand-btn');
+        
+        if (expand && !this.child.isShown() && expandBtn.length > 0) {
+            // Expand row
+            const childData = window.childDataMap[kdSettle] || [];
+            this.child(formatChildRows(childData, kdSettle)).show();
+            tr.addClass('shown');
+            expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
+        } else if (!expand && this.child.isShown()) {
+            // Collapse row
+            this.child.hide();
+            tr.removeClass('shown');
+            expandBtn.removeClass('fa-minus-square').addClass('fa-plus-square');
+        }
+    });
     
-    const btnId = '#btn-proses-' + rowIndex;
-    const $btn = $(btnId);
+    // Initialize tooltips after changes
+    setTimeout(() => initializeTooltips(), 300);
+}
+
+// Function untuk mencari dalam detail data
+function searchInDetails(searchTerm) {
+    if (!searchTerm) return;
+    
+    const searchLower = searchTerm.toLowerCase();
+    let found = false;
+    
+    jurnalCaEscrowTable.rows().every(function() {
+        const tr = $(this.node());
+        const kdSettle = tr.attr('data-kd-settle');
+        const childData = window.childDataMap[kdSettle] || [];
+        
+        // Check if any child data matches search
+        const hasMatch = childData.some(child => 
+            (child.d_NO_REF && child.d_NO_REF.toLowerCase().includes(searchLower)) ||
+            (child.d_DEBIT_ACCOUNT && child.d_DEBIT_ACCOUNT.toLowerCase().includes(searchLower)) ||
+            (child.d_CREDIT_ACCOUNT && child.d_CREDIT_ACCOUNT.toLowerCase().includes(searchLower)) ||
+            (child.d_CODE_RES && child.d_CODE_RES.toLowerCase().includes(searchLower))
+        );
+        
+        if (hasMatch && !this.child.isShown()) {
+            // Auto expand rows that contain matches
+            const expandBtn = tr.find('.expand-btn');
+            this.child(formatChildRows(childData, kdSettle)).show();
+            tr.addClass('shown');
+            expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
+            found = true;
+        }
+    });
+    
+    if (found) {
+        showAlert('info', `Ditemukan hasil pencarian untuk "${searchTerm}". Baris yang relevan telah diperluas.`);
+        setTimeout(() => initializeTooltips(), 300);
+    } else {
+        showAlert('warning', `Tidak ditemukan hasil untuk "${searchTerm}" dalam detail transaksi.`);
+    }
+}
+
+// Function untuk refresh data table
+function refreshTableData() {
+    if (jurnalCaEscrowTable) {
+        showAlert('info', 'Memuat ulang data...');
+        jurnalCaEscrowTable.ajax.reload(function() {
+            showAlert('success', 'Data berhasil dimuat ulang!');
+            // Re-initialize tooltips after reload
+            setTimeout(() => initializeTooltips(), 500);
+        }, false);
+    }
+}
+
+// Action Functions dengan Security Best Practices
+function prosesJurnalChild(childData, kdSettle) {
+    console.log('Proses Jurnal Child:', childData, 'KD Settle:', kdSettle);
     
     // Validasi data
-    if (!rowData.r_KD_SETTLE || !rowData.d_NO_REF) {
-        showAlert('error', 'Data tidak lengkap untuk diproses!');
+    if (!childData.d_NO_REF || !kdSettle) {
+        showAlert('error', 'Data tidak valid untuk diproses! Pastikan memilih detail transaksi.');
         return;
     }
     
     // Cek apakah sudah diproses sukses
-    if (rowData.d_CODE_RES && rowData.d_CODE_RES.startsWith('00')) {
+    if (childData.d_CODE_RES && childData.d_CODE_RES.startsWith('00')) {
         showAlert('warning', 'Jurnal sudah berhasil diproses sebelumnya!');
         return;
     }
     
     // Konfirmasi dengan detail informasi
-    const isReprocess = rowData.d_CODE_RES && !rowData.d_CODE_RES.startsWith('00');
+    const isReprocess = childData.d_CODE_RES && !childData.d_CODE_RES.startsWith('00');
     const confirmMessage = isReprocess 
-        ? `Apakah Anda yakin ingin memproses ULANG jurnal?\n\nKode Settle: ${rowData.r_KD_SETTLE}\nProduk: ${rowData.r_NAMA_PRODUK}\nAmount: ${formatCurrency(rowData.d_AMOUNT)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`
-        : `Apakah Anda yakin ingin memproses jurnal?\n\nKode Settle: ${rowData.r_KD_SETTLE}\nProduk: ${rowData.r_NAMA_PRODUK}\nAmount: ${formatCurrency(rowData.d_AMOUNT)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
+        ? `Apakah Anda yakin ingin memproses ULANG jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nCredit: ${childData.d_CREDIT_ACCOUNT}\n\nTransaksi ini akan mengirim dana ke rekening bank!`
+        : `Apakah Anda yakin ingin memproses jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nCredit: ${childData.d_CREDIT_ACCOUNT}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
     
     if (!confirm(confirmMessage)) {
         return;
     }
     
-    // Disable button dan semua interaksi
-    $btn.prop('disabled', true);
+    // Disable semua tombol di child table
+    $('.child-details-container button').prop('disabled', true);
     disableAllActions();
     
-    // Show loading state
-    $btn.html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
-    
     // Show progress modal
-    showProgressModal(rowData);
+    showProgressModal(childData, kdSettle);
     
     // Prevent browser close/refresh
     setBeforeUnloadWarning(true);
@@ -425,11 +655,11 @@ function prosesJurnal(rowData, rowIndex) {
         timeout: 120000, // 2 menit timeout
         data: {
             csrf_test_name: currentCSRF,
-            kd_settle: rowData.r_KD_SETTLE,
-            no_ref: rowData.d_NO_REF,
-            amount: rowData.d_AMOUNT,
-            debit_account: rowData.d_DEBIT_ACCOUNT,
-            credit_account: rowData.d_CREDIT_ACCOUNT,
+            kd_settle: kdSettle,
+            no_ref: childData.d_NO_REF,
+            amount: childData.d_AMOUNT,
+            debit_account: childData.d_DEBIT_ACCOUNT,
+            credit_account: childData.d_CREDIT_ACCOUNT,
             is_reprocess: isReprocess ? 1 : 0
         },
         success: function(response) {
@@ -445,17 +675,16 @@ function prosesJurnal(rowData, rowIndex) {
                 }, 1500);
             } else {
                 showAlert('error', 'Gagal memproses jurnal: ' + (response.message || 'Unknown error'));
-                
-                // Reset button state
-                resetButtonState($btn, isReprocess);
             }
             
             enableAllActions();
+            $('.child-details-container button').prop('disabled', false);
         },
         error: function(xhr, status, error) {
             hideProgressModal();
             setBeforeUnloadWarning(false);
             enableAllActions();
+            $('.child-details-container button').prop('disabled', false);
             
             let errorMessage = 'Terjadi kesalahan saat memproses jurnal';
             
@@ -469,9 +698,6 @@ function prosesJurnal(rowData, rowIndex) {
             
             showAlert('error', errorMessage);
             
-            // Reset button state
-            resetButtonState($btn, isReprocess);
-            
             console.error('Proses Jurnal Error:', {
                 status: xhr.status,
                 statusText: xhr.statusText,
@@ -480,6 +706,16 @@ function prosesJurnal(rowData, rowIndex) {
             });
         }
     });
+}
+
+// Legacy function for compatibility - redirect to child function
+function prosesJurnal(rowData, rowIndex) {
+    // If this is called with old format, try to adapt
+    if (rowData.parent_kd_settle) {
+        prosesJurnalChild(rowData, rowData.parent_kd_settle);
+    } else {
+        showAlert('warning', 'Silakan klik tombol expand untuk melihat detail dan memproses jurnal.');
+    }
 }
 
 function disableAllActions() {
@@ -513,12 +749,12 @@ function resetButtonState($btn, isReprocess) {
     $btn.prop('disabled', false);
 }
 
-function showProgressModal(rowData) {
+function showProgressModal(childData, kdSettle) {
     const modalContent = `
         <div class="modal fade" id="progressModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
             <div class="modal-dialog modal-md">
                 <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%); color: white; border-bottom: 1px solid #7458a1;">
                         <h5 class="modal-title">
                             <i class="fal fa-cog fa-spin"></i> Memproses Transaksi
                         </h5>
@@ -530,10 +766,12 @@ function showProgressModal(rowData) {
                             </div>
                         </div>
                         <h6>Sedang memproses jurnal:</h6>
-                        <div class="alert alert-info">
-                            <strong>Kode Settle:</strong> ${rowData.r_KD_SETTLE}<br>
-                            <strong>Amount:</strong> ${formatCurrency(rowData.d_AMOUNT)}<br>
-                            <strong>Produk:</strong> ${rowData.r_NAMA_PRODUK}
+                        <div class="alert" style="background-color: #f3f0f8; border-color: #886ab5; color: #5a4674;">
+                            <strong>Kode Settle:</strong> ${kdSettle || childData.parent_kd_settle || childData.d_NO_REF}<br>
+                            <strong>No Ref:</strong> ${childData.d_NO_REF}<br>
+                            <strong>Amount:</strong> ${formatCurrency(childData.d_AMOUNT)}<br>
+                            <strong>Debit:</strong> ${childData.d_DEBIT_ACCOUNT}<br>
+                            <strong>Credit:</strong> ${childData.d_CREDIT_ACCOUNT}
                         </div>
                         <div class="alert alert-warning">
                             <i class="fal fa-exclamation-triangle"></i>
@@ -620,16 +858,318 @@ function showAlert(type, message) {
     font-weight: 600;
     font-size: 0.75rem;
     white-space: nowrap;
+    vertical-align: middle;
+    text-align: center;
 }
 
 #jurnalCaEscrowTable td {
     vertical-align: middle;
     font-size: 0.8rem;
+    padding: 0.5rem 0.3rem;
 }
 
-.badge {
+/* Parent Row Styling */
+.parent-row {
+    background-color: #f8f9fc !important;
+    font-weight: 500;
+    border-left: 4px solid #007bff;
+    cursor: pointer;
+}
+
+.parent-row:hover {
+    background-color: #e9ecef !important;
+}
+
+.parent-row td {
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Child Details Container - Styling untuk tampilan natural */
+.child-details-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin: 0.25rem 1rem 0.5rem 3rem; /* Indentasi ke kanan */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: relative;
+}
+
+/* Garis penghubung visual dari parent ke child dengan warna ungu */
+.child-details-container::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #886ab5, #7458a1);
+    border-radius: 1px;
+}
+
+/* Header detail dengan styling ungu yang bagus */
+.child-details-header {
+    background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px 6px 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.child-details-header i {
+    margin-right: 0.3rem;
+}
+
+/* Child table dengan styling compact dan natural */
+.child-table {
+    margin-bottom: 0;
     font-size: 0.7rem;
-    padding: 0.25em 0.5em;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.child-table thead th {
+    background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%) !important;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border: none;
+    padding: 0.4rem 0.3rem;
+    text-align: center;
+    position: relative;
+}
+
+.child-table thead th::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background-color: rgba(255,255,255,0.2);
+}
+
+.child-table thead th:last-child::after {
+    display: none;
+}
+
+.child-table tbody td {
+    padding: 0.35rem 0.3rem;
+    vertical-align: middle;
+    border: 1px solid #f1f3f4;
+    font-size: 0.65rem;
+    background-color: #ffffff;
+}
+
+.child-table tbody tr {
+    transition: all 0.15s ease;
+}
+
+.child-table tbody tr:hover {
+    background-color: #f8f9fa !important;
+    transform: translateX(2px);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.child-table tbody tr:nth-child(even) {
+    background-color: #fcfdfe;
+}
+
+/* Expand/Collapse Control dengan animasi smooth */
+.details-control {
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.details-control:hover {
+    background-color: rgba(0,123,255,0.1) !important;
+}
+
+.expand-btn {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1.1em;
+    display: inline-block;
+}
+
+.expand-btn:hover {
+    color: #0056b3 !important;
+    transform: scale(1.15) rotate(5deg);
+}
+
+tr.shown .expand-btn {
+    color: #dc3545 !important;
+    transform: rotate(180deg);
+}
+
+/* Table row states dengan animasi */
+tr.shown {
+    background-color: #e3f2fd !important;
+    border-left: 4px solid #2196f3 !important;
+}
+
+tr.shown td {
+    border-bottom: 2px solid #2196f3 !important;
+}
+
+/* Badge styling improvements */
+.badge {
+    font-size: 0.6rem;
+    padding: 0.2em 0.4em;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+.badge.small {
+    font-size: 0.55rem;
+    padding: 0.15em 0.3em;
+}
+
+/* Button styling untuk child rows - lebih compact */
+.btn-xs {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+    line-height: 1.2;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.btn-xs:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* Code styling dengan background subtle */
+code {
+    color: #495057;
+    background-color: #f8f9fa;
+    padding: 0.15rem 0.3rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    border: 1px solid #e9ecef;
+}
+
+.child-table code {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .child-details-container {
+        margin: 0.25rem 0.5rem 0.5rem 1rem;
+    }
+    
+    #jurnalCaEscrowTable th,
+    #jurnalCaEscrowTable td {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.2rem;
+    }
+    
+    .child-table {
+        font-size: 0.6rem;
+    }
+    
+    .child-table thead th {
+        font-size: 0.55rem;
+        padding: 0.3rem 0.2rem;
+    }
+    
+    .child-table tbody td {
+        font-size: 0.55rem;
+        padding: 0.25rem 0.2rem;
+    }
+    
+    .btn-xs {
+        padding: 0.1rem 0.3rem;
+        font-size: 0.55rem;
+    }
+    
+    .badge {
+        font-size: 0.5rem;
+        padding: 0.1em 0.25em;
+    }
+}
+
+/* DataTable custom styling */
+.dataTables_wrapper .dataTables_length select {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.dataTables_wrapper .dataTables_info {
+    font-size: 0.875rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Loading state styling dengan animasi */
+.btn .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Text utilities */
+.text-end {
+    text-align: right !important;
+}
+
+.small {
+    font-size: 0.7rem;
+}
+
+/* Animasi untuk expand/collapse */
+.child-details-container {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Focus states untuk accessibility dengan warna ungu */
+.expand-btn:focus,
+.btn-xs:focus {
+    outline: 2px solid #886ab5;
+    outline-offset: 2px;
+}
+
+/* Custom alert styling untuk progress modal */
+.modal-header.bg-purple {
+    background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%) !important;
+    border-bottom: 1px solid #7458a1;
+}
+
+/* Custom purple theme untuk beberapa elemen */
+.text-purple {
+    color: #886ab5 !important;
+}
+
+.bg-purple-light {
+    background-color: #f3f0f8 !important;
+    border-color: #886ab5 !important;
 }
 </style>
 @endpush
