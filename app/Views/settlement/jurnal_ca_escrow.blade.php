@@ -386,11 +386,6 @@ function initializeDataTable() {
             e.preventDefault();
             toggleAllRows(true);
         }
-        // Ctrl + R = Refresh (override browser default)
-        if (e.ctrlKey && e.keyCode === 82) {
-            e.preventDefault();
-            refreshTableData();
-        }
         // Ctrl + Shift + C = Collapse all
         if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
             e.preventDefault();
@@ -1072,17 +1067,17 @@ tr.shown td {
 
 /* Code styling dengan background subtle */
 code {
-    color: #495057;
-    background-color: #f8f9fa;
     padding: 0.15rem 0.3rem;
     border-radius: 3px;
     font-size: 0.65rem;
-    border: 1px solid #e9ecef;
 }
 
 .child-table code {
     font-size: 0.6rem;
     padding: 0.1rem 0.25rem;
+    color: #495057;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
 }
 
 /* Responsive adjustments */
