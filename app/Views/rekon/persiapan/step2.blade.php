@@ -525,8 +525,12 @@ function startReconciliation() {
                 btn.prop('disabled', false).html(originalText);
             }
         },
-        error: function() {
-            toastr['error']('Error saat memulai rekonsiliasi');
+        error: function(xhr) {
+            let errorMsg = 'Error saat memulai rekonsiliasi';
+            if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message;
+            }
+            toastr['error'](errorMsg);
             btn.prop('disabled', false).html(originalText);
         }
     });
