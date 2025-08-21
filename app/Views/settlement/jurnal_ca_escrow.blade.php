@@ -333,7 +333,7 @@ function initializeDataTable() {
                                "<button class='btn btn-sm btn-outline-primary' onclick='prosesJurnal(" + JSON.stringify(full) + ", " + meta.row + ")' id='btn-proses-" + meta.row + "'>" +
                                "<i class='fal fa-play'></i> Proses Jurnal" +
                                "</button></div>";
-                    }
+                    }p
                 }
             }
             

@@ -180,36 +180,6 @@ $routes->post('/delete/roleAPI', 'User\RoleController::delete');
 $routes->get('/permission/roleAPI/(:num)', 'User\RoleController::getPermissions/$1');
 $routes->put('/assignPermission/roleAPI', 'User\RoleController::assignPermission');
 
-
-// ? Currency Conversions
-$routes->get('/currency-conversion', 'User\CurrencyConversionController::index', ['as' => 'currencyConversion.index']);
-// ? Role Currency Conversions
-$routes->get('/dataTables/currencyConversionAPI', 'User\CurrencyConversionController::dataTables');
-$routes->post('/post/currencyConversionAPI', 'User\CurrencyConversionController::post');
-$routes->post('/delete/currencyConversionAPI', 'User\CurrencyConversionController::delete');
-$routes->post('/edit/currencyConversionAPI', 'User\CurrencyConversionController::edit');
-$routes->post('/options/currencyConversionAPI', 'User\CurrencyConversionController::options');
-$routes->get('/getCurrencyRateToUsd/currencyConversionAPI', 'User\CurrencyConversionController::getCurrencyRateToUsd');
-
-// ? Underlying
-$routes->get('/underlying', 'User\UnderlyingController::index', ['as' => 'underlying.index']);
-// ? Role Underlying
-$routes->get('/dataTables/underlyingAPI', 'User\UnderlyingController::dataTables');
-$routes->get('/getAllCurrencyConversions/underlyingAPI', 'User\UnderlyingController::getAllCurrencyConversions');
-$routes->get('/getCurrencyRateToUsd/underlyingAPI', 'User\UnderlyingController::getCurrencyRateToUsd');
-$routes->post('/post/underlyingAPI', 'User\UnderlyingController::post');
-$routes->post('/edit/underlyingAPI', 'User\UnderlyingController::edit');
-$routes->post('/delete/underlyingAPI', 'User\UnderlyingController::delete');
-
-// ? Transaction
-$routes->get('/transaction/([A-Za-z0-9\-_]+)', 'User\TransactionController::index/$1', ['as' => 'transaction.index']);
-// ? Role Transaction
-$routes->get('/dataTables/transactionAPI', 'User\TransactionController::dataTables');
-$routes->post('/post/transactionAPI', 'User\TransactionController::post');
-$routes->post('/edit/transactionAPI', 'User\TransactionController::edit');
-$routes->post('/delete/transactionAPI', 'User\TransactionController::delete');
-$routes->post('/getNasabah', 'User\TransactionController::getNasabah');
-
 // ? Permission	
 $routes->get('/permission', 'User\PermissionController::index', ['as' => 'permission.index']);
 // ? Permission API
@@ -236,48 +206,6 @@ $routes->get('/log/activity', 'Log\LogActivityController::index', ['as' => 'log.
 // ? Log Activity API
 $routes->get('/dataTables/logActivityAPI', 'Log\LogActivityController::dataTables');
 $routes->get('/show/logActivityAPI/(:num)', 'Log\LogActivityController::showLog/$1');
-
-// ? Ticket
-$routes->get('/ticket', 'User\TicketController::index', ['as' => 'ticket.index']);
-// ? Ticket API
-$routes->get('/dataTables/ticketAPI', 'User\TicketController::dataTables');
-$routes->post('/post/ticketAPI', 'User\TicketController::post');
-$routes->post('/edit/ticketAPI', 'User\TicketController::edit'); // <-- THIS LINE IS REQUIRED FOR MAKE OFFER
-$routes->post('/delete/ticketAPI', 'User\TicketController::delete');
-$routes->get('/show/ticketAPI/(:num)', 'User\TicketController::show/$1');
-$routes->post('/sendMessage/ticketAPI', 'User\TicketController::sendMessage');
-$routes->get('/fetchMessages/ticketAPI/(:num)', 'User\TicketController::fetchMessages/$1');
-$routes->get('/ticketChat/(:any)', 'User\TicketController::showChat/$1');
-$routes->post('/chatMessage/ticketAPI', 'User\TicketController::chatMessage');
-$routes->get('/testChatMessage', 'User\TicketController::chatMessage');
-$routes->post('/closeTicket/ticketAPI', 'User\TicketController::closeTicket');
-$routes->post('/acceptOffer/ticketAPI', 'User\TicketController::acceptOffer');
-$routes->get('/getAccountList/ticketAPI', 'User\TicketController::getAccountList'); // <-- add this line
-$routes->get('/getVTicketWithUnitByTicketId', 'User\TicketController::getVTicketWithUnitByTicketId');
-$routes->get('/ticket/export-pdf/(:any)', 'User\TicketController::exportPdf/$1');
-
-// Add this line for stats/ticketAPI
-$routes->get('/stats/ticketAPI', 'User\TicketController::stats');
-
-$routes->get('/options/documentTypeAPI', 'User\DocumentTypeController::options');
-
-// ? Transaksi Valas (Non-Underlying)
-$routes->get('/transaksi_valas', 'User\TransaksiValasController::index', ['as' => 'transaksi_valas.index']);
-$routes->get('/dataTables/valasAPI', 'User\TransaksiValasController::dataTables');
-$routes->post('/post/valasAPI', 'User\TransaksiValasController::post');
-$routes->post('/edit/valasAPI', 'User\TransaksiValasController::edit');
-$routes->post('/delete/valasAPI', 'User\TransaksiValasController::delete');
-$routes->get('/getMonthlyTotal/valasAPI', 'User\TransaksiValasController::getMonthlyTotalAPI');
-$routes->get('/transaksi_valas/print/(:num)', 'User\TransaksiValasController::print/$1', ['as' => 'transaksi_valas.print']);
-
-// Monitoring Transaksi
-$routes->get('/monitoring_transaksi', 'User\MonitoringTransaksiController::index', ['as' => 'monitoring_transaksi.index']);
-$routes->get('/dataTables/monitoringTransaksiAPI', 'User\MonitoringTransaksiController::dataTables');
-$routes->get('/monitoring_transaksi/print', 'User\MonitoringTransaksiController::print', ['as' => 'monitoring_transaksi.print']);
-
-// API: Get all currency conversions
-$routes->get('/api/currency-conversions', 'User\CurrencyConversionController::getAll');
-$routes->get('/api/jenis-transaksi', 'User\UnderlyingController::jenisTransaksi');
 
 
 $routes->get('/rekon-bifast/rekap', 'Rekon\RekonController::index', ['as' => 'rekon-bifast.rekap']);
