@@ -222,8 +222,8 @@ function initializeDataTable() {
                 width: '5%',
                 render: function(data, type, row, meta) {
                     if (row.has_children) {
-                        return '<i class="fal fa-plus-square expand-btn text-primary" ' +
-                               'style="cursor: pointer; font-size: 1.1em;" ' +
+                        return '<i class="fal fa-plus-square expand-btn text-purple" ' +
+                               'style="cursor: pointer; font-size: 1.1em; color: #6c5190;" ' +
                                'title="Klik untuk melihat detail transaksi"></i>';
                     }
                     return '<span class="text-muted">' + (meta.row + 1) + '</span>';
@@ -251,7 +251,7 @@ function initializeDataTable() {
                 width: '15%',
                 className: 'text-end',
                 render: function(data, type, row) {
-                    return '<strong class="text-primary">' + formatCurrency(data) + '</strong>';
+                    return '<strong class="text-purple">' + formatCurrency(data) + '</strong>';
                 }
             },
             { 
@@ -260,7 +260,7 @@ function initializeDataTable() {
                 className: 'text-center',
                 width: '10%',
                 render: function(data, type, row) {
-                    return '<span class="badge badge-info">' + (data || '0') + '</span>';
+                    return '<span class="badge" style="background-color: #6c5190; color: white;">' + (data || '0') + '</span>';
                 }
             },
             { 
@@ -305,7 +305,7 @@ function initializeDataTable() {
             }
         ],
         pageLength: 15,
-        lengthMenu: [[10, 15, 25, 50], [10, 15, 25, 50]],
+        lengthChange: false,
         order: [[1, 'asc']],
         language: {
             processing: "Memuat data...",
@@ -324,9 +324,8 @@ function initializeDataTable() {
             zeroRecords: "Tidak ditemukan data yang sesuai"
         },
         responsive: false,
-        searching: true,
-        dom: '<"row"<"col-sm-4"l><"col-sm-4 text-center"><"col-sm-4"f>>' +
-             '<"row"<"col-sm-12"tr>>' +
+        searching: false,
+        dom: '<"row"<"col-sm-12"tr>>' +
              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
         createdRow: function(row, data, dataIndex) {
             $(row).addClass('parent-row');
@@ -501,13 +500,13 @@ function formatChildRows(childData, kdSettle) {
             actionButton = "<button class='btn btn-xs btn-outline-warning' " +
                           "onclick='prosesJurnalChild(" + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
                           "id='btn-child-" + index + "' title='Proses ulang transaksi'>" +
-                          "Ulang" +
+                          "<i class='fal fa-redo me-1'></i>Ulang" +
                           "</button>";
         } else {
             actionButton = "<button class='btn btn-xs btn-outline-primary' " +
                           "onclick='prosesJurnalChild(" + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
                           "id='btn-child-" + index + "' title='Proses transaksi'>" +
-                          "Proses" +
+                          "<i class='fal fa-play me-1'></i>Proses" +
                           "</button>";
         }
         html += actionButton;
@@ -754,19 +753,19 @@ function showProgressModal(childData, kdSettle) {
         <div class="modal fade" id="progressModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
             <div class="modal-dialog modal-md">
                 <div class="modal-content">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%); color: white; border-bottom: 1px solid #7458a1;">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #6c5190 0%, #553d73 100%); color: white; border-bottom: 1px solid #553d73;">
                         <h5 class="modal-title">
                             <i class="fal fa-cog fa-spin"></i> Memproses Transaksi
                         </h5>
                     </div>
                     <div class="modal-body text-center">
                         <div class="mb-3">
-                            <div class="spinner-border text-primary" role="status">
+                            <div class="spinner-border" style="color: #6c5190;" role="status">
                                 <span class="sr-only">Loading...</span>
                             </div>
                         </div>
                         <h6>Sedang memproses jurnal:</h6>
-                        <div class="alert" style="background-color: #f3f0f8; border-color: #886ab5; color: #5a4674;">
+                        <div class="alert" style="background-color: #ede8f2; border-color: #6c5190; color: #553d73;">
                             <strong>Kode Settle:</strong> ${kdSettle || childData.parent_kd_settle || childData.d_NO_REF}<br>
                             <strong>No Ref:</strong> ${childData.d_NO_REF}<br>
                             <strong>Amount:</strong> ${formatCurrency(childData.d_AMOUNT)}<br>
@@ -843,41 +842,33 @@ function showAlert(type, message) {
 <link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
 <style>
 .card {
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    border: 1px solid #e3e6f0;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(108, 81, 144, 0.15);
+    border: 1px solid #e8e2ec;
 }
 
-/* Table styling */
+/* Table styling dengan sentuhan ungu gelap */
 #jurnalCaEscrowTable {
     font-size: 0.875rem;
-}
-
-#jurnalCaEscrowTable th {
-    background-color: #f8f9fc;
-    border-top: 1px solid #e3e6f0;
-    font-weight: 600;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    vertical-align: middle;
-    text-align: center;
+    border: 1px solid #e8e2ec;
 }
 
 #jurnalCaEscrowTable td {
     vertical-align: middle;
     font-size: 0.8rem;
     padding: 0.5rem 0.3rem;
+    border-color: #e8e2ec;
 }
 
-/* Parent Row Styling */
+/* Parent Row Styling dengan tema ungu gelap yang elegan */
 .parent-row {
-    background-color: #f8f9fc !important;
+    background-color: #f6f4f9 !important;
     font-weight: 500;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid #6c5190;
     cursor: pointer;
 }
 
 .parent-row:hover {
-    background-color: #e9ecef !important;
+    background-color: #ede8f2 !important;
 }
 
 .parent-row td {
@@ -894,7 +885,7 @@ function showAlert(type, message) {
     position: relative;
 }
 
-/* Garis penghubung visual dari parent ke child dengan warna ungu */
+/* Garis penghubung visual dari parent ke child dengan warna ungu gelap */
 .child-details-container::before {
     content: '';
     position: absolute;
@@ -902,13 +893,13 @@ function showAlert(type, message) {
     top: 0;
     bottom: 0;
     width: 2px;
-    background: linear-gradient(to bottom, #886ab5, #7458a1);
+    background: linear-gradient(to bottom, #6c5190, #553d73);
     border-radius: 1px;
 }
 
-/* Header detail dengan styling ungu yang bagus */
+/* Header detail dengan styling ungu gelap yang elegan */
 .child-details-header {
-    background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%);
+    background: linear-gradient(135deg, #6c5190 0%, #553d73 100%);
     color: white;
     padding: 0.4rem 0.8rem;
     border-radius: 6px 6px 0 0;
@@ -930,8 +921,8 @@ function showAlert(type, message) {
 }
 
 .child-table thead th {
-    background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%) !important;
-    color: white;
+    background: linear-gradient(135deg, #553d73 0%, #553d73 100%) !important;
+    color: white !important;
     font-size: 0.65rem;
     font-weight: 600;
     border: none;
@@ -976,7 +967,7 @@ function showAlert(type, message) {
     background-color: #fcfdfe;
 }
 
-/* Expand/Collapse Control dengan animasi smooth */
+/* Expand/Collapse Control dengan animasi smooth dan tema ungu gelap */
 .details-control {
     cursor: pointer;
     text-align: center;
@@ -984,7 +975,7 @@ function showAlert(type, message) {
 }
 
 .details-control:hover {
-    background-color: rgba(0,123,255,0.1) !important;
+    background-color: rgba(108, 81, 144, 0.1) !important;
 }
 
 .expand-btn {
@@ -995,7 +986,7 @@ function showAlert(type, message) {
 }
 
 .expand-btn:hover {
-    color: #0056b3 !important;
+    color: #553d73 !important;
     transform: scale(1.15) rotate(5deg);
 }
 
@@ -1004,14 +995,14 @@ tr.shown .expand-btn {
     transform: rotate(180deg);
 }
 
-/* Table row states dengan animasi */
+/* Table row states dengan animasi dan tema ungu gelap */
 tr.shown {
-    background-color: #e3f2fd !important;
-    border-left: 4px solid #2196f3 !important;
+    background-color: #ede8f2 !important;
+    border-left: 4px solid #6c5190 !important;
 }
 
 tr.shown td {
-    border-bottom: 2px solid #2196f3 !important;
+    border-bottom: 2px solid #6c5190 !important;
 }
 
 /* Badge styling improvements */
@@ -1095,16 +1086,6 @@ code {
 }
 
 /* DataTable custom styling */
-.dataTables_wrapper .dataTables_length select {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
-
-.dataTables_wrapper .dataTables_filter input {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
-
 .dataTables_wrapper .dataTables_info {
     font-size: 0.875rem;
 }
@@ -1149,27 +1130,52 @@ code {
     }
 }
 
-/* Focus states untuk accessibility dengan warna ungu */
+/* Focus states untuk accessibility dengan warna ungu gelap */
 .expand-btn:focus,
 .btn-xs:focus {
-    outline: 2px solid #886ab5;
+    outline: 2px solid #6c5190;
     outline-offset: 2px;
 }
 
 /* Custom alert styling untuk progress modal */
 .modal-header.bg-purple {
-    background: linear-gradient(135deg, #886ab5 0%, #7458a1 100%) !important;
-    border-bottom: 1px solid #7458a1;
+    background: linear-gradient(135deg, #6c5190 0%, #553d73 100%) !important;
+    border-bottom: 1px solid #553d73;
 }
 
 /* Custom purple theme untuk beberapa elemen */
 .text-purple {
-    color: #886ab5 !important;
+    color: #6c5190 !important;
 }
 
 .bg-purple-light {
-    background-color: #f3f0f8 !important;
-    border-color: #886ab5 !important;
+    background-color: #ede8f2 !important;
+    border-color: #6c5190 !important;
+}
+
+/* Badge dengan tema ungu gelap untuk berbagai status */
+.badge-purple {
+    background-color: #6c5190 !important;
+    color: white !important;
+}
+
+.badge-purple-light {
+    background-color: #ede8f2 !important;
+    color: #6c5190 !important;
+    border: 1px solid #6c5190 !important;
+}
+
+/* Header table utama dengan sedikit sentuhan ungu gelap */
+#jurnalCaEscrowTable th {
+    background: linear-gradient(135deg, #f6f4f9 0%, #ffffff 100%);
+    border-top: 1px solid #e3e6f0;
+    border-bottom: 2px solid #6c5190;
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    vertical-align: middle;
+    text-align: center;
+    color: #553d73;
 }
 </style>
 @endpush
