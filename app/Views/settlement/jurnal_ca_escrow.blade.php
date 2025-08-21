@@ -557,7 +557,7 @@ function formatChildRows(childData, kdSettle) {
     html += '<th style="width: 11%">Credit Account</th>';
     html += '<th style="width: 13%">Credit Name</th>';
     html += '<th style="width: 10%">Nominal</th>';
-    html += '<th style="width: 8%">Status</th>';
+    html += '<th style="width: 8%">Core Res</th>';
     html += '<th style="width: 9%">Core Ref</th>';
     html += '<th style="width: 10%">Core DateTime</th>';
     html += '<th style="width: 5%">Aksi</th>';
@@ -598,23 +598,26 @@ function formatChildRows(childData, kdSettle) {
         html += '<strong class="text-dark">' + formatCurrency(child.d_AMOUNT || 0) + '</strong>';
         html += '</td>';
         
-        // Status - tampilkan apa adanya dengan badge sederhana
+        // Core Res - tampilkan apa adanya dengan badge sederhana
         html += '<td class="text-center">';
-        let statusBadge = '';
-        if (child.d_CODE_RES && child.d_CODE_RES.startsWith('00')) {
-            statusBadge = '<span class="badge badge-success small">' + child.d_CODE_RES + '</span>';
-        } else if (child.d_CODE_RES) {
-            statusBadge = '<span class="badge badge-danger small">' + child.d_CODE_RES + '</span>';
+        let coreResBadge = '';
+        const coreRes = child.d_CODE_RES;
+        if (coreRes === null || coreRes === undefined || coreRes === '') {
+            coreResBadge = '<span class="text-muted">NULL</span>';
+        } else if (coreRes.startsWith('00')) {
+            coreResBadge = '<span class="badge badge-success small">' + coreRes + '</span>';
         } else {
-            statusBadge = '<span class="text-muted">-</span>';
+            coreResBadge = '<span class="badge badge-danger small">' + coreRes + '</span>';
         }
-        html += statusBadge;
+        html += coreResBadge;
         html += '</td>';
         
         // Core Ref - tampilkan apa adanya dengan truncate untuk data panjang
         html += '<td>';
-        const coreRef = child.d_CORE_REF || '-';
-        if (coreRef.length > 10) {
+        const coreRef = child.d_CORE_REF;
+        if (coreRef === null || coreRef === undefined || coreRef === '') {
+            html += '<span class="text-muted">NULL</span>';
+        } else if (coreRef.length > 10) {
             html += '<span title="' + coreRef + '">' + coreRef.substring(0, 10) + '...</span>';
         } else {
             html += '<span>' + coreRef + '</span>';
@@ -623,12 +626,11 @@ function formatChildRows(childData, kdSettle) {
         
         // Core DateTime - tampilkan apa adanya
         html += '<td>';
-        const coreDateTime = child.d_CORE_DATETIME || '-';
-        if (coreDateTime !== '-' && coreDateTime !== null && coreDateTime !== '') {
-            // Format tanggal jika ada
-            html += '<small>' + coreDateTime + '</small>';
+        const coreDateTime = child.d_CORE_DATETIME;
+        if (coreDateTime === null || coreDateTime === undefined || coreDateTime === '') {
+            html += '<span class="text-muted">NULL</span>';
         } else {
-            html += '<span class="text-muted">-</span>';
+            html += '<small>' + coreDateTime + '</small>';
         }
         html += '</td>';
         
@@ -883,9 +885,15 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
     
     // Konfirmasi dengan detail informasi
     const isReprocess = childData.d_CODE_RES && !childData.d_CODE_RES.startsWith('00');
+    
+    // Helper function untuk format NULL values
+    const formatValue = (value) => {
+        return (value === null || value === undefined || value === '') ? 'NULL' : value;
+    };
+    
     const confirmMessage = isReprocess 
-        ? `Apakah Anda yakin ingin memproses ULANG jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nDebit Name: ${childData.d_DEBIT_NAME || '-'}\nCredit: ${childData.d_CREDIT_ACCOUNT}\nCredit Name: ${childData.d_CREDIT_NAME || '-'}\nStatus: ${childData.d_CODE_RES || '-'}\nCore Ref: ${childData.d_CORE_REF || '-'}\nCore DateTime: ${childData.d_CORE_DATETIME || '-'}\n\nTransaksi ini akan mengirim dana ke rekening bank!`
-        : `Apakah Anda yakin ingin memproses jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nDebit Name: ${childData.d_DEBIT_NAME || '-'}\nCredit: ${childData.d_CREDIT_ACCOUNT}\nCredit Name: ${childData.d_CREDIT_NAME || '-'}\nCore Ref: ${childData.d_CORE_REF || '-'}\nCore DateTime: ${childData.d_CORE_DATETIME || '-'}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
+        ? `Apakah Anda yakin ingin memproses ULANG jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nDebit Name: ${formatValue(childData.d_DEBIT_NAME)}\nCredit: ${childData.d_CREDIT_ACCOUNT}\nCredit Name: ${formatValue(childData.d_CREDIT_NAME)}\nCore Res: ${formatValue(childData.d_CODE_RES)}\nCore Ref: ${formatValue(childData.d_CORE_REF)}\nCore DateTime: ${formatValue(childData.d_CORE_DATETIME)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`
+        : `Apakah Anda yakin ingin memproses jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nDebit Name: ${formatValue(childData.d_DEBIT_NAME)}\nCredit: ${childData.d_CREDIT_ACCOUNT}\nCredit Name: ${formatValue(childData.d_CREDIT_NAME)}\nCore Res: ${formatValue(childData.d_CODE_RES)}\nCore Ref: ${formatValue(childData.d_CORE_REF)}\nCore DateTime: ${formatValue(childData.d_CORE_DATETIME)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
     
     if (!confirm(confirmMessage)) {
         // User membatalkan, restore semua button

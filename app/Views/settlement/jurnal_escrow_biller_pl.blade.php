@@ -68,9 +68,9 @@
                         <thead class="thead-light">
                             <tr>
                                 <th width="5%">Detail</th>
-                                <th width="35%">Kode Settle</th>
-                                <th width="45%">Nama Produk</th>
-                                <th width="15%">Action</th>
+                                <th width="40%">Kode Settle</th>
+                                <th width="50%">Nama Produk</th>
+                                <th width="5%">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -270,7 +270,7 @@ function initializeDataTable() {
             { 
                 data: 'r_KD_SETTLE', 
                 name: 'r_KD_SETTLE',
-                width: '35%',
+                width: '40%',
                 render: function(data, type, row) {
                     return '<strong><code>' + (data || '') + '</code></strong>';
                 }
@@ -279,13 +279,13 @@ function initializeDataTable() {
             { 
                 data: 'r_NAMA_PRODUK', 
                 name: 'r_NAMA_PRODUK',
-                width: '45%',
+                width: '50%',
                 render: function(data, type, row) {
                     return '<strong>' + (data || '') + '</strong>';
                 }
             },
             // SUMMARY: Child count summary
-              { 
+            { 
                 data: null,
                 name: 'summary',
                 orderable: false,
@@ -506,16 +506,17 @@ function formatChildRows(childData, kdSettle) {
     html += '<table class="table table-sm table-hover child-table">';
     html += '<thead>';
     html += '<tr>';
-    html += '<th style="width: 12%">Status Escrow</th>';
-    html += '<th style="width: 10%">No. Ref</th>';
+    html += '<th style="width: 10%">Status Escrow</th>';
+    html += '<th style="width: 9%">No. Ref</th>';
     html += '<th style="width: 11%">Debit Account</th>';
-    html += '<th style="width: 13%">Debit Name</th>';
+    html += '<th style="width: 12%">Debit Name</th>';
     html += '<th style="width: 11%">Credit Account</th>';
-    html += '<th style="width: 13%">Credit Name</th>';
-    html += '<th style="width: 10%">Nominal</th>';
-    html += '<th style="width: 8%">Status</th>';
+    html += '<th style="width: 12%">Credit Name</th>';
+    html += '<th style="width: 9%">Nominal</th>';
+    html += '<th style="width: 7%">Code Res</th>';
     html += '<th style="width: 9%">Core Ref</th>';
-    html += '<th style="width: 3%">Aksi</th>';
+    html += '<th style="width: 8%">Core DateTime</th>';
+    html += '<th style="width: 2%">Aksi</th>';
     html += '</tr>';
     html += '</thead>';
     html += '<tbody>';
@@ -534,7 +535,7 @@ function formatChildRows(childData, kdSettle) {
         } else if (escrowStatus.includes('Sebagian')) {
             escrowBadge = '<span class="badge badge-info small">' + escrowStatus + '</span>';
         } else {
-            escrowBadge = '<span>-</span>';
+            escrowBadge = '<span class="text-muted">-</span>';
         }
         html += escrowBadge;
         html += '</td>';
@@ -569,33 +570,43 @@ function formatChildRows(childData, kdSettle) {
         html += '<strong class="text-dark">' + formatCurrency(child.d_AMOUNT || 0) + '</strong>';
         html += '</td>';
         
-        // Status - tampilkan apa adanya dengan badge sederhana
+        // Code Res - tampilkan apa adanya dengan badge
         html += '<td class="text-center">';
-        let statusBadge = '';
+        let codeResBadge = '';
         if (child.d_CODE_RES && child.d_CODE_RES.startsWith('00')) {
-            statusBadge = '<span class="badge badge-success small">' + child.d_CODE_RES + '</span>';
+            codeResBadge = '<span class="badge badge-success small">' + child.d_CODE_RES + '</span>';
         } else if (child.d_CODE_RES) {
-            statusBadge = '<span class="badge badge-danger small">' + child.d_CODE_RES + '</span>';
+            codeResBadge = '<span class="badge badge-danger small">' + child.d_CODE_RES + '</span>';
         } else {
-            statusBadge = '<span class="text-muted">-</span>';
+            codeResBadge = '<span class="text-muted">NULL</span>';
         }
-        html += statusBadge;
+        html += codeResBadge;
         html += '</td>';
         
         // Core Ref - tampilkan apa adanya dengan truncate untuk data panjang
         html += '<td>';
-        const coreRef = child.d_CORE_REF || '-';
-        if (coreRef.length > 10) {
-            html += '<span title="' + coreRef + '">' + coreRef.substring(0, 10) + '...</span>';
+        const coreRef = child.d_CORE_REF || 'NULL';
+        if (coreRef !== 'NULL' && coreRef.length > 8) {
+            html += '<span title="' + coreRef + '">' + coreRef.substring(0, 8) + '...</span>';
         } else {
-            html += '<span>' + coreRef + '</span>';
+            html += '<span class="text-muted">' + coreRef + '</span>';
+        }
+        html += '</td>';
+        
+        // Core DateTime - tampilkan apa adanya
+        html += '<td>';
+        const coreDateTime = child.d_CORE_DATETIME || 'NULL';
+        if (coreDateTime !== 'NULL' && coreDateTime !== null && coreDateTime !== '') {
+            html += '<small>' + coreDateTime + '</small>';
+        } else {
+            html += '<span class="text-muted">NULL</span>';
         }
         html += '</td>';
         
         // Actions - disabled for now per request
         html += '<td class="text-center">';
         html += '<button class="btn btn-xs btn-secondary" disabled title="Fitur sedang dikembangkan">';
-        html += '<i class="fal fa-cog me-1"></i>Proses';
+        html += '<i class="fal fa-cog"></i>';
         html += '</button>';
         html += '</td>';
         
