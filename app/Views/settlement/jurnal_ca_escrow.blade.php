@@ -948,11 +948,6 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
             if (response.success) {
                 showAlert('success', 'Jurnal berhasil diproses!\nCore Ref: ' + (response.core_ref || '-'));
                 
-                // Reset button state
-                if (resetButtonCallback) {
-                    resetButtonCallback();
-                }
-                
                 // Reload table untuk update status dengan mempertahankan expand state
                 setTimeout(function() {
                     console.log('Reloading table with preserved expand state for:', Array.from(expandedRows));
