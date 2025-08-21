@@ -15,12 +15,13 @@
 // ============================================================================
 // Namespace: App\Controllers\RekonBifast
 
-$routes->group('rekon-bifast', ['namespace' => 'App\Controllers\RekonBifast'], function($routes) {
+$routes->group('rekon-bifast', ['namespace' => 'App\Controllers\Rekon'], function($routes) {
     
     // ========================================================================
     // MAIN BIFAST ROUTES
     // ========================================================================
     // Routes utama untuk fitur Rekon BiFast
-    $routes->get('rekap', 'RekonBifastController::index', ['as' => 'rekon-bifast.rekap']);
-    $routes->post('upload', 'RekonBifastController::upload', ['as' => 'rekon-bifast.upload']);
+    $routes->get('rekap', 'RekonController::index', ['as' => 'rekon-bifast.rekap']);
+    $routes->post('upload', 'RekonController::upload', ['as' => 'rekon-bifast.upload']);
+    $routes->get('get-new-csrf-token', 'RekonController::getCsrfToken');
 });
