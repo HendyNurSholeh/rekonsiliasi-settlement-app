@@ -27,7 +27,7 @@ class JurnalEscrowBillerPlController extends BaseController
             'route' => 'settlement/jurnal-escrow-biller-pl'
         ];
 
-        return $this->render('settlement/jurnal_escrow_biller_pl.blade.php', $data);
+        return $this->render('settlement/jurnal_escrow_biller_pl/index.blade.php', $data);
     }
 
     /**

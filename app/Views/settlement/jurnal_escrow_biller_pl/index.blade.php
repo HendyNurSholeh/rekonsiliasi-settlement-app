@@ -1,22 +1,22 @@
 @extends('layouts.app')
 @push('styles')
     <link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
-    <link rel="stylesheet" href="{{ base_url('css/settlement/jurnal_ca_escrow.css') }}">
+    <link rel="stylesheet" href="{{ base_url('css/settlement/jurnal_escrow_biller_pl.css') }}">
 @endpush
 
 @section('content')
     <div class="subheader">
         <h1 class="subheader-title">
             <i class="fal fa-exchange-alt"></i> {{ $title }}
-            <small>Jurnal CA to Escrow untuk tanggal {{ date('d/m/Y', strtotime($tanggalData)) }}</small>
+            <small>Jurnal Escrow to Biller PL untuk tanggal {{ date('d/m/Y', strtotime($tanggalData)) }}</small>
         </h1>
     </div>
 
     <!-- Filter Section -->
-    @include('settlement.jurnal_ca_escrow._filter')
+    @include('settlement.jurnal_escrow_biller_pl._filter')
 
     <!-- Data Table -->
-    @include('settlement.jurnal_ca_escrow._data_table')
+    @include('settlement.jurnal_escrow_biller_pl._data_table')
 @endsection
 
 @push('scripts')
@@ -27,6 +27,6 @@
         csrfToken: "{{ csrf_token() }}"
     };
     </script>
-    <script src="{{ base_url('js/settlement/jurnal-ca-escrow.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl.js') }}"></script>
 @endpush
 

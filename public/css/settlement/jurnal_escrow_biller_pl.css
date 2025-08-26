@@ -1,0 +1,362 @@
+.card {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(108, 81, 144, 0.15);
+    border: 1px solid #e8e2ec;
+}
+
+/* Table styling dengan sentuhan ungu gelap */
+#jurnalEscrowBillerPlTable {
+    font-size: 0.875rem;
+    border: 1px solid #e8e2ec;
+}
+
+#jurnalEscrowBillerPlTable td {
+    vertical-align: middle;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.3rem;
+    border-color: #e8e2ec;
+}
+
+/* Parent Row Styling dengan tema ungu gelap yang elegan */
+.parent-row {
+    background-color: #f6f4f9 !important;
+    font-weight: 500;
+    border-left: 4px solid #6c5190;
+    cursor: pointer;
+}
+
+.parent-row:hover {
+    background-color: #ede8f2 !important;
+}
+
+.parent-row td {
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Child Details Container - Styling untuk tampilan natural */
+.child-details-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin: 0.25rem 1rem 0.5rem 3rem; /* Indentasi ke kanan */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: relative;
+}
+
+/* Garis penghubung visual dari parent ke child dengan warna ungu gelap */
+.child-details-container::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #6c5190, #553d73);
+    border-radius: 1px;
+}
+
+/* Header detail dengan styling ungu gelap yang elegan */
+.child-details-header {
+    background: linear-gradient(135deg, #6c5190 0%, #553d73 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px 6px 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.child-details-header i {
+    margin-right: 0.3rem;
+}
+
+/* Child table dengan styling compact dan natural */
+.child-table {
+    margin-bottom: 0;
+    font-size: 0.7rem;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.child-table thead th {
+    background: linear-gradient(135deg, #553d73 0%, #553d73 100%) !important;
+    color: white !important;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border: none;
+    padding: 0.4rem 0.3rem;
+    text-align: center;
+    position: relative;
+}
+
+.child-table thead th::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background-color: rgba(255,255,255,0.2);
+}
+
+.child-table thead th:last-child::after {
+    display: none;
+}
+
+.child-table tbody td {
+    padding: 0.35rem 0.3rem;
+    vertical-align: middle;
+    border: 1px solid #f1f3f4;
+    font-size: 0.65rem;
+    background-color: #ffffff;
+}
+
+.child-table tbody tr {
+    transition: all 0.15s ease;
+}
+
+.child-table tbody tr:hover {
+    background-color: #f8f9fa !important;
+    transform: translateX(2px);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.child-table tbody tr:nth-child(even) {
+    background-color: #fcfdfe;
+}
+
+/* Expand/Collapse Control dengan animasi smooth dan tema ungu gelap */
+.details-control {
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.details-control:hover {
+    background-color: rgba(108, 81, 144, 0.1) !important;
+}
+
+.expand-btn {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1.1em;
+    display: inline-block;
+}
+
+.expand-btn:hover {
+    color: #553d73 !important;
+    transform: scale(1.15) rotate(5deg);
+}
+
+tr.shown .expand-btn {
+    color: #dc3545 !important;
+    transform: rotate(180deg);
+}
+
+/* Table row states dengan animasi dan tema ungu gelap */
+tr.shown {
+    background-color: #ede8f2 !important;
+    border-left: 4px solid #6c5190 !important;
+}
+
+tr.shown td {
+    border-bottom: 2px solid #6c5190 !important;
+}
+
+/* Badge styling improvements */
+.badge {
+    font-size: 0.6rem;
+    padding: 0.2em 0.4em;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+.badge.small {
+    font-size: 0.55rem;
+    padding: 0.15em 0.3em;
+}
+
+/* Button styling untuk child rows - lebih compact */
+.btn-xs {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+    line-height: 1.2;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.btn-xs:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* Button processing state */
+.btn-processing {
+    background-color: #f8f9fa !important;
+    border-color: #6c757d !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+.btn-processing:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Disabled button state */
+.btn-xs:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Hidden button state - completely invisible */
+.btn-hidden-temp {
+    display: none !important;
+}
+
+/* Processing indicator styling */
+.btn-processing .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* Code styling dengan background subtle */
+code {
+    padding: 0.15rem 0.3rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+}
+
+.child-table code {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.25rem;
+    color: #495057;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .child-details-container {
+        margin: 0.25rem 0.5rem 0.5rem 1rem;
+    }
+    
+    #jurnalEscrowBillerPlTable th,
+    #jurnalEscrowBillerPlTable td {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.2rem;
+    }
+    
+    .child-table {
+        font-size: 0.6rem;
+    }
+    
+    .child-table thead th {
+        font-size: 0.55rem;
+        padding: 0.3rem 0.2rem;
+    }
+    
+    .child-table tbody td {
+        font-size: 0.55rem;
+        padding: 0.25rem 0.2rem;
+    }
+    
+    .btn-xs {
+        padding: 0.1rem 0.3rem;
+        font-size: 0.55rem;
+    }
+    
+    .badge {
+        font-size: 0.5rem;
+        padding: 0.1em 0.25em;
+    }
+}
+
+/* DataTable custom styling */
+.dataTables_wrapper .dataTables_info {
+    font-size: 0.875rem;
+}
+
+/* Loading state styling dengan animasi */
+.btn .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Text utilities */
+.text-end {
+    text-align: right !important;
+}
+
+.small {
+    font-size: 0.7rem;
+}
+
+/* Animasi untuk expand/collapse */
+.child-details-container {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Focus states untuk accessibility dengan warna ungu gelap */
+.expand-btn:focus,
+.btn-xs:focus {
+    outline: 2px solid #6c5190;
+    outline-offset: 2px;
+}
+
+/* Custom alert styling untuk progress modal */
+.modal-header.bg-purple {
+    background: linear-gradient(135deg, #6c5190 0%, #553d73 100%) !important;
+    border-bottom: 1px solid #553d73;
+}
+
+/* Custom purple theme untuk beberapa elemen */
+.text-purple {
+    color: #6c5190 !important;
+}
+
+.bg-purple-light {
+    background-color: #ede8f2 !important;
+    border-color: #6c5190 !important;
+}
+
+/* Badge dengan tema ungu gelap untuk berbagai status */
+.badge-purple {
+    background-color: #6c5190 !important;
+    color: white !important;
+}
+
+.badge-purple-light {
+    background-color: #ede8f2 !important;
+    color: #6c5190 !important;
+    border: 1px solid #6c5190 !important;
+}
+
+/* Header table utama dengan sedikit sentuhan ungu gelap */
+#jurnalEscrowBillerPlTable th {
+    background: linear-gradient(135deg, #f6f4f9 0%, #ffffff 100%);
+    border-top: 1px solid #e3e6f0;
+    border-bottom: 2px solid #6c5190;
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    vertical-align: middle;
+    text-align: center;
+    color: #553d73;
+}
