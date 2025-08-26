@@ -351,7 +351,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -419,8 +419,8 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('rekon/process/direct-jurnal/dispute/datatable') }}',
-            type: 'GET',
+            url: "{{ base_url('rekon/process/direct-jurnal/dispute/datatable') }}",
+            type: "GET",
             data: function(d) {
                 // Add current date filter
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
@@ -556,7 +556,7 @@ function openDisputeModal(id) {
     refreshCSRFToken().then(function() {
         // Get dispute detail - CSRF otomatis ditambahkan dengan token fresh
         $.ajax({
-            url: '{{ base_url('rekon/process/direct-jurnal/dispute/detail') }}',
+            url: "{{ base_url('rekon/process/direct-jurnal/dispute/detail') }}",
             type: 'POST',
             data: { id: id },
             dataType: 'json',
@@ -620,8 +620,8 @@ function saveDispute() {
     refreshCSRFToken().then(function() {
         // CSRF otomatis ditambahkan oleh ajaxSetup dengan token fresh
         $.ajax({
-            url: '{{ base_url('rekon/process/direct-jurnal/dispute/update') }}',
-            type: 'POST',
+            url: "{{ base_url('rekon/process/direct-jurnal/dispute/update') }}",
+            type: "POST",
             data: formData,
             processData: false,
             contentType: false,

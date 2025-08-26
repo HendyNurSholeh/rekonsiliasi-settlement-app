@@ -33,7 +33,7 @@
                         • <strong>Reset & Lanjutkan:</strong> Hapus semua data rekonsiliasi untuk tanggal tersebut dan buat proses baru
                     </p>
                     <div class="mt-3">
-                        <button type="button" class="btn btn-danger" onclick="confirmReset('{{ session('existing_date') }}')">
+                        <button type="button" class="btn btn-danger" onclick="confirmReset(`{{ session('existing_date') }}`)">
                             <i class="fal fa-redo"></i> Reset & Lanjutkan
                         </button>
                         <button type="button" class="btn btn-secondary ml-2" onclick="dismissAlert()">
@@ -266,7 +266,7 @@ function doReset(date) {
 
 function dismissAlert() {
     $('.alert-warning').fadeOut();
-    $('#tanggal_rekon').val('{{ $defaultDate ?? date('Y-m-d', strtotime('-1 day')) }}');
+    $('#tanggal_rekon').val("{{ $defaultDate ?? date('Y-m-d', strtotime('-1 day')) }}");
     $('#dateStatus').hide();
 }
 

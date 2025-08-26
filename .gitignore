@@ -17,7 +17,7 @@ Desktop.ini
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
-
+app/Config/App.php
 # Windows Installer files
 *.cab
 *.msi

@@ -229,7 +229,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 });
 
 function refreshCSRFToken() {
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -286,7 +286,7 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('settlement/buat-jurnal/datatable') }}',
+            url: "{{ base_url('settlement/buat-jurnal/datatable') }}",
             type: 'GET',
             data: function(d) {
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
@@ -479,8 +479,8 @@ function openCreateJurnalModal(namaProduk, $btn) {
     // Validate settlement data first
     refreshCSRFToken().then(function() {
         $.ajax({
-            url: '{{ base_url('settlement/buat-jurnal/validate') }}',
-            type: 'POST',
+            url: "{{ base_url('settlement/buat-jurnal/validate') }}",
+            type: "POST",
             data: { 
                 nama_produk: namaProduk,
                 tanggal_rekon: tanggalRekon
@@ -542,8 +542,8 @@ function confirmCreateJurnal() {
     
     refreshCSRFToken().then(function() {
         $.ajax({
-            url: '{{ base_url('settlement/buat-jurnal/create') }}',
-            type: 'POST',
+            url: "{{ base_url('settlement/buat-jurnal/create') }}",
+            type: "POST",
             data: { 
                 nama_produk: namaProduk,
                 tanggal_rekon: tanggalRekon

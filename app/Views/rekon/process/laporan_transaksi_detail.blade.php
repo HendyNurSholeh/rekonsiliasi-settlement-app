@@ -372,7 +372,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -454,7 +454,7 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('rekon/process/laporan-transaksi-detail/datatable') }}',
+            url: "{{ base_url('rekon/process/laporan-transaksi-detail/datatable') }}",
             type: 'GET',
             data: function(d) {
                 // Add current date filter
@@ -625,7 +625,7 @@ function openDisputeModal(id) {
     refreshCSRFToken().then(function() {
         // Get dispute detail - CSRF otomatis ditambahkan dengan token fresh
         $.ajax({
-            url: '{{ base_url('rekon/process/laporan-transaksi-detail/detail') }}',
+            url: "{{ base_url('rekon/process/laporan-transaksi-detail/detail') }}",
             type: 'POST',
             data: { id: id },
             dataType: 'json',
@@ -698,7 +698,7 @@ function saveDispute() {
     refreshCSRFToken().then(function() {
         // CSRF otomatis ditambahkan oleh ajaxSetup dengan token fresh
         $.ajax({
-            url: '{{ base_url('rekon/process/laporan-transaksi-detail/update') }}',
+            url: "{{ base_url('rekon/process/laporan-transaksi-detail/update') }}",
             type: 'POST',
             data: formData,
             processData: false,

@@ -288,7 +288,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 });
 
 function refreshCSRFToken() {
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -349,8 +349,8 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('settlement/approve-jurnal/datatable') }}',
-            type: 'GET',
+            url: "{{ base_url('settlement/approve-jurnal/datatable') }}",
+            type: "GET",
             data: function(d) {
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
                 d.status_approve = $('#filter_status_approve').val();
@@ -494,7 +494,7 @@ function openApprovalModal(kdSettle, $btn) {
 
     refreshCSRFToken().then(function() {
         $.ajax({
-            url: '{{ base_url('settlement/approve-jurnal/detail') }}',
+            url: "{{ base_url('settlement/approve-jurnal/detail') }}",
             type: 'POST',
             data: { kd_settle: kdSettle },
             dataType: 'json',
@@ -622,8 +622,8 @@ function processApproval(action) {
     
     refreshCSRFToken().then(function() {
         $.ajax({
-            url: '{{ base_url('settlement/approve-jurnal/process') }}',
-            type: 'POST',
+            url: "{{ base_url('settlement/approve-jurnal/process') }}",
+            type: "POST",
             data: { 
                 kd_settle: currentSettleData.kd_settle,
                 tanggal_rekon: tanggalRekon,
@@ -671,7 +671,7 @@ function loadSummary() {
     const tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
     
     $.ajax({
-        url: '{{ base_url('settlement/approve-jurnal/summary') }}',
+        url: "{{ base_url('settlement/approve-jurnal/summary') }}",
         type: 'GET',
         data: { tanggal: tanggal },
         dataType: 'json',

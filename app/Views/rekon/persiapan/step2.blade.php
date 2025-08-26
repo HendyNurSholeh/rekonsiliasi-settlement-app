@@ -457,7 +457,7 @@
                         @endif
                     </div>
                     <div>
-                        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='{{ base_url('rekon') }}'">
+                        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href=`{{ base_url('rekon') }}`">
                             <i class="fal fa-arrow-left"></i> Kembali ke Step 1
                         </button>
                         @if(($mappingStats['unmapped_products'] ?? 0) > 0)
@@ -497,7 +497,7 @@ function startReconciliation() {
     btn.prop('disabled', true).html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
     
     $.ajax({
-        url: '{{ base_url('rekon/step2/validate') }}',
+        url: "{{ base_url('rekon/step2/validate') }}",
         type: 'POST',
         data: {
             tanggal_rekon: currentTanggalRekon,
@@ -545,7 +545,7 @@ function prosesUlangPersiapan() {
     
     // Kirim request AJAX
     $.ajax({
-        url: '{{ base_url('rekon/step2/proses-ulang') }}',
+        url: "{{ base_url('rekon/step2/proses-ulang') }}",
         type: 'POST',
         data: {
             tanggal_rekon: currentTanggalRekon,

@@ -136,7 +136,7 @@ let currentCSRF = '{{ csrf_token() }}';
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
     console.log('Requesting fresh CSRF token...');
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         console.log('CSRF token response:', response);
         if (response.csrf_token) {
             const oldToken = currentCSRF;
@@ -251,8 +251,8 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('rekon/process/indirect-jurnal-rekap/datatable') }}',
-            type: 'GET',
+            url: "{{ base_url('rekon/process/indirect-jurnal-rekap/datatable') }}",
+            type: "GET",
             data: function(d) {
                 // Add current date filter
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
@@ -443,7 +443,7 @@ function updateSuksesTx(group) {
         });
         
         $.ajax({
-            url: '{{ base_url('rekon/process/indirect-jurnal-rekap/update-sukses') }}',
+            url: "{{ base_url('rekon/process/indirect-jurnal-rekap/update-sukses') }}",
             type: 'POST',
             data: {
                 group: group,

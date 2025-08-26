@@ -123,8 +123,8 @@ $(document).ajaxError(function(event, xhr, settings) {
 function refreshCSRFToken() {
     console.log('Attempting to refresh CSRF token...');
     console.log('Current CSRF before refresh:', currentCSRF);
-    
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         console.log('CSRF refresh response:', response);
         
         if (response.csrf_token) {
@@ -201,7 +201,7 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('settlement/jurnal-ca-escrow/datatable') }}',
+            url: "{{ base_url('settlement/jurnal-ca-escrow/datatable') }}",
             type: 'GET',
             data: function(d) {
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalData }}';
@@ -560,7 +560,7 @@ function formatChildRows(childData, kdSettle) {
     html += '<th style="width: 8%">Core Res</th>';
     html += '<th style="width: 9%">Core Ref</th>';
     html += '<th style="width: 10%">Core DateTime</th>';
-    html += '<th style="width: 5%">Aksi</th>';
+    // html += '<th style="width: 5%">Aksi</th>';
     html += '</tr>';
     html += '</thead>';
     html += '<tbody>';
@@ -635,6 +635,7 @@ function formatChildRows(childData, kdSettle) {
         html += '</td>';
         
         // Actions - sederhana tanpa icon yang berlebihan
+        /*
         html += '<td class="text-center">';
         let actionButton = '';
         if (child.d_CODE_RES && child.d_CODE_RES.startsWith('00')) {
@@ -654,6 +655,7 @@ function formatChildRows(childData, kdSettle) {
         }
         html += actionButton;
         html += '</td>';
+        */
         
         html += '</tr>';
     });
@@ -920,7 +922,7 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
     
     // AJAX call untuk proses jurnal
     $.ajax({
-        url: '{{ base_url('settlement/jurnal-ca-escrow/proses') }}',
+        url: "{{ base_url('settlement/jurnal-ca-escrow/proses') }}",
         type: 'POST',
         timeout: 120000, // 2 menit timeout
         data: {

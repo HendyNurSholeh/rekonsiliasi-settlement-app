@@ -180,7 +180,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -280,7 +280,7 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('rekon/process/detail-vs-rekap/datatable') }}',
+            url: "{{ base_url('rekon/process/detail-vs-rekap/datatable') }}",
             type: 'GET',
             data: function(d) {
                 // Add current filters
@@ -402,7 +402,7 @@ function updateStatistics() {
     
     // Make AJAX request to get statistics
     $.ajax({
-        url: '{{ base_url('rekon/process/detail-vs-rekap/statistics') }}',
+        url: "{{ base_url('rekon/process/detail-vs-rekap/statistics') }}",
         type: 'GET',
         data: {
             tanggal: tanggal,

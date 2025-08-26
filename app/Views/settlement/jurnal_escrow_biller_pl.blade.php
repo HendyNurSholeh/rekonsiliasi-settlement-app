@@ -119,8 +119,8 @@ $(document).ajaxError(function(event, xhr, settings) {
 function refreshCSRFToken() {
     console.log('Attempting to refresh CSRF token...');
     console.log('Current CSRF before refresh:', currentCSRF);
-    
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         console.log('CSRF refresh response:', response);
         
         if (response.csrf_token) {
@@ -197,7 +197,7 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('settlement/jurnal-escrow-biller-pl/datatable') }}',
+            url: "{{ base_url('settlement/jurnal-escrow-biller-pl/datatable') }}",
             type: 'GET',
             data: function(d) {
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalData }}';
@@ -516,7 +516,7 @@ function formatChildRows(childData, kdSettle) {
     html += '<th style="width: 7%">Code Res</th>';
     html += '<th style="width: 9%">Core Ref</th>';
     html += '<th style="width: 8%">Core DateTime</th>';
-    html += '<th style="width: 2%">Aksi</th>';
+    // html += '<th style="width: 2%">Aksi</th>';
     html += '</tr>';
     html += '</thead>';
     html += '<tbody>';
@@ -604,11 +604,11 @@ function formatChildRows(childData, kdSettle) {
         html += '</td>';
         
         // Actions - disabled for now per request
-        html += '<td class="text-center">';
-        html += '<button class="btn btn-xs btn-secondary" disabled title="Fitur sedang dikembangkan">';
-        html += '<i class="fal fa-cog"></i>';
-        html += '</button>';
-        html += '</td>';
+        // html += '<td class="text-center">';
+        // html += '<button class="btn btn-xs btn-secondary" disabled title="Fitur sedang dikembangkan">';
+        // html += '<i class="fal fa-cog"></i>';
+        // html += '</button>';
+        // html += '</td>';
         
         html += '</tr>';
     });
@@ -869,7 +869,7 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
     
     // AJAX call untuk proses jurnal
     $.ajax({
-        url: '{{ base_url('settlement/jurnal-ca-escrow/proses') }}',
+        url: "{{ base_url('settlement/jurnal-ca-escrow/proses') }}",
         type: 'POST',
         timeout: 120000, // 2 menit timeout
         data: {

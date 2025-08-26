@@ -352,7 +352,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
-    return $.get('{{ base_url('get-csrf-token') }}').then(function(response) {
+    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -552,8 +552,8 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ base_url('rekon/process/indirect-dispute/datatable') }}',
-            type: 'GET',
+            url: "{{ base_url('rekon/process/indirect-dispute/datatable') }}",
+            type: "GET",
             data: function(d) {
                 // Add current filters sesuai arahan senior
                 d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
@@ -694,7 +694,7 @@ function showProsesDispute(vId) {
         
         // Load current data
         $.ajax({
-            url: '{{ base_url('rekon/process/indirect-dispute/detail') }}',
+            url: "{{ base_url('rekon/process/indirect-dispute/detail') }}",
             type: 'POST',
             data: { id: vId },
             success: function(response) {
