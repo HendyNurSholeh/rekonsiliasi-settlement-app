@@ -31,15 +31,4 @@ class Dashboard extends BaseController
 
 		return $this->render('dashboard', $data);
 	}
-
-	// public function callSeeder()
-	// {
-	// 	$role = Role::all();
-	// 	foreach ($role as $item) {
-	// 		$item->permissions()->sync([10,11]);
-	// 	}
-
-	// 	$role = Role::where('key', 'SUPER ADMIN')->first();
-	// 	$role->permissions()->sync([1, 2, 3, 4, 8, 9, 10, 11]);
-	// }
 }
