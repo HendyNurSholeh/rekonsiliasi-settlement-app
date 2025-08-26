@@ -1,149 +1,5 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="subheader">
-    <h1 class="subheader-title">
-        <i class="fal fa-chart-line"></i> {{ $title }}
-        <small>Perbandingan data detail vs rekap untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
-    </h1>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-info">
-            <i class="fal fa-info-circle"></i>
-            <strong>Laporan Detail vs Rekap</strong> 
-            <br>Menampilkan perbandingan data antara detail transaksi dengan data rekap settlement.
-        </div>
-    </div>
-</div>
-
-<!-- Filter Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fal fa-filter"></i> Filter Data
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="GET" action="{{ current_url() }}">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="tanggal" class="form-label">Tanggal Rekonsiliasi</label>
-                            <input type="date" class="form-control" id="tanggal" name="tanggal" 
-                                   value="{{ $tanggalRekon }}" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="filter_selisih" class="form-label">Filter Selisih</label>
-                            <select class="form-control" id="filter_selisih" name="filter_selisih">
-                                <option value="">Semua Data</option>
-                                <option value="ada_selisih" @if(request()->getGet('filter_selisih') == 'ada_selisih') selected @endif>Ada Selisih</option>
-                                <option value="tidak_ada_selisih" @if(request()->getGet('filter_selisih') == 'tidak_ada_selisih') selected @endif>Tidak Ada Selisih</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
-                                <i class="fal fa-search"></i> Tampilkan Data
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="resetFilters()">
-                                <i class="fal fa-undo"></i> Reset
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Statistics Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <span class="text-muted small">Total Data</span>
-                            <h4 class="mb-0 text-primary" id="stat-total">
-                                <i class="fal fa-spinner fa-spin"></i>
-                            </h4>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <span class="text-muted small">Ada Selisih</span>
-                            <h4 class="mb-0 text-danger" id="stat-ada-selisih">
-                                <i class="fal fa-spinner fa-spin"></i>
-                            </h4>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <span class="text-muted small">Tidak Ada Selisih</span>
-                            <h4 class="mb-0 text-success" id="stat-tidak-ada-selisih">
-                                <i class="fal fa-spinner fa-spin"></i>
-                            </h4>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="d-flex flex-column">
-                            <span class="text-muted small">Persentase Selesai</span>
-                            <h4 class="mb-0 text-info" id="stat-akurasi">
-                                <i class="fal fa-spinner fa-spin"></i>
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Data Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fal fa-table"></i> Data Perbandingan Detail vs Rekap
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="compareTable">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>No</th>
-                                <th>Nama Group</th>
-                                <th>File Settle</th>
-                                <th>Amount Detail</th>
-                                <th>Amount Rekap</th>
-                                <th>Selisih</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data akan dimuat via AJAX -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@endsection
-
-@push('styles')
-<link rel="stylesheet" href="{{ base_url('css/rekon/process/detail_vs_rekap.css') }}">
-@endpush
-
-@push('scripts')
-<script>
 // Super Simple but Robust CSRF Management
-let currentCSRF = '{{ csrf_token() }}';
+let currentCSRF = window.appConfig?.csrfToken || '';
 
 // Global AJAX setup untuk auto-inject CSRF
 $.ajaxSetup({
@@ -180,7 +36,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
-    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
+    return $.get(window.appConfig.baseUrl + 'get-csrf-token').then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -280,11 +136,11 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: "{{ base_url('rekon/process/detail-vs-rekap/datatable') }}",
+            url: window.appConfig.baseUrl + "rekon/process/detail-vs-rekap/datatable",
             type: 'GET',
             data: function(d) {
                 // Add current filters
-                d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
+                d.tanggal = $('#tanggal').val() || window.appConfig.tanggalData;
                 d.filter_selisih = $('#filter_selisih').val();
                 console.log('DataTable request data:', d);
                 console.log('Filter Selisih:', d.filter_selisih);
@@ -402,7 +258,7 @@ function updateStatistics() {
     
     // Make AJAX request to get statistics
     $.ajax({
-        url: "{{ base_url('rekon/process/detail-vs-rekap/statistics') }}",
+        url: window.appConfig.baseUrl + "rekon/process/detail-vs-rekap/statistics",
         type: 'GET',
         data: {
             tanggal: tanggal,
@@ -450,12 +306,12 @@ function updateStatistics() {
 }
 
 function resetFilters() {
-    $('#tanggal').val('{{ $tanggalRekon }}');
+    $('#tanggal').val(window.appConfig.tanggalData);
     $('#filter_selisih').val('');
     
     // Update URL params
     const url = new URL(window.location);
-    url.searchParams.set('tanggal', '{{ $tanggalRekon }}');
+    url.searchParams.set('tanggal', window.appConfig.tanggalData);
     url.searchParams.delete('filter_selisih');
     window.history.pushState({}, '', url);
     
@@ -505,5 +361,3 @@ function showAlert(type, message) {
         }, 3000);
     }
 }
-</script>
-@endpush

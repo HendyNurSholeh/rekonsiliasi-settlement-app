@@ -44,7 +44,7 @@ class DetailVsRekapController extends BaseController
             $data['compareData'] = [];
         }
 
-        return $this->render('rekon/process/detail_vs_rekap.blade.php', $data);
+        return $this->render('rekon/process/detail_vs_rekap/index.blade.php', $data);
     }
 
     /**
