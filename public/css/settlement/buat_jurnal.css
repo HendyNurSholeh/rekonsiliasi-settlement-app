@@ -1,0 +1,126 @@
+.btn-create-jurnal {
+    transition: all 0.3s ease;
+}
+
+.btn-create-jurnal:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.text-success {
+    font-weight: 600;
+}
+
+.text-danger {
+    font-weight: 600;
+}
+
+.text-primary {
+    font-weight: 600;
+}
+
+.text-info {
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.85em;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-header .close {
+    color: white;
+    opacity: 0.8;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+}
+
+/* Table styling for better readability */
+#buatJurnalTable {
+    font-size: 0.9em;
+}
+
+#buatJurnalTable th {
+    font-size: 0.85em;
+    white-space: nowrap;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#buatJurnalTable td {
+    vertical-align: middle;
+}
+
+#buatJurnalTable .text-right {
+    text-align: right !important;
+}
+
+#buatJurnalTable .text-center {
+    text-align: center !important;
+}
+
+/* Code styling for KD_SETTLE */
+code.text-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* Amount styling */
+.amount-cell {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+
+/* Modal form group styling */
+.modal .form-group label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.modal .form-control[readonly] {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+/* Responsive table handling */
+@media (max-width: 1200px) {
+    #buatJurnalTable {
+        font-size: 0.8em;
+    }
+    
+    #buatJurnalTable th,
+    #buatJurnalTable td {
+        padding: 0.5rem 0.3rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        border: none;
+    }
+    
+    #buatJurnalTable th:not(:first-child):not(:last-child),
+    #buatJurnalTable td:not(:first-child):not(:last-child) {
+        display: none;
+    }
+    
+    #buatJurnalTable th:first-child,
+    #buatJurnalTable td:first-child {
+        width: 30%;
+    }
+    
+    #buatJurnalTable th:last-child,
+    #buatJurnalTable td:last-child {
+        width: 70%;
+    }
+}

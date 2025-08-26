@@ -30,7 +30,7 @@ class BuatJurnalController extends BaseController
             'route' => 'settlement/buat-jurnal'
         ];
 
-        return $this->render('settlement/buat_jurnal.blade.php', $data);
+        return $this->render('settlement/buat_jurnal/index.blade.php', $data);
     }
 
     /**

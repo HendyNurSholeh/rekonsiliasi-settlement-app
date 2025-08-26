@@ -1,206 +1,5 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="subheader">
-    <h1 class="subheader-title">
-        <i class="fal fa-file-invoice-dollar"></i> {{ $title }}
-        <small>Membuat jurnal settlement untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
-    </h1>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-info">
-            <i class="fal fa-info-circle"></i>
-            <strong>Informasi Settlement</strong> 
-            <br>Modul ini berfungsi untuk membuat jurnal transaksi settlement yang kemudian akan diproses di sistem core banking. 
-            <br>Produk yang dapat diproses adalah produk yang tidak memiliki dispute atau status settle verifikasinya adalah 1 (dilimpahkan) atau 9 (tidak dilimpahkan).
-        
-        </div>
-    </div>
-</div>
-
-<!-- Filter Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fal fa-filter"></i> Filter Data
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="GET" action="{{ current_url() }}">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="tanggal" class="form-label">Tanggal Rekonsiliasi</label>
-                            <input type="date" class="form-control" id="tanggal" name="tanggal" 
-                                   value="{{ $tanggalRekon }}" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="filter_file_settle" class="form-label">File Settle</label>
-                            <select class="form-control" id="filter_file_settle" name="file_settle">
-                                <option value="">Semua File</option>
-                                <option value="0" @if(request()->getGet('file_settle') == '0') selected @endif>Default (0)</option>
-                                <option value="1" @if(request()->getGet('file_settle') == '1') selected @endif>Pajak (1)</option>
-                                <option value="2" @if(request()->getGet('file_settle') == '2') selected @endif>Edu (2)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
-                                <i class="fal fa-search"></i> Tampilkan Data
-                            </button>
-                            <button type="button" class="btn btn-secondary ml-2" onclick="resetFilters()">
-                                <i class="fal fa-undo"></i> Reset
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Data Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fal fa-table"></i> Data Compare Rekap Settlement
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="buatJurnalTable">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>No</th>
-                                <th>Nama Produk</th>
-                                <th>File Settle</th>
-                                <th>Amount Detail</th>
-                                <th>Amount Rekap</th>
-                                <th>Selisih</th>
-                                <th>Jum TX Dispute</th>
-                                <th>Amount TX Dispute</th>
-                                <th>Kode Settle</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data akan dimuat via AJAX -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Konfirmasi Create Jurnal -->
-<div class="modal fade" id="createJurnalModal" tabindex="-1" role="dialog" aria-labelledby="createJurnalModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createJurnalModalLabel">
-                    <i class="fal fa-plus-circle"></i> Konfirmasi Buat Jurnal Settlement
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fal fa-exclamation-triangle"></i>
-                    <strong>Perhatian!</strong> Pastikan data sudah benar sebelum membuat jurnal settlement.
-                </div>
-                
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0">Detail Produk</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Nama Produk</label>
-                                    <input type="text" class="form-control" id="modal_nama_produk" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Tanggal Rekonsiliasi</label>
-                                    <input type="text" class="form-control" id="modal_tanggal_rekon" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <div class="form-group">
-                                    <label>File Settle</label>
-                                    <input type="text" class="form-control" id="modal_file_settle" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <div class="form-group">
-                                    <label>Amount Detail</label>
-                                    <input type="text" class="form-control" id="modal_amount_detail" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <div class="form-group">
-                                    <label>Amount Rekap</label>
-                                    <input type="text" class="form-control" id="modal_amount_rekap" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <div class="form-group">
-                                    <label>Selisih</label>
-                                    <input type="text" class="form-control" id="modal_selisih" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <div class="form-group">
-                                    <label>Jum TX Dispute</label>
-                                    <input type="text" class="form-control" id="modal_jum_tx_dispute" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <div class="form-group">
-                                    <label>Amount TX Dispute</label>
-                                    <input type="text" class="form-control" id="modal_amount_tx_dispute" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="alert alert-info mt-3">
-                            <i class="fal fa-info-circle"></i>
-                            <strong>Syarat Validasi:</strong>
-                            <ul class="mb-0 mt-2">
-                                <li>SELISIH harus = 0 (Amount Detail - Amount Rekap = 0)</li>
-                                <li>JUM_TX_DISPUTE harus = 0 (Tidak ada transaksi yang dispute)</li>
-                                <li>AMOUNT_TX_DISPUTE harus = 0 (Total amount dispute = 0)</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fal fa-times"></i> Batal
-                </button>
-                <button type="button" class="btn btn-primary" id="confirmCreateJurnalBtn" onclick="confirmCreateJurnal()">
-                    <i class="fal fa-check"></i> Ya, Buat Jurnal
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-@endsection
-
-@push('scripts')
-<script>
 // CSRF Management
-let currentCSRF = '{{ csrf_token() }}';
+let currentCSRF = window.appConfig?.csrfToken || '';
 
 $.ajaxSetup({
     beforeSend: function(xhr, settings) {
@@ -229,7 +28,7 @@ $(document).ajaxError(function(event, xhr, settings) {
 });
 
 function refreshCSRFToken() {
-    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
+    return $.get(window.appConfig.baseUrl + "get-csrf-token").then(function(response) {
         if (response.csrf_token) {
             currentCSRF = response.csrf_token;
             console.log('New CSRF token:', currentCSRF);
@@ -286,10 +85,10 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: "{{ base_url('settlement/buat-jurnal/datatable') }}",
+            url: window.appConfig.baseUrl + 'settlement/buat-jurnal/datatable',
             type: 'GET',
             data: function(d) {
-                d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
+                d.tanggal = $('#tanggal').val() || window.appConfig.tanggalRekon;
                 d.file_settle = $('#filter_file_settle').val();
                 console.log('DataTable request data:', d);
                 return d;
@@ -474,12 +273,12 @@ function openCreateJurnalModal(namaProduk, $btn) {
         return;
     }
 
-    const tanggalRekon = $('#tanggal').val() || '{{ $tanggalRekon }}';
-    
+    const tanggalRekon = $('#tanggal').val() || window.appConfig.tanggalRekon;
+
     // Validate settlement data first
     refreshCSRFToken().then(function() {
         $.ajax({
-            url: "{{ base_url('settlement/buat-jurnal/validate') }}",
+            url: window.appConfig.baseUrl + "settlement/buat-jurnal/validate",
             type: "POST",
             data: { 
                 nama_produk: namaProduk,
@@ -542,7 +341,7 @@ function confirmCreateJurnal() {
     
     refreshCSRFToken().then(function() {
         $.ajax({
-            url: "{{ base_url('settlement/buat-jurnal/create') }}",
+            url: window.appConfig.baseUrl + "settlement/buat-jurnal/create",
             type: "POST",
             data: { 
                 nama_produk: namaProduk,
@@ -624,137 +423,3 @@ function resetFilters() {
     url.searchParams.delete('file_settle');
     window.location.href = url.pathname + url.search;
 }
-</script>
-@endpush
-
-@push('styles')
-<link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
-<style>
-.btn-create-jurnal {
-    transition: all 0.3s ease;
-}
-
-.btn-create-jurnal:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.text-success {
-    font-weight: 600;
-}
-
-.text-danger {
-    font-weight: 600;
-}
-
-.text-primary {
-    font-weight: 600;
-}
-
-.text-info {
-    font-weight: 600;
-}
-
-.badge {
-    font-size: 0.85em;
-}
-
-.modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.modal-header .close {
-    color: white;
-    opacity: 0.8;
-}
-
-.modal-header .close:hover {
-    opacity: 1;
-}
-
-/* Table styling for better readability */
-#buatJurnalTable {
-    font-size: 0.9em;
-}
-
-#buatJurnalTable th {
-    font-size: 0.85em;
-    white-space: nowrap;
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
-}
-
-#buatJurnalTable td {
-    vertical-align: middle;
-}
-
-#buatJurnalTable .text-right {
-    text-align: right !important;
-}
-
-#buatJurnalTable .text-center {
-    text-align: center !important;
-}
-
-/* Code styling for KD_SETTLE */
-code.text-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-    padding: 2px 6px;
-    border-radius: 3px;
-}
-
-/* Amount styling */
-.amount-cell {
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-}
-
-/* Modal form group styling */
-.modal .form-group label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 5px;
-}
-
-.modal .form-control[readonly] {
-    background-color: #f8f9fa;
-    border-color: #ced4da;
-}
-
-/* Responsive table handling */
-@media (max-width: 1200px) {
-    #buatJurnalTable {
-        font-size: 0.8em;
-    }
-    
-    #buatJurnalTable th,
-    #buatJurnalTable td {
-        padding: 0.5rem 0.3rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .table-responsive {
-        border: none;
-    }
-    
-    #buatJurnalTable th:not(:first-child):not(:last-child),
-    #buatJurnalTable td:not(:first-child):not(:last-child) {
-        display: none;
-    }
-    
-    #buatJurnalTable th:first-child,
-    #buatJurnalTable td:first-child {
-        width: 30%;
-    }
-    
-    #buatJurnalTable th:last-child,
-    #buatJurnalTable td:last-child {
-        width: 70%;
-    }
-}
-</style>
-@endpush
