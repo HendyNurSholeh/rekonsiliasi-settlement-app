@@ -30,7 +30,7 @@ class ApproveJurnalController extends BaseController
             'route' => 'settlement/approve-jurnal'
         ];
 
-        return $this->render('settlement/approve_jurnal.blade.php', $data);
+        return $this->render('settlement/approve_jurnal/index.blade.php', $data);
     }
 
     /**
