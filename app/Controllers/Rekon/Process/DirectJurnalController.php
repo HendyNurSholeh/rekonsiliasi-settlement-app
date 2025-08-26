@@ -42,7 +42,7 @@ class DirectJurnalController extends BaseController
             $data['rekapData'] = [];
         }
 
-        return $this->render('rekon/process/direct_jurnal_rekap.blade.php', $data);
+        return $this->render('rekon/process/direct_jurnal_rekap/index.blade.php', $data);
     }
 
     /**
