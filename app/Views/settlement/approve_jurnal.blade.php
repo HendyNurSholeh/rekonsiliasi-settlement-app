@@ -1,5 +1,10 @@
 @extends('layouts.app')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
+    <link rel="stylesheet" href="{{ base_url('css/settlement/approve_jurnal.css') }}">
+@endpush
+
 @section('content')
 <div class="subheader">
     <h1 class="subheader-title">
@@ -237,27 +242,7 @@
 @endsection
 
 @push('scripts')
-<script src="{{ base_url('assets/js/toastr.min.js') }}"></script>
 <script>
-// Toastr configuration
-toastr.options = {
-    "closeButton": true,
-    "debug": false,
-    "newestOnTop": false,
-    "progressBar": true,
-    "positionClass": "toast-top-right",
-    "preventDuplicates": false,
-    "onclick": null,
-    "showDuration": "300",
-    "hideDuration": "1000",
-    "timeOut": "5000",
-    "extendedTimeOut": "1000",
-    "showEasing": "swing",
-    "hideEasing": "linear",
-    "showMethod": "fadeIn",
-    "hideMethod": "fadeOut"
-};
-
 // CSRF Management
 let currentCSRF = '{{ csrf_token() }}';
 
@@ -701,150 +686,4 @@ function resetFilters() {
     window.location.href = url.pathname + url.search;
 }
 </script>
-@endpush
-
-@push('styles')
-<link rel="stylesheet" href="{{ base_url('assets/css/toastr.min.css') }}">
-<link rel="stylesheet" href="{{ base_url('css/settlement/settlement.css') }}">
-<style>
-/* Custom Modal Extra Large */
-.modal-extra-large {
-    max-width: 95vw;
-    width: 95vw;
-}
-
-.modal-extra-large .modal-content {
-    height: 90vh;
-    max-height: 90vh;
-}
-
-.modal-extra-large .modal-body {
-    max-height: calc(90vh - 160px);
-    overflow-y: auto;
-    padding: 1.5rem;
-}
-
-/* Responsive behavior for smaller screens */
-@media (max-width: 768px) {
-    .modal-extra-large {
-        max-width: 98vw;
-        width: 98vw;
-        margin: 0.5rem;
-    }
-    
-    .modal-extra-large .modal-content {
-        height: 95vh;
-        max-height: 95vh;
-    }
-    
-    .modal-extra-large .modal-body {
-        max-height: calc(95vh - 140px);
-        padding: 1rem;
-    }
-}
-
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-
-.text-xs {
-    font-size: 0.75rem;
-}
-
-.text-gray-800 {
-    color: #5a5c69 !important;
-}
-
-.text-gray-300 {
-    color: #dddfeb !important;
-}
-
-.btn-view-detail {
-    transition: all 0.3s ease;
-}
-
-.btn-view-detail:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.modal-header .close {
-    color: white;
-    opacity: 0.8;
-}
-
-.modal-header .close:hover {
-    opacity: 1;
-}
-
-#detailJurnalTable {
-    font-size: 0.75rem;
-}
-
-#detailJurnalTable th {
-    background-color: #f8f9fc;
-    border-top: 1px solid #e3e6f0;
-    font-weight: 600;
-    padding: 0.5rem 0.4rem;
-    vertical-align: middle;
-    font-size: 0.75rem;
-    white-space: nowrap;
-}
-
-#detailJurnalTable td {
-    padding: 0.5rem 0.4rem;
-    vertical-align: middle;
-    font-size: 0.75rem;
-    word-wrap: break-word;
-}
-
-.table-compact {
-    margin-bottom: 0;
-}
-
-.table-compact th,
-.table-compact td {
-    padding: 0.4rem 0.3rem;
-}
-
-.text-right {
-    text-align: right;
-}
-
-.card {
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    border: 1px solid #e3e6f0;
-}
-
-/* Improve table readability in larger modal */
-.table-responsive {
-    border-radius: 0.5rem;
-}
-
-/* Make form groups in modal more spacious */
-.modal-body .form-group {
-    margin-bottom: 1.2rem;
-}
-
-.modal-body .card-header {
-    padding: 1rem 1.25rem;
-}
-
-.modal-body .card-body {
-    padding: 1.25rem;
-}
-</style>
 @endpush
