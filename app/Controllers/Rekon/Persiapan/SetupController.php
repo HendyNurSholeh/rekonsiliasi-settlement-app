@@ -31,7 +31,7 @@ class SetupController extends BaseController
             'defaultDate' => $defaultDate
         ];
         
-        return $this->render('rekon/persiapan/index.blade.php', $data);
+        return $this->render('rekon/persiapan/index/index.blade.php', $data);
     }
     
     /**
