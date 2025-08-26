@@ -29,5 +29,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ base_url('js/rekon/process/direct_jurnal_rekap.js') }}"></script>
+    <script src="{{ base_url('js/rekon/process/direct_jurnal/rekap_direct_jurnal.js') }}"></script>
 @endpush
