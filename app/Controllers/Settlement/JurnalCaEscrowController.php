@@ -31,7 +31,7 @@ class JurnalCaEscrowController extends BaseController
             'route' => 'settlement/jurnal-ca-escrow'
         ];
 
-        return $this->render('settlement/jurnal_ca_escrow.blade.php', $data);
+        return $this->render('settlement/jurnal_ca_escrow/index.blade.php', $data);
     }
 
     /**

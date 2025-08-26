@@ -18,7 +18,6 @@
                 <strong>Informasi Settlement</strong> 
                 <br>Modul ini berfungsi untuk membuat jurnal transaksi settlement yang kemudian akan diproses di sistem core banking. 
                 <br>Produk yang dapat diproses adalah produk yang tidak memiliki dispute atau status settle verifikasinya adalah 1 (dilimpahkan) atau 9 (tidak dilimpahkan).
-            
             </div>
         </div>
     </div>
