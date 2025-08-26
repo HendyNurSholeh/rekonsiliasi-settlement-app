@@ -22,10 +22,10 @@
     </div>
 
     <!-- Filter Section -->
-    @include('rekon.process.direct_jurnal_rekap._filter')
+    @include('rekon.process.direct_jurnal.rekap_direct_jurnal._filter')
 
     <!-- Data Table -->
-    @include('rekon.process.direct_jurnal_rekap._data_table')
+    @include('rekon.process.direct_jurnal.rekap_direct_jurnal._data_table')
 @endsection
 
 @push('scripts')

@@ -21,13 +21,13 @@
     </div>
 
     <!-- Filter Section -->
-    @include('rekon.process.dispute_resolution._filter')
+    @include('rekon.process.direct_jurnal.dispute_resolution._filter')
 
     <!-- Data Table -->
-    @include('rekon.process.dispute_resolution._data_table')
+    @include('rekon.process.direct_jurnal.dispute_resolution._data_table')
 
     <!-- Modal Proses Data Dispute -->
-    @include('rekon.process.dispute_resolution._modal')
+    @include('rekon.process.direct_jurnal.dispute_resolution._modal')
 @endsection
 
 @push('scripts')
