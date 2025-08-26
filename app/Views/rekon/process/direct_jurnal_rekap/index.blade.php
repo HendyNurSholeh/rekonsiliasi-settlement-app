@@ -8,7 +8,7 @@
     <div class="subheader">
         <h1 class="subheader-title">
             <i class="fal fa-file-invoice"></i> {{ $title }}
-            <small>Rekap transaksi direct jurnal untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
+            <small>Rekap transaksi direct jurnal untuk tanggal {{ date('d/m/Y', strtotime($tanggalData)) }}</small>
         </h1>
     </div>
     <div class="row">

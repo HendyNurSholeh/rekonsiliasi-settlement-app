@@ -20,19 +20,19 @@ class DirectJurnalController extends BaseController
      */
     public function rekap()
     {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
 
         $data = [
             'title' => 'Rekap Tx Direct Jurnal',
-            'tanggalRekon' => $tanggalRekon,
+            'tanggalData' => $tanggalData,
             'route' => 'rekon/process/direct-jurnal/rekap'
         ];
 
         // Get data from procedure if date is provided
-        if ($tanggalRekon) {
+        if ($tanggalData) {
             try {
                 $db = \Config\Database::connect();
-                $query = $db->query("CALL p_direct_jurnal_rekap(?)", [$tanggalRekon]);
+                $query = $db->query("CALL p_direct_jurnal_rekap(?)", [$tanggalData]);
                 $data['rekapData'] = $query->getResultArray();
             } catch (\Exception $e) {
                 log_message('error', 'Error calling p_direct_jurnal_rekap: ' . $e->getMessage());

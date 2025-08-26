@@ -20,21 +20,21 @@ class DetailVsRekapController extends BaseController
      */
     public function index()
     {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         $filterSelisih = $this->request->getGet('filter_selisih') ?? '';
 
         $data = [
             'title' => 'Laporan Detail vs Rekap',
-            'tanggalRekon' => $tanggalRekon,
+            'tanggalData' => $tanggalData,
             'filterSelisih' => $filterSelisih,
             'route' => 'rekon/process/detail-vs-rekap'
         ];
 
         // For statistics, still get data from procedure if date is provided
-        if ($tanggalRekon) {
+        if ($tanggalData) {
             try {
                 $db = \Config\Database::connect();
-                $query = $db->query("CALL p_compare_rekap(?)", [$tanggalRekon]);
+                $query = $db->query("CALL p_compare_rekap(?)", [$tanggalData]);
                 $data['compareData'] = $query->getResultArray();
             } catch (\Exception $e) {
                 log_message('error', 'Error calling p_compare_rekap: ' . $e->getMessage());

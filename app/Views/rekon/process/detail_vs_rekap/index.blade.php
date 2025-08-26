@@ -7,7 +7,7 @@
     <div class="subheader">
         <h1 class="subheader-title">
             <i class="fal fa-chart-line"></i> {{ $title }}
-            <small>Perbandingan data detail vs rekap untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
+            <small>Perbandingan data detail vs rekap untuk tanggal {{ date('d/m/Y', strtotime($tanggalData)) }}</small>
         </h1>
     </div>
 

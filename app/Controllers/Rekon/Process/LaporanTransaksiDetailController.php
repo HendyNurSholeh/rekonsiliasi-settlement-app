@@ -20,7 +20,7 @@ class LaporanTransaksiDetailController extends BaseController
      */
     public function index()
     {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         $statusBiller = $this->request->getGet('status_biller') ?? '';
         $statusCore = $this->request->getGet('status_core') ?? '';
         $settleVerifikasi = $this->request->getGet('settle_verifikasi') ?? '';
@@ -28,7 +28,7 @@ class LaporanTransaksiDetailController extends BaseController
 
         $data = [
             'title' => 'Laporan Transaksi Detail',
-            'tanggalRekon' => $tanggalRekon,
+            'tanggalData' => $tanggalData,
             'statusBiller' => $statusBiller,
             'statusCore' => $statusCore,
             'settleVerifikasi' => $settleVerifikasi,
@@ -36,7 +36,7 @@ class LaporanTransaksiDetailController extends BaseController
             'route' => 'rekon/process/laporan-transaksi-detail'
         ];
 
-        return $this->render('rekon/process/laporan_transaksi_detail.blade.php', $data);
+        return $this->render('rekon/process/laporan_transaksi_detail/index.blade.php', $data);
     }
 
     /**
