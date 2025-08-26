@@ -1,0 +1,451 @@
+// Super Simple but Robust CSRF Management
+let currentCSRF = window.appConfig?.csrfToken || '';
+
+// Global AJAX setup untuk auto-inject CSRF
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        // Untuk semua POST request, tambahkan CSRF
+        if (settings.type === 'POST') {
+            // Jika data adalah FormData
+            if (settings.data instanceof FormData) {
+                settings.data.append('csrf_test_name', currentCSRF);
+            } 
+            // Jika data adalah string biasa
+            else {
+                const separator = settings.data ? '&' : '';
+                settings.data = (settings.data || '') + separator + 'csrf_test_name=' + encodeURIComponent(currentCSRF);
+            }
+        }
+    }
+});
+
+// Global error handler untuk CSRF expired
+$(document).ajaxError(function(event, xhr, settings) {
+    if (xhr.status === 403 || xhr.status === 419) {
+        console.log('CSRF Token expired, refreshing...');
+        refreshCSRFToken().then(function() {
+            console.log('CSRF refreshed, retrying request...');
+            // Retry the request with new token
+            if (!settings._retried) {
+                settings._retried = true;
+                $.ajax(settings);
+            }
+        });
+    }
+});
+
+// Function untuk refresh CSRF token
+function refreshCSRFToken() {
+    return $.get(window.appConfig.baseUrl + 'get-csrf-token').then(function(response) {
+        if (response.csrf_token) {
+            currentCSRF = response.csrf_token;
+            console.log('New CSRF token:', currentCSRF);
+        }
+    }).catch(function(error) {
+        console.error('Failed to refresh CSRF:', error);
+        // Fallback: reload page if can't refresh token
+        setTimeout(function() {
+            if (confirm('Session expired. Reload page?')) {
+                location.reload();
+            }
+        }, 1000);
+    });
+}
+
+// DataTable instance
+let disputeTable;
+
+$(document).ready(function() {
+    // Set initial filter values from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('status_biller')) {
+        $('#status_biller').val(urlParams.get('status_biller'));
+    }
+    if (urlParams.get('status_core')) {
+        $('#status_core').val(urlParams.get('status_core'));
+    }
+    
+    // Refresh CSRF token saat page load untuk memastikan token fresh
+    refreshCSRFToken().then(function() {
+        console.log('CSRF token refreshed on page load');
+        
+        // Initialize DataTable dengan AJAX
+        initializeDataTable();
+    });
+    
+    // Handle form submit for filters
+    $('#form-filter').on('submit', function(e) {
+        e.preventDefault();
+        
+        console.log('Form submit - Reloading DataTable with filters');
+        
+        if (disputeTable) {
+            // Update current URL parameters
+            const formData = new FormData(this);
+            const url = new URL(window.location);
+            
+            for (let [key, value] of formData.entries()) {
+                if (value) {
+                    url.searchParams.set(key, value);
+                } else {
+                    url.searchParams.delete(key);
+                }
+            }
+            
+            window.history.pushState({}, '', url);
+            console.log('Updated URL:', url.toString());
+            
+            // Reload DataTable with new filters
+            disputeTable.ajax.reload();
+        }
+    });
+    
+    // Handle form submit for proses dispute
+    $('#formProsesDispute').on('submit', function(e) {
+        e.preventDefault();
+        
+        const vId = $('#prosesVId').val();
+        
+        // Ambil data langsung dari form yang terselected, bukan dari FormData
+        const idpartner = $('#prosesIDPartnerSelect').val();
+        const statusBiller = $('input[name="status_biller"]:checked').val();
+        const statusCore = $('input[name="status_core"]:checked').val();
+        const statusSettlement = $('input[name="status_settlement"]:checked').val();
+        
+        console.log('Submitting proses dispute for v_ID:', vId);
+        console.log('Selected form values:');
+        console.log('- idpartner:', idpartner);
+        console.log('- status_biller:', statusBiller);
+        console.log('- status_core:', statusCore);
+        console.log('- status_settlement:', statusSettlement);
+        
+        // Validasi form berdasarkan nilai yang terselected
+        if (!idpartner || !statusBiller || !statusCore || !statusSettlement) {
+            let missingFields = [];
+            
+            // Reset semua border field
+            $('#prosesIDPartnerSelect').removeClass('is-invalid');
+            $('input[name="status_biller"]').closest('.form-group').removeClass('has-error');
+            $('input[name="status_core"]').closest('.form-group').removeClass('has-error');
+            $('input[name="status_settlement"]').closest('.form-group').removeClass('has-error');
+            
+            // Tandai field yang kosong
+            if (!idpartner) {
+                missingFields.push('IDPARTNER');
+                $('#prosesIDPartnerSelect').addClass('is-invalid');
+            }
+            if (!statusBiller) {
+                missingFields.push('Status Biller');
+                $('input[name="status_biller"]').closest('.form-group').addClass('has-error');
+            }
+            if (!statusCore) {
+                missingFields.push('Status Core');
+                $('input[name="status_core"]').closest('.form-group').addClass('has-error');
+            }
+            if (!statusSettlement) {
+                missingFields.push('Status Settlement');
+                $('input[name="status_settlement"]').closest('.form-group').addClass('has-error');
+            }
+            
+            toastr["error"]('Harap lengkapi field yang diperlukan: ' + missingFields.join(', '));
+            return;
+        }
+        
+        // Clear any previous validation errors
+        $('#prosesIDPartnerSelect').removeClass('is-invalid');
+        $('input[name="status_biller"]').closest('.form-group').removeClass('has-error');
+        $('input[name="status_core"]').closest('.form-group').removeClass('has-error');
+        $('input[name="status_settlement"]').closest('.form-group').removeClass('has-error');
+        
+        // Buat FormData dengan data yang sudah divalidasi
+        const formData = new FormData();
+        formData.append('v_id', vId);
+        formData.append('idpartner', idpartner);
+        formData.append('status_biller', statusBiller);
+        formData.append('status_core', statusCore);
+        formData.append('status_settlement', statusSettlement);
+        
+        // Pre-refresh CSRF token sebelum submit untuk mencegah 403 pertama
+        refreshCSRFToken().then(function() {
+            console.log('CSRF refreshed before submit, current token:', currentCSRF);
+            
+            // Update FormData dengan token yang fresh
+            formData.set('csrf_test_name', currentCSRF);
+            
+            $.ajax({
+                url: window.appConfig.baseUrl + 'rekon/process/indirect-dispute/update',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    console.log('Proses response:', response);
+                    
+                    if (response.success) {
+                        toastr["success"](response.message);
+                        $('#modalProsesDispute').modal('hide');
+                        disputeTable.ajax.reload();
+                    } else {
+                        toastr["error"](response.message);
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Proses error:', xhr.responseText);
+                    toastr["error"]('Terjadi kesalahan saat memproses data dispute');
+                }
+            });
+        }).catch(function(error) {
+            console.error('Failed to refresh CSRF before submit:', error);
+            toastr["error"]('Gagal menyegarkan token keamanan. Silakan coba lagi.');
+        });
+    });
+    
+    // Clear validation errors saat user mengisi form
+    $('#prosesIDPartnerSelect').on('change', function() {
+        $(this).removeClass('is-invalid');
+    });
+    
+    $('input[name="status_biller"]').on('change', function() {
+        $(this).closest('.form-group').removeClass('has-error');
+    });
+    
+    $('input[name="status_core"]').on('change', function() {
+        $(this).closest('.form-group').removeClass('has-error');
+    });
+    
+    $('input[name="status_settlement"]').on('change', function() {
+        $(this).closest('.form-group').removeClass('has-error');
+    });
+    
+    // Handle button clicks using event delegation for dynamically generated buttons
+    $(document).on('click', '.btn-proses', function(e) {
+        e.preventDefault();
+        
+        const disputeId = $(this).data('id');
+        if (!disputeId) {
+            toastr.error('ID dispute tidak ditemukan');
+            return;
+        }
+        
+        showProsesDispute(disputeId);
+    });
+});
+
+function initializeDataTable() {
+    disputeTable = $('#disputeTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: window.appConfig.baseUrl + 'rekon/process/indirect-dispute/datatable',
+            type: "GET",
+            data: function(d) {
+                // Add current filters sesuai arahan senior
+                d.tanggal = $('#tanggal').val() || window.appConfig.tanggalData;
+                d.status_biller = $('#status_biller').val();
+                d.status_core = $('#status_core').val();
+                
+                console.log('DataTable request data:');
+                console.log('- tanggal:', d.tanggal);
+                console.log('- status_biller:', d.status_biller);
+                console.log('- status_core:', d.status_core);
+                console.log('Full request data:', d);
+                return d;
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTable AJAX Error:', error, thrown, xhr.responseText);
+                if (xhr.status === 403 || xhr.status === 419) {
+                    console.log('CSRF error in DataTable, refreshing token...');
+                    refreshCSRFToken().then(function() {
+                        console.log('CSRF refreshed, reloading DataTable...');
+                        disputeTable.ajax.reload();
+                    });
+                }
+            }
+        },
+        columns: [
+            { 
+                data: null,
+                name: 'no',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                }
+            },
+            { data: 'IDPARTNER', name: 'IDPARTNER' },
+            { data: 'TERMINALID', name: 'TERMINALID' },
+            { data: 'PRODUK', name: 'PRODUK' },
+            { data: 'IDPEL', name: 'IDPEL' },
+            { 
+                data: 'RP_BILLER_TAG', 
+                name: 'RP_BILLER_TAG',
+                className: 'text-end',
+                render: function(data, type, row) {
+                    const amount = parseFloat(String(data || 0).replace(/,/g, ''));
+                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+                }
+            },
+            { 
+                data: 'STATUS_BILLER', 
+                name: 'STATUS_BILLER',
+                className: 'text-center',
+                render: function(data, type, row) {
+                    let badgeClass = 'badge-warning';
+                    let statusText = 'Pending';
+                    
+                    if (data == 1) {
+                        badgeClass = 'badge-success';
+                        statusText = 'Sukses';
+                    }
+                    
+                    return '<span class="badge ' + badgeClass + '">' + statusText + '</span>';
+                }
+            },
+            { 
+                data: 'STATUS_CORE', 
+                name: 'STATUS_CORE',
+                className: 'text-center',
+                render: function(data, type, row) {
+                    let badgeClass = 'badge-secondary';
+                    let statusText = 'Belum Verif';
+                    
+                    if (data == 1) {
+                        badgeClass = 'badge-info';
+                        statusText = 'Terdebet';
+                    } else if (data == 0) {
+                        badgeClass = 'badge-danger';
+                        statusText = 'Tidak Terdebet';
+                    }
+                    
+                    return '<span class="badge ' + badgeClass + '">' + statusText + '</span>';
+                }
+            },
+            { 
+                data: null,
+                name: 'aksi',
+                orderable: false,
+                searchable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return '<button type="button" class="btn btn-sm btn-primary btn-proses" data-id="' + (row.v_ID || '') + '">' +
+                           '<i class="fal fa-tools"></i> Proses</button>';
+                }
+            }
+        ],
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        order: [[1, 'asc']],
+        language: {
+            processing: "Memuat data...",
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ data per halaman",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            infoFiltered: "(difilter dari _MAX_ total data)",
+            paginate: {
+                first: "Pertama",
+                last: "Terakhir",
+                next: "Selanjutnya",
+                previous: "Sebelumnya"
+            },
+            emptyTable: "Tidak ada data dispute yang tersedia",
+            zeroRecords: "Tidak ditemukan data dispute yang sesuai"
+        },
+        responsive: true,
+        searching: false,
+        dom: '<"row"<"col-sm-12">>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-5"i><"col-sm-7"p>>'
+    });
+}
+
+function showProsesDispute(vId) {
+    console.log('Showing proses dispute form for v_ID:', vId);
+    
+    // Reset form dan clear validation errors
+    $('#formProsesDispute')[0].reset();
+    $('#prosesVId').val(vId);
+    
+    // Clear any validation errors
+    $('#prosesIDPartnerSelect').removeClass('is-invalid');
+    $('input[name="status_biller"]').closest('.form-group').removeClass('has-error');
+    $('input[name="status_core"]').closest('.form-group').removeClass('has-error');
+    $('input[name="status_settlement"]').closest('.form-group').removeClass('has-error');
+    
+    // Pre-refresh CSRF token sebelum load data
+    refreshCSRFToken().then(function() {
+        console.log('CSRF refreshed before loading modal data');
+        
+        // Load current data
+        $.ajax({
+            url: window.appConfig.baseUrl + 'rekon/process/indirect-dispute/detail',
+            type: 'POST',
+            data: { id: vId },
+            success: function(response) {
+                console.log('Detail response for proses:', response);
+                
+                if (response.success && response.data) {
+                    const data = response.data;
+                    
+                    // Fill readonly fields - Data Transaksi
+                    $('#prosesPartner').val(data.IDPARTNER || '');
+                    $('#prosesTerminalID').val(data.TERMINALID || '');
+                    $('#prosesIsDirectFee').val(data.IS_DIRECT_FEE || '0');
+                    $('#prosesGroupProduk').val(data.v_GROUP_PRODUK || data.PRODUK || '');
+                    $('#prosesIDPEL').val(data.IDPEL || '');
+                    
+                    // Fill readonly fields - Data Tagihan
+                    $('#prosesBillerPokok').val('Rp ' + formatNumber(data.RP_BILLER_POKOK || 0));
+                    $('#prosesBillerDenda').val('Rp ' + formatNumber(data.RP_BILLER_DENDA || 0));
+                    $('#prosesFeeStruk').val('Rp ' + formatNumber(data.RP_FEE_STRUK || 0));
+                    $('#prosesAmountStruk').val('Rp ' + formatNumber(data.RP_AMOUNT_STRUK || 0));
+                    $('#prosesBillerTag').val('Rp ' + formatNumber(data.RP_BILLER_TAG || 0));
+                    
+                    // Set selected values for form fields
+                    // IDPARTNER Select - set to current partner value
+                    $('#prosesIDPartnerSelect').val(data.IDPARTNER || '');
+                    
+                    // Status Biller Radio - set to current status
+                    const currentStatusBiller = data.STATUS;
+                    if (currentStatusBiller !== null && currentStatusBiller !== undefined) {
+                        $('input[name="status_biller"][value="' + currentStatusBiller + '"]').prop('checked', true);
+                    }
+                    
+                    // Status Core Radio - set to current status
+                    const currentStatusCore = data.v_STAT_CORE_AGR;
+                    if (currentStatusCore !== null && currentStatusCore !== undefined) {
+                        $('input[name="status_core"][value="' + currentStatusCore + '"]').prop('checked', true);
+                    }
+                    
+                    // Status Settlement Radio - leave unselected (user must choose)
+                    // This is intentionally left empty as user needs to select the appropriate action
+                    
+                    $('#modalProsesDispute').modal('show');
+                } else {
+                    toastr["error"]('Data dispute tidak ditemukan');
+                }
+            },
+            error: function(xhr) {
+                console.error('Detail error for proses:', xhr.responseText);
+                toastr["error"]('Terjadi kesalahan saat memuat data dispute');
+            }
+        });
+    }).catch(function() {
+        toastr["error"]('Gagal menyegarkan token keamanan. Silakan coba lagi.');
+    });
+}
+
+function resetFilters() {
+    // Remove 'tanggal' parameter from URL and redirect
+    const url = new URL(window.location);
+    url.searchParams.delete('tanggal');
+    url.searchParams.delete('status_biller');
+    url.searchParams.delete('status_core');
+    window.location.href = url.pathname + url.search;
+}
+
+function formatNumber(num) {
+    // Convert string to number first, removing any existing commas
+    const cleanNum = parseFloat(String(num).replace(/,/g, '')) || 0;
+    return new Intl.NumberFormat('id-ID').format(cleanNum);
+}

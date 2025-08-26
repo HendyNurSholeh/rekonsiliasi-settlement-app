@@ -108,10 +108,10 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         // ====================================================================
         // Untuk menangani dispute pada transaksi tidak langsung
         
-        $routes->get('indirect-dispute', 'IndirectDisputeController::index', ['as' => 'rekon.process.indirect-dispute']);
-        $routes->get('indirect-dispute/datatable', 'IndirectDisputeController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable']);
-        $routes->post('indirect-dispute/datatable', 'IndirectDisputeController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable.post']);
-        $routes->post('indirect-dispute/detail', 'IndirectDisputeController::getDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
-        $routes->post('indirect-dispute/update', 'IndirectDisputeController::update', ['as' => 'rekon.process.indirect-dispute.update']);
+        $routes->get('indirect-dispute', 'IndirectJurnal\DisputeResolutionController::index', ['as' => 'rekon.process.indirect-dispute']);
+        $routes->get('indirect-dispute/datatable', 'IndirectJurnal\DisputeResolutionController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable']);
+        $routes->post('indirect-dispute/datatable', 'IndirectJurnal\DisputeResolutionController::datatable', ['as' => 'rekon.process.indirect-dispute.datatable.post']);
+        $routes->post('indirect-dispute/detail', 'IndirectJurnal\DisputeResolutionController::getDetail', ['as' => 'rekon.process.indirect-dispute.detail']);
+        $routes->post('indirect-dispute/update', 'IndirectJurnal\DisputeResolutionController::update', ['as' => 'rekon.process.indirect-dispute.update']);
     });
 });

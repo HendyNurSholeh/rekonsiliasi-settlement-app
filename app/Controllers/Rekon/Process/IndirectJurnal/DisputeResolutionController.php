@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Controllers\Rekon\Process;
+namespace App\Controllers\Rekon\Process\IndirectJurnal;
 
 use App\Controllers\BaseController;
 use App\Models\ProsesModel;
 
-class IndirectDisputeController extends BaseController
+class DisputeResolutionController extends BaseController
 {
     protected $prosesModel;
 
@@ -27,7 +27,7 @@ class IndirectDisputeController extends BaseController
             'route' => 'rekon/process/indirect-dispute'
         ];
 
-        return $this->render('rekon/process/indirect_dispute.blade.php', $data);
+        return $this->render('rekon/process/indirect_jurnal/dispute_resolution/index.blade.php', $data);
     }
 
     /**

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ base_url('css/rekon/process/indirect_jurnal_rekap.css') }}">
+    <link rel="stylesheet" href="{{ base_url('css/rekon/process/indirect_jurnal/rekap_indirect_jurnal.css') }}">
 @endpush
 
 @section('content')
