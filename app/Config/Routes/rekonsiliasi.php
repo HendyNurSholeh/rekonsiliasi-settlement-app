@@ -97,11 +97,11 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         // ====================================================================
         // Untuk menangani jurnal tidak langsung dan konfirmasi setoran
         
-        $routes->get('indirect-jurnal-rekap', 'IndirectJurnalRekapController::index', ['as' => 'rekon.process.indirect-jurnal-rekap']);
-        $routes->get('indirect-jurnal-rekap/datatable', 'IndirectJurnalRekapController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable']);
-        $routes->post('indirect-jurnal-rekap/datatable', 'IndirectJurnalRekapController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable.post']);
-        $routes->post('indirect-jurnal-rekap/konfirmasi', 'IndirectJurnalRekapController::konfirmasiSetoran', ['as' => 'rekon.process.indirect-jurnal-rekap.konfirmasi']);
-        $routes->post('indirect-jurnal-rekap/update-sukses', 'IndirectJurnalRekapController::updateSukses', ['as' => 'rekon.process.indirect-jurnal-rekap.update-sukses']);
+        $routes->get('indirect-jurnal-rekap', 'IndirectJurnal\RekapIndirectJurnalController::index', ['as' => 'rekon.process.indirect-jurnal-rekap']);
+        $routes->get('indirect-jurnal-rekap/datatable', 'IndirectJurnal\RekapIndirectJurnalController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable']);
+        $routes->post('indirect-jurnal-rekap/datatable', 'IndirectJurnal\RekapIndirectJurnalController::datatable', ['as' => 'rekon.process.indirect-jurnal-rekap.datatable.post']);
+        $routes->post('indirect-jurnal-rekap/konfirmasi', 'IndirectJurnal\RekapIndirectJurnalController::konfirmasiSetoran', ['as' => 'rekon.process.indirect-jurnal-rekap.konfirmasi']);
+        $routes->post('indirect-jurnal-rekap/update-sukses', 'IndirectJurnal\RekapIndirectJurnalController::updateSukses', ['as' => 'rekon.process.indirect-jurnal-rekap.update-sukses']);
         
         // ====================================================================
         // INDIRECT DISPUTE

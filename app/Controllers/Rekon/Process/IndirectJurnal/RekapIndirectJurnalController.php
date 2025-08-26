@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Controllers\Rekon\Process;
+namespace App\Controllers\Rekon\Process\IndirectJurnal;
 
 use App\Controllers\BaseController;
 use App\Models\ProsesModel;
 
-class IndirectJurnalRekapController extends BaseController
+class RekapIndirectJurnalController extends BaseController
 {
     protected $prosesModel;
 
@@ -20,15 +20,15 @@ class IndirectJurnalRekapController extends BaseController
      */
     public function index()
     {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
 
         $data = [
             'title' => 'Rekap Tx Indirect Jurnal',
-            'tanggalRekon' => $tanggalRekon,
+            'tanggalData' => $tanggalData,
             'route' => 'rekon/process/indirect-jurnal-rekap'
         ];
 
-        return $this->render('rekon/process/indirect_jurnal_rekap.blade.php', $data);
+        return $this->render('rekon/process/indirect_jurnal/rekap_indirect_jurnal/index.blade.php', $data);
     }
 
     /**

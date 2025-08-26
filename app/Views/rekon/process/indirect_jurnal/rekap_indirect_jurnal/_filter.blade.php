@@ -9,12 +9,12 @@
             <div class="card-body">
                 <form method="GET" action="{{ current_url() }}">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="tanggal" class="form-label">Tanggal Rekonsiliasi</label>
                             <input type="date" class="form-control" id="tanggal" name="tanggal" 
                                    value="{{ $tanggalData }}" required>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
+                        <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fal fa-search"></i> Tampilkan Data
                             </button>

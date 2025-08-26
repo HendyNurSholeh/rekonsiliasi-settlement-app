@@ -12,7 +12,7 @@
                         <div class="col-md-3">
                             <label for="tanggal" class="form-label">Tanggal Settlement</label>
                             <input type="date" class="form-control" id="tanggal" name="tanggal" 
-                                   value="{{ $tanggalRekon }}" required>
+                                   value="{{ $tanggalData }}" required>
                         </div>
                         <div class="col-md-3">
                             <label for="filter_status_approve" class="form-label">Status Approval</label>

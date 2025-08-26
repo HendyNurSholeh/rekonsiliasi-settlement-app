@@ -1,142 +1,10 @@
-@extends('layouts.app')
-
-@push('styles')
-<link rel="stylesheet" href="{{ base_url('css/rekon/process/indirect_jurnal_rekap.css') }}">
-@endpush
-
-@section('content')
-<div class="subheader">
-    <h1 class="subheader-title">
-        <i class="fal fa-chart-bar"></i> {{ $title }}
-        <small>Rekap transaksi indirect jurnal untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
-    </h1>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-info">
-            <i class="fal fa-info-circle"></i>
-            <strong>Rekap Tx Indirect Jurnal</strong> 
-            <br>Menampilkan rekap transaksi indirect jurnal dengan analisis selisih antara data sukses dan core.
-        </div>
-    </div>
-</div>
-
-<!-- Filter Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fal fa-filter"></i> Filter Data
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="GET" action="{{ current_url() }}">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="tanggal" class="form-label">Tanggal Rekonsiliasi</label>
-                            <input type="date" class="form-control" id="tanggal" name="tanggal" 
-                                   value="{{ $tanggalRekon }}" required>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fal fa-search"></i> Tampilkan Data
-                            </button>
-                            <button type="button" class="btn btn-secondary ml-2" onclick="resetFilters()">
-                                <i class="fal fa-undo"></i> Reset
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Data Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">
-                    <i class="fal fa-table"></i> Data Rekap Indirect Jurnal
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="rekapTable">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>No</th>
-                                <th>Tanggal Rekon</th>
-                                <th>Nama Group</th>
-                                <th>Sukses (N)</th>
-                                <th>Sukses (Amount)</th>
-                                <th>Core Sukses (N)</th>
-                                <th>Core Sukses (Amount)</th>
-                                <th>Selisih (N)</th>
-                                <th>Selisih (Amount)</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data akan dimuat via AJAX -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Konfirmasi -->
-<div class="modal fade" id="konfirmasiModal" tabindex="-1" role="dialog" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="konfirmasiModalLabel">
-                    <i class="fal fa-shield-check text-primary"></i>
-                    Konfirmasi Saldo Rekening Escrow
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info">
-                    <i class="fal fa-info-circle"></i>
-                    <strong>Konfirmasi Saldo Escrow!</strong> Pastikan saldo rekening escrow sudah sesuai sebelum melakukan konfirmasi.
-                </div>
-                <p id="konfirmasiMessage" class="mb-3"></p>
-                <p class="text-muted small">
-                    <i class="fal fa-lightbulb"></i>
-                    Pastikan saldo fisik di rekening escrow sudah sesuai dengan nominal yang ditampilkan.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fal fa-times"></i> Batal
-                </button>
-                <button type="button" class="btn btn-primary" id="confirmUpdateBtn">
-                    <i class="fal fa-check"></i> Ya, Saldo Sudah Sesuai
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-@endsection
-
-@push('scripts')
-<script>
 // Enhanced CSRF Management with auto-refresh
-let currentCSRF = '{{ csrf_token() }}';
+let currentCSRF = window.appConfig?.csrfToken || '';
 
 // Function untuk refresh CSRF token
 function refreshCSRFToken() {
     console.log('Requesting fresh CSRF token...');
-    return $.get("{{ base_url('get-csrf-token') }}").then(function(response) {
+    return $.get(window.appConfig.baseUrl + 'get-csrf-token').then(function(response) {
         console.log('CSRF token response:', response);
         if (response.csrf_token) {
             const oldToken = currentCSRF;
@@ -251,11 +119,11 @@ function initializeDataTable() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: "{{ base_url('rekon/process/indirect-jurnal-rekap/datatable') }}",
+            url: window.appConfig.baseUrl + 'rekon/process/indirect-jurnal-rekap/datatable',
             type: "GET",
             data: function(d) {
                 // Add current date filter
-                d.tanggal = $('#tanggal').val() || '{{ $tanggalRekon }}';
+                d.tanggal = $('#tanggal').val() || window.appConfig.tanggalData;
                 console.log('DataTable request data:', d);
                 return d;
             },
@@ -425,7 +293,7 @@ function updateSuksesTx(group) {
     $('#confirmUpdateBtn').html('<i class="fal fa-spinner fa-spin"></i> Memproses Konfirmasi...').prop('disabled', true);
     
     // Get current tanggal rekonsiliasi
-    const tanggalRekon = $('#tanggal').val() || '{{ $tanggalRekon }}';
+    const tanggalRekon = $('#tanggal').val() || window.appConfig.tanggalData;
     
     // Refresh CSRF token dulu sebelum request
     refreshCSRFToken().then(function(newToken) {
@@ -443,7 +311,7 @@ function updateSuksesTx(group) {
         });
         
         $.ajax({
-            url: "{{ base_url('rekon/process/indirect-jurnal-rekap/update-sukses') }}",
+            url: window.appConfig.baseUrl + 'rekon/process/indirect-jurnal-rekap/update-sukses',
             type: 'POST',
             data: {
                 group: group,
@@ -522,6 +390,3 @@ function resetFilters() {
     url.searchParams.delete('tanggal');
     window.location.href = url.pathname + url.search;
 }
-</script>
-@endpush
-
