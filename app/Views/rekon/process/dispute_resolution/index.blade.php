@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@push('styles')
+@push('styles') 
     <link rel="stylesheet" href="{{ base_url('css/rekon/process/dispute_resolution.css') }}">
 @endpush
 
@@ -14,20 +14,20 @@
         <div class="col-12">
             <div class="alert alert-info">
                 <i class="fal fa-info-circle"></i>
-                <strong>Detail Transaksi</strong> 
-                <br>Menampilkan dan mengelola data detail transaksi yang memerlukan penyelesaian manual.
+                <strong>Penyelesaian Dispute</strong> 
+                <br>Menampilkan dan mengelola data dispute yang memerlukan penyelesaian manual.
             </div>
         </div>
     </div>
 
     <!-- Filter Section -->
-    @include('rekon.process.laporan_transaksi_detail._filter')
+    @include('rekon.process.dispute_resolution._filter')
 
     <!-- Data Table -->
-    @include('rekon.process.laporan_transaksi_detail._data_table')
+    @include('rekon.process.dispute_resolution._data_table')
 
     <!-- Modal Proses Data Dispute -->
-    @include('rekon.process.laporan_transaksi_detail._modal')
+    @include('rekon.process.dispute_resolution._modal')
 @endsection
 
 @push('scripts')
@@ -38,5 +38,5 @@
         csrfToken: "{{ csrf_token() }}"
     };
     </script>
-    <script src="{{ base_url('js/rekon/process/laporan_detail_transaksi.js') }}"></script>
+    <script src="{{ base_url('js/rekon/process/direct_jurnal/dispute_resolution.js') }}"></script>
 @endpush

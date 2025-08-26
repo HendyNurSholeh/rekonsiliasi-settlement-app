@@ -85,12 +85,12 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
         // ====================================================================
         // Untuk menangani jurnal langsung dan penyelesaian dispute
         
-        $routes->get('direct-jurnal-rekap', 'DirectJurnalController::rekap', ['as' => 'rekon.process.direct-jurnal-rekap']);
-        $routes->get('penyelesaian-dispute', 'DirectJurnalController::dispute', ['as' => 'rekon.process.penyelesaian-dispute']);
-        $routes->get('direct-jurnal/dispute/datatable', 'DirectJurnalController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable']);
-        $routes->post('direct-jurnal/dispute/datatable', 'DirectJurnalController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable.post']);
-        $routes->post('direct-jurnal/dispute/detail', 'DirectJurnalController::getDisputeDetail', ['as' => 'rekon.process.dispute.detail']);
-        $routes->post('direct-jurnal/dispute/update', 'DirectJurnalController::updateDispute', ['as' => 'rekon.process.dispute.update']);
+        $routes->get('direct-jurnal-rekap', 'DirectJurnal\DirectJurnalController::rekap', ['as' => 'rekon.process.direct-jurnal-rekap']);
+        $routes->get('penyelesaian-dispute', 'DirectJurnal\DirectJurnalController::dispute', ['as' => 'rekon.process.penyelesaian-dispute']);
+        $routes->get('direct-jurnal/dispute/datatable', 'DirectJurnal\DirectJurnalController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable']);
+        $routes->post('direct-jurnal/dispute/datatable', 'DirectJurnal\DirectJurnalController::disputeDataTable', ['as' => 'rekon.process.dispute.datatable.post']);
+        $routes->post('direct-jurnal/dispute/detail', 'DirectJurnal\DirectJurnalController::getDisputeDetail', ['as' => 'rekon.process.dispute.detail']);
+        $routes->post('direct-jurnal/dispute/update', 'DirectJurnal\DirectJurnalController::updateDispute', ['as' => 'rekon.process.dispute.update']);
         
         // ====================================================================
         // INDIRECT JURNAL REKAP

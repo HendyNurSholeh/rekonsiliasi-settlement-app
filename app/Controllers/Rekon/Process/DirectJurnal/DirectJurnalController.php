@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers\Rekon\Process;
+namespace App\Controllers\Rekon\Process\DirectJurnal;
 
 use App\Controllers\BaseController;
 use App\Models\ProsesModel;
@@ -51,16 +51,16 @@ class DirectJurnalController extends BaseController
      */
     public function dispute()
     {
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
 
         $data = [
             'title' => 'Penyelesaian Dispute Direct Jurnal',
-            'tanggalRekon' => $tanggalRekon,
+            'tanggalData' => $tanggalData,
             'route' => 'rekon/process/direct-jurnal/dispute'
         ];
 
         // Get data from view if date is provided
-        if ($tanggalRekon) {
+        if ($tanggalData) {
             try {
                 $db = \Config\Database::connect();
                 $query = $db->query("
@@ -68,7 +68,7 @@ class DirectJurnalController extends BaseController
                            RP_BILLER_TAG, STATUS AS STATUS_BILLER, v_STAT_CORE_AGR AS STATUS_CORE, v_ID
                     FROM v_cek_biller_dispute_direct 
                     WHERE v_TGL_FILE_REKON = ?
-                ", [$tanggalRekon]);
+                ", [$tanggalData]);
                 $data['disputeData'] = $query->getResultArray();
             } catch (\Exception $e) {
                 log_message('error', 'Error fetching dispute data: ' . $e->getMessage());
@@ -78,7 +78,7 @@ class DirectJurnalController extends BaseController
             $data['disputeData'] = [];
         }
 
-        return $this->render('rekon/process/dispute_resolution.blade.php', $data);
+        return $this->render('rekon/process/dispute_resolution/index.blade.php', $data);
     }
 
     /**

@@ -10,7 +10,6 @@
             <small>Perbandingan data detail vs rekap untuk tanggal {{ date('d/m/Y', strtotime($tanggalData)) }}</small>
         </h1>
     </div>
-
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info">
