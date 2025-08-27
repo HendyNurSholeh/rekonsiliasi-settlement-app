@@ -20,16 +20,8 @@ class Profile extends BaseController
 
 	public function index()
 	{
-		$data = [
-			'title' => 'Profile',
-			'route' => 'profile',
-			'data' => [
-				'name' => session()->name ?? '-',
-				'username' => session()->username ?? '-',
-				'role' => session()->role ?? '-',
-			],
-		];
-
+		$userData = $this->getUserDataFromSession();
+		$data = $this->buildViewData($userData);
 
 		if (!$this->request->is('post')) {
 			return $this->render('user/profile.blade.php', $data);
@@ -40,6 +32,24 @@ class Profile extends BaseController
 		} else {
 			return $this->_updatePassword($data);
 		}
+	}
+
+	protected function getUserDataFromSession()
+	{
+		return [
+			'name' => session()->name ?? '-',
+			'username' => session()->username ?? '-',
+			'role' => session()->role ?? '-',
+		];
+	}
+
+	protected function buildViewData($userData)
+	{
+		return [
+			'title' => 'Profile',
+			'route' => 'profile',
+			'data' => $userData,
+		];
 	}
 
 	private function _updateName($data)
