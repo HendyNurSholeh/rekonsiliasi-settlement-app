@@ -446,10 +446,12 @@ function formatChildRows(childData, kdSettle) {
     
     let html = '<div class="child-details-container">';
     
-    // Header dengan informasi jumlah detail
-    html += '<div class="child-details-header">';
-    html += '<i class="fal fa-list-alt"></i>';
-    html += 'Detail Transaksi (' + childData.length + ' item)';
+    // Header dengan informasi jumlah detail dan tombol batch process
+    html += '<div class="child-details-header d-flex justify-content-between align-items-center">';
+    html += '<div><i class="fal fa-list-alt"></i> Detail Transaksi (' + childData.length + ' item)</div>';
+    html += '<button type="button" class="btn btn-primary btn-sm" onclick="processBatchJurnal(\'' + kdSettle + '\')" id="btn-batch-' + kdSettle + '">';
+    html += '<i class="fal fa-play me-1"></i> Proses Semua (' + childData.length + ')';
+    html += '</button>';
     html += '</div>';
     
     // Table detail dengan styling compact
@@ -467,7 +469,7 @@ function formatChildRows(childData, kdSettle) {
     html += '<th style="width: 8%">Core Res</th>';
     html += '<th style="width: 9%">Core Ref</th>';
     html += '<th style="width: 10%">Core DateTime</th>';
-    // html += '<th style="width: 5%">Aksi</th>';
+    html += '<th style="width: 8%">Status</th>';
     html += '</tr>';
     html += '</thead>';
     html += '<tbody>';
@@ -541,28 +543,16 @@ function formatChildRows(childData, kdSettle) {
         }
         html += '</td>';
         
-        // Actions - sederhana tanpa icon yang berlebihan
-        /*
+        // Status - tampilkan status berdasarkan core response
         html += '<td class="text-center">';
-        let actionButton = '';
         if (child.d_CODE_RES && child.d_CODE_RES.startsWith('00')) {
-            actionButton = '<span class="badge badge-success small">Selesai</span>';
+            html += '<span class="badge badge-success small"><i class="fal fa-check"></i> Selesai</span>';
         } else if (child.d_CODE_RES && !child.d_CODE_RES.startsWith('00')) {
-            actionButton = "<button class='btn btn-xs btn-outline-warning' " +
-                          "onclick='handleProsesClick(this, " + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
-                          "id='btn-child-" + index + "' title='Proses ulang transaksi'>" +
-                          "<i class='fal fa-redo me-1'></i>Ulang" +
-                          "</button>";
+            html += '<span class="badge badge-warning small"><i class="fal fa-exclamation-triangle"></i> Gagal</span>';
         } else {
-            actionButton = "<button class='btn btn-xs btn-outline-primary' " +
-                          "onclick='handleProsesClick(this, " + JSON.stringify(child) + ", \"" + kdSettle + "\")' " +
-                          "id='btn-child-" + index + "' title='Proses transaksi'>" +
-                          "<i class='fal fa-play me-1'></i>Proses" +
-                          "</button>";
+            html += '<span class="badge badge-light small"><i class="fal fa-clock"></i> Pending</span>';
         }
-        html += actionButton;
         html += '</td>';
-        */
         
         html += '</tr>';
     });
@@ -760,34 +750,46 @@ function showAllProcessButtons() {
     console.log('All process buttons restored');
 }
 
-function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallback = null) {
+function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallback = null, batchCallback = null) {
     console.log('Proses Jurnal Child:', childData, 'KD Settle:', kdSettle, 'Retry:', retryCount);
     
     // Maksimal 3 percobaan
     if (retryCount > 2) {
         console.log('Max retry attempts exceeded');
+        const errorMsg = 'Maksimal percobaan telah tercapai. Silakan refresh halaman dan coba lagi.';
         Swal.fire({
             icon: 'error',
             title: 'Gagal!',
-            text: 'Maksimal percobaan telah tercapai. Silakan refresh halaman dan coba lagi.'
+            text: errorMsg
         });
+        if (batchCallback) {
+            batchCallback(false, errorMsg);
+        }
         return;
     }
     
     // Validasi data
     if (!childData.d_NO_REF || !kdSettle) {
-        showAlert('error', 'Data tidak valid untuk diproses! Pastikan memilih detail transaksi.');
+        const errorMsg = 'Data tidak valid untuk diproses! Pastikan memilih detail transaksi.';
+        showAlert('error', errorMsg);
         if (resetButtonCallback) {
             resetButtonCallback();
+        }
+        if (batchCallback) {
+            batchCallback(false, errorMsg);
         }
         return;
     }
     
     // Cek apakah sudah diproses sukses
     if (childData.d_CODE_RES && childData.d_CODE_RES.startsWith('00')) {
-        showAlert('warning', 'Jurnal sudah berhasil diproses sebelumnya!');
+        const errorMsg = 'Jurnal sudah berhasil diproses sebelumnya!';
+        showAlert('warning', errorMsg);
         if (resetButtonCallback) {
             resetButtonCallback();
+        }
+        if (batchCallback) {
+            batchCallback(false, errorMsg);
         }
         return;
     }
@@ -804,23 +806,35 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
         ? `Apakah Anda yakin ingin memproses ULANG jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nDebit Name: ${formatValue(childData.d_DEBIT_NAME)}\nCredit: ${childData.d_CREDIT_ACCOUNT}\nCredit Name: ${formatValue(childData.d_CREDIT_NAME)}\nCore Res: ${formatValue(childData.d_CODE_RES)}\nCore Ref: ${formatValue(childData.d_CORE_REF)}\nCore DateTime: ${formatValue(childData.d_CORE_DATETIME)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`
         : `Apakah Anda yakin ingin memproses jurnal?\n\nKode Settle: ${kdSettle}\nNo Ref: ${childData.d_NO_REF}\nAmount: ${formatCurrency(childData.d_AMOUNT)}\nDebit: ${childData.d_DEBIT_ACCOUNT}\nDebit Name: ${formatValue(childData.d_DEBIT_NAME)}\nCredit: ${childData.d_CREDIT_ACCOUNT}\nCredit Name: ${formatValue(childData.d_CREDIT_NAME)}\nCore Res: ${formatValue(childData.d_CODE_RES)}\nCore Ref: ${formatValue(childData.d_CORE_REF)}\nCore DateTime: ${formatValue(childData.d_CORE_DATETIME)}\n\nTransaksi ini akan mengirim dana ke rekening bank!`;
     
-    if (!confirm(confirmMessage)) {
+    // Skip konfirmasi jika dalam batch mode
+    const skipConfirmation = batchCallback !== null;
+    
+    if (!skipConfirmation && !confirm(confirmMessage)) {
         // User membatalkan, restore semua button
         if (resetButtonCallback) {
             resetButtonCallback();
         }
+        if (batchCallback) {
+            batchCallback(false, 'Dibatalkan oleh user');
+        }
         return;
     }
     
-    // Disable semua tombol di child table
-    $('.child-details-container button').prop('disabled', true);
-    disableAllActions();
+    // Disable semua tombol di child table (kecuali dalam batch mode)
+    if (!batchCallback) {
+        $('.child-details-container button').prop('disabled', true);
+        disableAllActions();
+    }
     
-    // Show progress modal
-    showProgressModal(childData, kdSettle);
+    // Show progress modal (kecuali dalam batch mode)
+    if (!batchCallback) {
+        showProgressModal(childData, kdSettle);
+    }
     
-    // Prevent browser close/refresh
-    setBeforeUnloadWarning(true);
+    // Prevent browser close/refresh (kecuali dalam batch mode)
+    if (!batchCallback) {
+        setBeforeUnloadWarning(true);
+    }
     
     // Store variables for error handler
     const currentChildData = childData;
@@ -852,8 +866,11 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
         success: function(response) {
             console.log('AJAX success response received:', response);
             
-            hideProgressModal();
-            setBeforeUnloadWarning(false);
+            // Hide progress modal (kecuali dalam batch mode)
+            if (!batchCallback) {
+                hideProgressModal();
+                setBeforeUnloadWarning(false);
+            }
             
             // Update CSRF token dari response jika ada
             if (response.csrf_token) {
@@ -863,24 +880,45 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
             }
             
             if (response.success) {
-                showAlert('success', 'Jurnal berhasil diproses!\nCore Ref: ' + (response.core_ref || '-'));
+                const successMsg = 'Jurnal berhasil diproses!\nCore Ref: ' + (response.core_ref || '-');
+                if (!batchCallback) {
+                    showAlert('success', successMsg);
+                }
                 
                 // Reload table untuk update status dengan mempertahankan expand state
-                setTimeout(function() {
-                    console.log('Reloading table with preserved expand state for:', Array.from(expandedRows));
-                    jurnalCaEscrowTable.ajax.reload(null, false); // false = stay on current page
-                }, 1500);
+                if (!batchCallback) {
+                    setTimeout(function() {
+                        console.log('Reloading table with preserved expand state for:', Array.from(expandedRows));
+                        jurnalCaEscrowTable.ajax.reload(null, false); // false = stay on current page
+                    }, 1500);
+                }
+                
+                // Callback untuk batch processing
+                if (batchCallback) {
+                    batchCallback(true, successMsg);
+                }
             } else {
-                showAlert('error', 'Gagal memproses jurnal: ' + (response.message || 'Unknown error'));
+                const errorMsg = 'Gagal memproses jurnal: ' + (response.message || 'Unknown error');
+                if (!batchCallback) {
+                    showAlert('error', errorMsg);
+                }
                 
                 // Reset button state on error
                 if (resetButtonCallback) {
                     resetButtonCallback();
                 }
+                
+                // Callback untuk batch processing
+                if (batchCallback) {
+                    batchCallback(false, errorMsg);
+                }
             }
             
-            enableAllActions();
-            $('.child-details-container button').prop('disabled', false);
+            // Enable actions kembali (kecuali dalam batch mode)
+            if (!batchCallback) {
+                enableAllActions();
+                $('.child-details-container button').prop('disabled', false);
+            }
         },
         error: function(xhr, status, error) {
             console.log('AJAX error details:', {
@@ -893,10 +931,13 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
                 error: error
             });
             
-            hideProgressModal();
-            setBeforeUnloadWarning(false);
-            enableAllActions();
-            $('.child-details-container button').prop('disabled', false);
+            // Hide progress modal (kecuali dalam batch mode)
+            if (!batchCallback) {
+                hideProgressModal();
+                setBeforeUnloadWarning(false);
+                enableAllActions();
+                $('.child-details-container button').prop('disabled', false);
+            }
             
             let errorMessage = 'Terjadi kesalahan saat memproses jurnal';
             
@@ -910,15 +951,23 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
                     refreshCSRFToken().then(function() {
                         console.log('CSRF token refreshed, retrying process... Attempt:', currentRetryCount + 1);
                         setTimeout(function() {
-                            prosesJurnalChild(currentChildData, currentKdSettle, currentRetryCount + 1, resetButtonCallback);
+                            prosesJurnalChild(currentChildData, currentKdSettle, currentRetryCount + 1, resetButtonCallback, batchCallback);
                         }, 500);
                     }).catch(function(refreshError) {
-                        showAlert('error', 'Gagal memperbaharui token. Silakan refresh halaman.');
+                        const errorMsg = 'Gagal memperbaharui token. Silakan refresh halaman.';
+                        if (!batchCallback) {
+                            showAlert('error', errorMsg);
+                        }
                         console.error('Failed to refresh CSRF after 403:', refreshError);
                         
                         // Reset button on CSRF refresh error
                         if (resetButtonCallback) {
                             resetButtonCallback();
+                        }
+                        
+                        // Callback untuk batch processing
+                        if (batchCallback) {
+                            batchCallback(false, errorMsg);
                         }
                     });
                     return; // Exit without showing error message
@@ -927,6 +976,11 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
                     // Reset button after max retry
                     if (resetButtonCallback) {
                         resetButtonCallback();
+                    }
+                    
+                    // Callback untuk batch processing
+                    if (batchCallback) {
+                        batchCallback(false, errorMessage);
                     }
                 }
             } else if (xhr.responseJSON && xhr.responseJSON.message) {
@@ -937,9 +991,21 @@ function prosesJurnalChild(childData, kdSettle, retryCount = 0, resetButtonCallb
                     currentCSRF = xhr.responseJSON.csrf_token;
                     console.log('CSRF token updated from error response:', currentCSRF);
                 }
+                
+                // Callback untuk batch processing
+                if (batchCallback) {
+                    batchCallback(false, errorMessage);
+                }
+            } else {
+                // Callback untuk batch processing
+                if (batchCallback) {
+                    batchCallback(false, errorMessage);
+                }
             }
             
-            showAlert('error', errorMessage);
+            if (!batchCallback) {
+                showAlert('error', errorMessage);
+            }
             
             // Reset button state on any error
             if (resetButtonCallback) {
@@ -1094,4 +1160,198 @@ function showAlert(type, message) {
     setTimeout(function() {
         $('.alert').alert('close');
     }, 5000);
+}
+
+// Function untuk memproses semua detail transaksi dalam satu grup (batch processing)
+function processBatchJurnal(kdSettle) {
+    // Ambil child data dari map
+    const childData = window.childDataMap ? window.childDataMap[kdSettle] : null;
+    
+    if (!childData || childData.length === 0) {
+        showAlert('warning', 'Tidak ada detail transaksi untuk diproses.');
+        return;
+    }
+    
+    // Filter hanya yang belum selesai (belum ada response code yang berhasil)
+    const pendingData = childData.filter(child => 
+        !child.d_CODE_RES || !child.d_CODE_RES.startsWith('00')
+    );
+    
+    if (pendingData.length === 0) {
+        showAlert('info', 'Semua transaksi dalam grup ini sudah selesai diproses.');
+        return;
+    }
+    
+    // Konfirmasi sebelum proses batch
+    const confirmMessage = `Apakah Anda yakin ingin memproses ${pendingData.length} transaksi dalam grup ${kdSettle}?\n\n` +
+                          `Detail:\n` +
+                          pendingData.map((child, index) => 
+                              `${index + 1}. ${child.d_NO_REF} - ${formatCurrency(child.d_AMOUNT)}`
+                          ).join('\n');
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Disable tombol batch dan tampilkan loading
+    const $batchBtn = $(`#btn-batch-${kdSettle}`);
+    const originalHtml = $batchBtn.html();
+    $batchBtn.prop('disabled', true);
+    $batchBtn.html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
+    
+    // Disable semua aksi lainnya
+    disableAllActions();
+    setBeforeUnloadWarning(true);
+    
+    // Tampilkan modal progress untuk batch
+    showBatchProgressModal(kdSettle, pendingData);
+    
+    let processedCount = 0;
+    let successCount = 0;
+    let errorCount = 0;
+    const totalToProcess = pendingData.length;
+    
+    // Function untuk memproses satu child
+    function processNextChild() {
+        if (processedCount >= totalToProcess) {
+            // Semua selesai
+            finishBatchProcess();
+            return;
+        }
+        
+        const currentChild = pendingData[processedCount];
+        processedCount++;
+        
+        // Update progress
+        updateBatchProgress(processedCount, totalToProcess, currentChild);
+        
+        // Proses child dengan callback
+        prosesJurnalChild(currentChild, kdSettle, 0, null, function(success, message) {
+            if (success) {
+                successCount++;
+            } else {
+                errorCount++;
+            }
+            
+            // Lanjut ke child berikutnya setelah delay kecil
+            setTimeout(processNextChild, 500);
+        });
+    }
+    
+    // Function untuk menyelesaikan batch process
+    function finishBatchProcess() {
+        // Enable kembali aksi
+        enableAllActions();
+        setBeforeUnloadWarning(false);
+        hideBatchProgressModal();
+        
+        // Reset tombol batch
+        $batchBtn.prop('disabled', false);
+        $batchBtn.html(originalHtml);
+        
+        // Tampilkan hasil
+        let resultMessage = `Batch process selesai!\n\n`;
+        resultMessage += `Total diproses: ${processedCount}\n`;
+        resultMessage += `Berhasil: ${successCount}\n`;
+        resultMessage += `Gagal: ${errorCount}\n\n`;
+        
+        if (errorCount === 0) {
+            showAlert('success', resultMessage);
+        } else if (successCount > 0) {
+            showAlert('warning', resultMessage + 'Beberapa transaksi gagal diproses.');
+        } else {
+            showAlert('error', resultMessage + 'Semua transaksi gagal diproses.');
+        }
+        
+        // Refresh table data
+        $('#jurnalCaEscrowTable').DataTable().ajax.reload(null, false);
+    }
+    
+    // Mulai proses batch
+    processNextChild();
+}
+
+// Function untuk menampilkan modal progress batch
+function showBatchProgressModal(kdSettle, pendingData) {
+    const modalContent = `
+        <div class="modal fade" id="batchProgressModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #6c5190 0%, #553d73 100%); color: white; border-bottom: 1px solid #553d73;">
+                        <h5 class="modal-title">
+                            <i class="fal fa-tasks"></i> Memproses Batch Transaksi
+                        </h5>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Informasi Grup:</h6>
+                                <div class="alert" style="background-color: #ede8f2; border-color: #6c5190; color: #553d73;">
+                                    <strong>Kode Settle:</strong> ${kdSettle}<br>
+                                    <strong>Total Transaksi:</strong> ${pendingData.length}<br>
+                                    <strong>Total Nominal:</strong> ${formatCurrency(pendingData.reduce((sum, child) => sum + (child.d_AMOUNT || 0), 0))}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Progress:</h6>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" id="batchProgressBar" style="width: 0%"></div>
+                                </div>
+                                <div id="batchProgressText" class="text-center">
+                                    <strong>0 / ${pendingData.length}</strong> transaksi diproses
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <h6>Transaksi Saat Ini:</h6>
+                                <div class="alert alert-info" id="currentTransactionInfo">
+                                    <i class="fal fa-spinner fa-spin"></i> Menunggu proses dimulai...
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fal fa-exclamation-triangle"></i>
+                            <strong>PENTING:</strong><br>
+                            Jangan tutup atau refresh browser!<br>
+                            Batch transaksi sedang berlangsung...<br>
+                            <small class="text-muted">
+                                <i class="fal fa-lock"></i> Semua tombol proses lainnya disembunyikan untuk mencegah konflik
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(modalContent);
+    $('#batchProgressModal').modal('show');
+}
+
+// Function untuk update progress batch
+function updateBatchProgress(current, total, currentChild) {
+    const percentage = (current / total) * 100;
+    $('#batchProgressBar').css('width', percentage + '%');
+    $('#batchProgressText').html(`<strong>${current} / ${total}</strong> transaksi diproses`);
+    
+    const infoHtml = `
+        <strong>No Ref:</strong> ${currentChild.d_NO_REF}<br>
+        <strong>Amount:</strong> ${formatCurrency(currentChild.d_AMOUNT)}<br>
+        <strong>Debit:</strong> ${currentChild.d_DEBIT_ACCOUNT}<br>
+        <strong>Credit:</strong> ${currentChild.d_CREDIT_ACCOUNT}<br>
+        <strong>Status:</strong> ${currentChild.d_CODE_RES || 'Pending'}
+    `;
+    $('#currentTransactionInfo').html(infoHtml);
+}
+
+// Function untuk menyembunyikan modal progress batch
+function hideBatchProgressModal() {
+    $('#batchProgressModal').modal('hide');
+    setTimeout(function() {
+        $('#batchProgressModal').remove();
+    }, 500);
 }
