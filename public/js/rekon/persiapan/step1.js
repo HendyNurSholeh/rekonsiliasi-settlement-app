@@ -1,198 +1,3 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="subheader">
-    <h1 class="subheader-title">
-        <i class="fal fa-upload"></i> {{ $title }}
-        <small>Upload file settlement untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon)) }}</small>
-    </h1>
-</div>
-
-<!-- Success/Error Messages -->
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="fal fa-check-circle"></i> {{ session('success') }}
-    <button type="button" class="close" data-dismiss="alert">
-        <span aria-hidden="true">&times;</span>
-    </button>
-</div>
-@endif
-
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="fal fa-exclamation-circle"></i> {{ session('error') }}
-    <button type="button" class="close" data-dismiss="alert">
-        <span aria-hidden="true">&times;</span>
-    </button>
-</div>
-@endif
-
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-info">
-            <i class="fal fa-info-circle"></i>
-            <strong>Tanggal Settlement:</strong> {{ date('d/m/Y', strtotime($tanggalRekon)) }}
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Upload Data Agregator Detail -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-warning">
-            <div class="card-header bg-warning-200">
-                <h5 class="card-title">
-                    <i class="fal fa-upload text-warning"></i>
-                    Data Agregator Detail
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small mb-3">
-                    Upload file data transaksi detail dari agregator untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
-                    <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter ;</span>
-                </p>
-                <form id="form-agn-detail" enctype="multipart/form-data">
-                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
-                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
-                    <input type="hidden" name="file_type" value="agn_detail" />
-                    <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-agn-detail" name="file" accept=".txt" required>
-                        <label class="custom-file-label" for="file-agn-detail">Pilih file .txt...</label>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('agn_detail')">
-                        <i class="fal fa-upload"></i> Upload
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upload Data Settlement Education -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-warning">
-            <div class="card-header bg-warning-200">
-                <h5 class="card-title">
-                    <i class="fal fa-upload text-warning"></i>
-                    Settlement Education
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small mb-3">
-                    Upload file settlement education untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
-                    <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter ;</span>
-                </p>
-                <form id="form-settle-edu" enctype="multipart/form-data">
-                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
-                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
-                    <input type="hidden" name="file_type" value="settle_edu" />
-                    <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-settle-edu" name="file" accept=".txt" required>
-                        <label class="custom-file-label" for="file-settle-edu">Pilih file .txt...</label>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_edu')">
-                        <i class="fal fa-upload"></i> Upload
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upload Data Settlement Pajak -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-warning">
-            <div class="card-header bg-warning-200">
-                <h5 class="card-title">
-                    <i class="fal fa-upload text-warning"></i>
-                    Settlement Pajak
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small mb-3">
-                    Upload file data settlement pajak untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }}
-                    <br><span class="text-info"><strong>Format:</strong> .txt dengan delimiter |</span>
-                </p>    
-                <form id="form-settle-pajak" enctype="multipart/form-data">
-                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
-                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
-                    <input type="hidden" name="file_type" value="settle_pajak" />
-                    <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-settle-pajak" name="file" accept=".txt" required>
-                        <label class="custom-file-label" for="file-settle-pajak">Pilih file .txt...</label>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('settle_pajak')">
-                        <i class="fal fa-upload"></i> Upload
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upload Data M-Gate -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-warning">
-            <div class="card-header bg-warning-200">
-                <h5 class="card-title">
-                    <i class="fal fa-upload text-warning"></i>
-                    Data M-Gate
-                </h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small mb-3">
-                    Upload file transaksi M-Gate (Payment Gateway) untuk tanggal {{ date('d/m/Y', strtotime($tanggalRekon ?? date('Y-m-d', strtotime('-1 day')))) }} <span class="text-danger">*Wajib</span>
-                    <br><span class="text-info"><strong>Format:</strong> .csv dengan delimiter ;</span>
-                </p>
-                <form id="form-mgate" enctype="multipart/form-data">
-                    <input type="hidden" name="{{ csrf_token() }}" value="{{ csrf_hash() }}" />
-                    <input type="hidden" name="tanggal_rekon" value="{{ $tanggalRekon }}" />
-                    <input type="hidden" name="file_type" value="mgate" />
-                    <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="file-mgate" name="file" accept=".csv" required>
-                        <label class="custom-file-label" for="file-mgate">Pilih file .csv...</label>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-block mt-2" onclick="uploadFile('mgate')">
-                        <i class="fal fa-upload"></i> Upload
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Navigation Buttons -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ site_url('rekon') }}" class="btn btn-secondary">
-                        <i class="fal fa-arrow-left"></i> Kembali ke Daftar
-                    </a>
-                    
-                    <div class="upload-summary">
-                        <span class="text-muted">Status Upload:</span>
-                        <span class="ml-2">
-                            <strong class="text-warning" id="upload-count">0/4 files</strong>
-                        </span>
-                    </div>
-                    
-                    <div class="action-buttons">
-                        <button class="btn btn-success mr-2" onclick="validateAndProceed()" disabled id="btn-validate">
-                            <i class="fal fa-check-circle"></i> Validasi & Lanjutkan
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@push('styles')
-<link rel="stylesheet" href="{{ base_url('css/rekon/persiapan/step1.css') }}">
-@endpush
-
-@push('scripts')
-<script>
 // Variabel global untuk tracking upload
 let uploadedFiles = [];
 let isUploading = false; // Flag untuk mencegah multiple upload bersamaan
@@ -202,12 +7,12 @@ const requiredFiles = ['agn_detail', 'settle_edu', 'settle_pajak', 'mgate'];
 function refreshCSRFToken() {
     return new Promise((resolve, reject) => {
         $.ajax({
-            url: '{{ site_url("get-csrf-token") }}',
+            url: window.appConfig.baseUrl + "get-csrf-token",
             method: 'GET',
             success: function(response) {
                 if (response.csrf_token) {
                     // Update semua CSRF input di form
-                    $('input[name="{{ csrf_token() }}"]').val(response.csrf_token);
+                    $('input[name="' + window.appConfig.csrfToken + '"]').val(response.csrf_token);
                     console.log('CSRF token refreshed:', response.csrf_token);
                     resolve(response.csrf_token);
                 } else {
@@ -333,7 +138,7 @@ function uploadFile(type) {
         
         // AJAX Upload
         $.ajax({
-            url: '{{ site_url("rekon/step1/upload") }}',
+            url: window.appConfig.baseUrl + "rekon/step1/upload",
             method: 'POST',
             data: formData,
             processData: false,
@@ -545,11 +350,11 @@ function callDataUploadProcess() {
     
     // AJAX untuk proses data upload dengan stored procedure
     $.ajax({
-        url: '{{ site_url("rekon/step1/process") }}',
+        url: window.appConfig.baseUrl + "rekon/step1/process",
         method: 'POST',
         data: {
-            tanggal_rekon: '{{ $tanggalRekon }}',
-            '{{ csrf_token() }}': $('input[name="{{ csrf_token() }}"]').val()
+            tanggal_rekon: window.appConfig.tanggalData,
+            [window.appConfig.csrfToken]: $('input[name="' + window.appConfig.csrfToken + '"]').val()
         },
         success: function(response) {
             // Refresh CSRF token setelah response
@@ -607,6 +412,3 @@ function callDataUploadProcess() {
 $(document).ready(function() {
     console.log('Step 1 - File Upload & Processing initialized');
 });
-</script>
-@endpush
-

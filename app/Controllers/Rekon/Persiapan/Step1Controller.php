@@ -38,20 +38,20 @@ class Step1Controller extends BaseController
     public function index()
     {
         // Get date from URL parameter or from database
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
-        if (!$tanggalRekon) {
+        if (!$tanggalData) {
             return redirect()->to('rekon')->with('error', 'Tanggal rekonsiliasi tidak ditemukan. Silakan buat proses baru.');
         }
 
         $data = [
             'title' => 'Step 1: Upload File Settlement',
             'route' => 'rekon/step1',
-            'tanggalRekon' => $tanggalRekon,
+            'tanggalData' => $tanggalData,
             'currentStep' => 1
         ];
 
-        return $this->render('rekon/persiapan/step1.blade.php', $data);
+        return $this->render('rekon/persiapan/step1/index.blade.php', $data);
     }
 
     /**
