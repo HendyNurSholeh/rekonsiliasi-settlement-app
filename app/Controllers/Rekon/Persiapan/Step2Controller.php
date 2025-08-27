@@ -50,9 +50,9 @@ class Step2Controller extends BaseController
     public function index()
     {
         // Get date from URL parameter or database
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
-        if (!$tanggalRekon) {
+        if (!$tanggalData) {
             return redirect()->to('rekon')->with('error', 'Tanggal rekonsiliasi tidak ditemukan. Silakan buat proses baru.');
         }
 
@@ -73,7 +73,7 @@ class Step2Controller extends BaseController
             $data = [
                 'title' => 'Step 2: Verifikasi Isi Data',
                 'route' => 'rekon/step2',
-                'tanggalRekon' => $tanggalRekon,
+                'tanggalData' => $tanggalData,
                 'currentStep' => 2,
                 'mappingData' => $mappingData,
                 'mappingStats' => $mappingStats,
@@ -81,7 +81,7 @@ class Step2Controller extends BaseController
                 'dataStats' => $dataStats
             ];
 
-            return $this->render('rekon/persiapan/step2.blade.php', $data);
+            return $this->render('rekon/persiapan/step2/index.blade.php', $data);
             
         } catch (\Exception $e) {
             log_message('error', 'Error in Step 2 index: ' . $e->getMessage());
@@ -89,7 +89,7 @@ class Step2Controller extends BaseController
             $data = [
                 'title' => 'Step 2: Verifikasi Isi Data',
                 'route' => 'rekon/step2',
-                'tanggalRekon' => $tanggalRekon,
+                'tanggalData' => $tanggalData,
                 'currentStep' => 2,
                 'mappingData' => [],
                 'mappingStats' => [
@@ -115,9 +115,9 @@ class Step2Controller extends BaseController
      */
     public function processValidation()
     {
-        $tanggalRekon = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
-        if (!$tanggalRekon) {
+        if (!$tanggalData) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Tanggal rekonsiliasi tidak ditemukan'
@@ -143,12 +143,12 @@ class Step2Controller extends BaseController
             }
 
             // If mapping is valid, call reconciliation procedure
-            $result = $this->executeReconciliation($tanggalRekon);
+            $result = $this->executeReconciliation($tanggalData);
 
             if ($result['success']) {
                 $this->logActivity([
                     'log_name' => 'RECONCILIATION_START',
-                    'description' => "Memulai proses rekonsiliasi untuk tanggal {$tanggalRekon}",
+                    'description' => "Memulai proses rekonsiliasi untuk tanggal {$tanggalData}",
                     'event' => 'RECONCILIATION_START',
                     'subject' => 'Settlement Reconciliation'
                 ]);
@@ -178,13 +178,13 @@ class Step2Controller extends BaseController
     /**
      * Execute reconciliation procedure
      */
-    private function executeReconciliation($tanggalRekon)
+    private function executeReconciliation($tanggalData)
     {
         try {
             $db = \Config\Database::connect();
             
             // Call stored procedure p_proses_rekonsiliasi
-            $query = $db->query("CALL p_proses_rekonsiliasi(?)", [$tanggalRekon]);
+            $query = $db->query("CALL p_proses_rekonsiliasi(?)", [$tanggalData]);
             
             return [
                 'success' => true,
@@ -206,9 +206,9 @@ class Step2Controller extends BaseController
      */
     public function prosesUlang()
     {
-        $tanggalRekon = $this->request->getPost('tanggal_rekon') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getPost('tanggal_rekon') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
-        if (!$tanggalRekon) {
+        if (!$tanggalData) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Tanggal rekonsiliasi tidak ditemukan'
@@ -219,21 +219,21 @@ class Step2Controller extends BaseController
             $db = \Config\Database::connect();
             
             // Call stored procedure p_proses_dataupload
-            log_message('info', "Calling stored procedure p_proses_dataupload with parameter: {$tanggalRekon}");
+            log_message('info', "Calling stored procedure p_proses_dataupload with parameter: {$tanggalData}");
             
-            $query = $db->query("CALL p_proses_dataupload(?)", [$tanggalRekon]);
+            $query = $db->query("CALL p_proses_dataupload(?)", [$tanggalData]);
             
             // Log activity
             $this->logActivity([
                 'log_name' => 'PROSES_ULANG_PERSIAPAN',
-                'description' => "Menjalankan proses ulang persiapan data untuk tanggal {$tanggalRekon}",
+                'description' => "Menjalankan proses ulang persiapan data untuk tanggal {$tanggalData}",
                 'event' => 'PROSES_ULANG_PERSIAPAN',
                 'subject' => 'Data Preparation'
             ]);
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => "Proses ulang persiapan berhasil dijalankan untuk tanggal {$tanggalRekon}. Halaman akan di-refresh untuk menampilkan data terbaru."
+                'message' => "Proses ulang persiapan berhasil dijalankan untuk tanggal {$tanggalData}. Halaman akan di-refresh untuk menampilkan data terbaru."
             ]);
             
         } catch (\Exception $e) {
@@ -252,9 +252,9 @@ class Step2Controller extends BaseController
     public function getDataPreview()
     {
         $fileType = $this->request->getGet('file_type');
-        $tanggalRekon = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
-        if (!$fileType || !$tanggalRekon) {
+        if (!$fileType || !$tanggalData) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Parameter tidak valid'
@@ -262,12 +262,12 @@ class Step2Controller extends BaseController
         }
 
         try {
-            $uploadPath = WRITEPATH . 'uploads/settlement/' . $tanggalRekon . '/';
+            $uploadPath = WRITEPATH . 'uploads/settlement/' . $tanggalData . '/';
             $possibleExtensions = ['csv', 'xlsx', 'xls'];
             $filePath = null;
 
             foreach ($possibleExtensions as $ext) {
-                $testPath = $uploadPath . $fileType . '_' . $tanggalRekon . '.' . $ext;
+                $testPath = $uploadPath . $fileType . '_' . $tanggalData . '.' . $ext;
                 if (file_exists($testPath)) {
                     $filePath = $testPath;
                     break;
@@ -334,9 +334,9 @@ class Step2Controller extends BaseController
      */
     public function getUploadStats()
     {
-        $tanggalRekon = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $tanggalData = $this->request->getPost('tanggal') ?? $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
         
-        if (!$tanggalRekon) {
+        if (!$tanggalData) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Tanggal rekonsiliasi tidak ditemukan'
@@ -348,12 +348,12 @@ class Step2Controller extends BaseController
             $fileTypes = ['agn_detail', 'agn_settle_edu', 'agn_settle_pajak', 'agn_trx_mgate'];
 
             foreach ($fileTypes as $fileType) {
-                $uploadPath = WRITEPATH . 'uploads/settlement/' . $tanggalRekon . '/';
+                $uploadPath = WRITEPATH . 'uploads/settlement/' . $tanggalData . '/';
                 $possibleExtensions = ['csv', 'xlsx', 'xls'];
                 $fileInfo = null;
 
                 foreach ($possibleExtensions as $ext) {
-                    $filePath = $uploadPath . $fileType . '_' . $tanggalRekon . '.' . $ext;
+                    $filePath = $uploadPath . $fileType . '_' . $tanggalData . '.' . $ext;
                     if (file_exists($filePath)) {
                         $fileInfo = [
                             'exists' => true,
@@ -377,7 +377,7 @@ class Step2Controller extends BaseController
             return $this->response->setJSON([
                 'success' => true,
                 'stats' => $stats,
-                'tanggal_rekon' => $tanggalRekon
+                'tanggal_rekon' => $tanggalData
             ]);
 
         } catch (\Exception $e) {
@@ -391,7 +391,7 @@ class Step2Controller extends BaseController
     /**
      * Validate file content based on file type
      */
-    private function validateFileContent($filePath, $fileType, $tanggalRekon)
+    private function validateFileContent($filePath, $fileType, $tanggalData)
     {
         $errors = [];
         
@@ -411,7 +411,7 @@ class Step2Controller extends BaseController
             switch ($fileType) {
                 case 'agn_trx_mgate':
                     // M-Gate file is mandatory and has specific requirements
-                    $mgateValidation = $this->validateMgateFile($filePath, $tanggalRekon);
+                    $mgateValidation = $this->validateMgateFile($filePath, $tanggalData);
                     if (!$mgateValidation['valid']) {
                         $errors = array_merge($errors, $mgateValidation['errors']);
                     }
@@ -419,7 +419,7 @@ class Step2Controller extends BaseController
                     
                 default:
                     // Generic validation for other files
-                    $genericValidation = $this->validateGenericFile($filePath, $tanggalRekon);
+                    $genericValidation = $this->validateGenericFile($filePath, $tanggalData);
                     if (!$genericValidation['valid']) {
                         $errors = array_merge($errors, $genericValidation['errors']);
                     }
@@ -436,7 +436,7 @@ class Step2Controller extends BaseController
     /**
      * Validate M-Gate file (mandatory file with specific rules)
      */
-    private function validateMgateFile($filePath, $tanggalRekon)
+    private function validateMgateFile($filePath, $tanggalData)
     {
         $errors = [];
         
@@ -455,7 +455,7 @@ class Step2Controller extends BaseController
     /**
      * Generic file validation
      */
-    private function validateGenericFile($filePath, $tanggalRekon)
+    private function validateGenericFile($filePath, $tanggalData)
     {
         $errors = [];
         
