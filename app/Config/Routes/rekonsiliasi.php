@@ -4,7 +4,7 @@
  * Rekonsiliasi Settlement Routes
  * 
  * File ini berisi routes untuk:
- * - Setup & Persiapan Rekonsiliasi (Setup, Step1, Step2, Step3)
+ * - Setup & Persiapan Rekonsiliasi (Setup, Step1, Step2)
  * - Process Rekonsiliasi (Laporan, Detail vs Rekap, Direct/Indirect Jurnal)
  * - Dispute Management
  * - Report Generation
@@ -43,13 +43,6 @@ $routes->group('rekon', ['namespace' => 'App\Controllers\Rekon'], function($rout
     $routes->post('step2/proses-ulang', 'Persiapan\Step2Controller::prosesUlang', ['as' => 'rekon.step2.proses-ulang']);
     $routes->get('step2/preview', 'Persiapan\Step2Controller::getDataPreview', ['as' => 'rekon.step2.preview']);
     $routes->get('step2/stats', 'Persiapan\Step2Controller::getUploadStats', ['as' => 'rekon.step2.stats']);
-    
-    // Step 3 Controller - untuk step3.blade.php (Proses Rekonsiliasi)
-    $routes->get('step3', 'Persiapan\Step3Controller::index', ['as' => 'rekon.step3']);
-    $routes->post('step3/process', 'Persiapan\Step3Controller::processReconciliation', ['as' => 'rekon.step3.process']);
-    $routes->get('step3/progress', 'Persiapan\Step3Controller::getReconciliationProgress', ['as' => 'rekon.step3.progress']);
-    $routes->post('step3/reports', 'Persiapan\Step3Controller::generateReports', ['as' => 'rekon.step3.reports']);
-    $routes->get('step3/download', 'Persiapan\Step3Controller::downloadReport', ['as' => 'rekon.step3.download']);
     
     // ========================================================================
     // PROCESS REKONSILIASI
