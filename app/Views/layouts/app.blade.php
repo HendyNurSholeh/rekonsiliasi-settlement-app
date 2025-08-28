@@ -59,6 +59,48 @@
                 <!-- BEGIN PRIMARY NAVIGATION -->
                 <nav id="js-primary-nav" class="primary-nav text-center" role="navigation" style="height: 100vh;">
                     <ul id="js-nav-menu" class="nav-menu">
+                        @php
+                            $user = in_array('view user', $permissions);
+                            $unit_kerja = in_array('view unit kerja', $permissions);
+                            $permission = in_array('view permission', $permissions);
+                            $role = in_array('view role', $permissions);
+                            $activity = in_array('view activity', $permissions);
+                            $error = in_array('view error', $permissions);
+
+                            // Persiapan permissions
+                            $rekon_pilih_tanggal = in_array('view rekon pilih tanggal', $permissions ?? []) ?? true;
+                            $rekon_review_data = in_array('view rekon review data', $permissions ?? []) ?? true;
+
+                            // Proses Rekonsiliasi permissions
+                            $rekon_detail_vs_rekap = in_array('view rekon detail vs rekap', $permissions ?? []) ?? true;
+                            $rekon_transaksi_detail = in_array('view rekon transaksi detail', $permissions ?? []) ?? true;
+                            $rekon_direct_jurnal_rekap = in_array('view rekon direct jurnal', $permissions ?? []) ?? true;
+                            $rekon_penyelesaian_dispute = in_array('view rekon penyelesaian dispute', $permissions ?? []) ?? true;
+                            $rekon_indirect_jurnal_rekap = in_array('view rekon indirect jurnal', $permissions ?? []) ?? true;
+                            $rekon_indirect_dispute = in_array('view rekon indirect dispute', $permissions ?? []) ?? true;
+
+                            // Settlement permissions
+                            $settlement_buat_jurnal = in_array('view settlement buat jurnal', $permissions ?? []) ?? true;
+                            $settlement_approve_jurnal = in_array('view settlement approve jurnal', $permissions ?? []) ?? true;
+                            $settlement_jurnal_ca_escrow = in_array('view settlement jurnal ca escrow', $permissions ?? []) ?? true;
+                            $settlement_jurnal_escrow_biller = in_array('view settlement jurnal escrow biller', $permissions ?? []) ?? true;
+
+                            // Rekon Bi-fast permissions
+                            $rekon_bifast_rekap = in_array('view bifast rekap', $permissions ?? []) ?? true;
+                            $rekon_bifast_dispute = in_array('view bifast dispute', $permissions ?? []) ?? true;
+
+                            // Parent menu visibility logic - hanya tampilkan jika ada minimal satu submenu
+                            $rekon_bifast = $rekon_bifast_rekap || $rekon_bifast_dispute;
+                            $rekon_direct_jurnal = $rekon_direct_jurnal_rekap || $rekon_penyelesaian_dispute;
+                            $rekon_indirect_jurnal = $rekon_indirect_jurnal_rekap || $rekon_indirect_dispute;
+                            $settlement = $settlement_buat_jurnal || $settlement_approve_jurnal || $settlement_jurnal_ca_escrow || $settlement_jurnal_escrow_biller;
+                            $show_persiapan = $rekon_pilih_tanggal || $rekon_review_data;
+                            $show_proses_rekonsiliasi = $rekon_detail_vs_rekap || $rekon_transaksi_detail || $rekon_direct_jurnal || $rekon_indirect_jurnal;
+                            $show_settlement = $settlement_buat_jurnal || $settlement_approve_jurnal || $settlement_jurnal_ca_escrow || $settlement_jurnal_escrow_biller;
+                            $show_rekon_bifast = $rekon_bifast_rekap || $rekon_bifast_dispute;
+                            $show_user_management = $user || $unit_kerja || $permission || $role;
+                            $show_log = $activity || $error;
+                        @endphp
                         <li class="@if ($route == 'dashboard') active open @endif">
                             <a href="{{ site_url('dashboard') }}">
                                 <i class="fal fa-home"></i>
@@ -66,45 +108,35 @@
                             </a>
                         </li>
 
-                         @php
-                            $user = in_array('view user', $permissions);
-                            $unit_kerja = in_array('view unit kerja', $permissions);
-                            $permission = in_array('view permission', $permissions);
-                            $role = in_array('view role', $permissions);
-                            $activity = in_array('view activity', $permissions);
-                            $error = in_array('view error', $permissions);
-                            
-                            // Rekonsiliasi permissions
-                            $rekon_process = in_array('view rekon process', $permissions ?? []) ?? true;
-                            $upload_data = in_array('view upload data', $permissions ?? []) ?? true;
-                        @endphp
-
                         {{-- Rekonsiliasi Settlement Menu --}}
-                        @if ($rekon_process || $upload_data)
-                        
-                            @if ($rekon_process)
+                        @if ($show_persiapan || $show_proses_rekonsiliasi || $show_settlement || $show_rekon_bifast)
+                            @if ($show_persiapan)
                                 <li class="@if ($route == 'rekon') active open @endif">
-                                    <a href="javascript:void(0);" title="User Management" data-filter-tags="user management">
+                                    <a href="javascript:void(0);" title="Persiapan Rekonsiliasi" data-filter-tags="persiapan rekonsiliasi">
                                         <i class="fal fa-calendar-alt"></i>
                                         <span class="nav-link-text">Persiapan</span>
                                     </a>
                                     <ul>
+                                        @if ($rekon_pilih_tanggal)
                                         <li class="@if ($route == 'rekon') active @endif">
                                             <a href="{{ site_url('rekon') }}">
                                                 <span class="nav-link-text text-left">Pilih Tanggal</span>
                                             </a>
                                         </li>
+                                        @endif
+                                        @if ($rekon_review_data)
                                         <li class="@if ($route == 'rekon/step2') active @endif">
                                             <a href="{{ site_url('/rekon/step2') }}">
                                                 <span class="nav-link-text text-left">Review Data</span>
                                             </a> 
                                         </li>
+                                        @endif
                                     </ul>
                                 </li>
                             @endif
-                        @endif
                             
                             {{-- TAHAP 3 - PROSES REKONSILIASI --}}
+                            @if ($show_proses_rekonsiliasi)
                             <li class="@if (str_contains($route, 'rekon/process')) active open @endif">
                                 <a href="javascript:void(0);" title="Proses Rekonsiliasi" data-filter-tags="tahap 3 proses rekonsiliasi">
                                     <i class="fal fa-tasks"></i>
@@ -114,60 +146,78 @@
                                     
                                     
                                     <!-- 2. Laporan Detail vs Rekap -->
+                                    @if ($rekon_detail_vs_rekap)
                                     <li class="@if ($route == 'rekon/process/detail-vs-rekap') active @endif">
                                         <a href="{{ site_url('rekon/process/detail-vs-rekap') }}">
                                             <span class="nav-link-text text-left">Laporan Detail vs Rekap</span>
                                         </a>
                                     </li>
+                                    @endif
 
                                     <!-- 1. Laporan Transaksi Detail -->
+                                    @if ($rekon_transaksi_detail)
                                     <li class="@if ($route == 'rekon/process/laporan-transaksi-detail') active @endif">
                                         <a href="{{ site_url('rekon/process/laporan-transaksi-detail') }}">
                                             <span class="nav-link-text text-left">Laporan Transaksi Detail</span>
                                         </a>
                                     </li>
+                                    @endif
                                     
                                     <!-- 3. Rekon Direct Jurnal -->
+                                    @if ($rekon_direct_jurnal)
                                     <li class="@if (str_contains($route, 'rekon/process/direct-jurnal')) active open @endif">
                                         <a href="javascript:void(0);" title="Rekon Direct Jurnal">
                                             <span class="nav-link-text text-left">Rekon Direct Jurnal</span>
                                         </a>
                                         <ul>
+                                            @if ($rekon_direct_jurnal_rekap)
                                             <li class="@if ($route == 'rekon/process/direct-jurnal-rekap') active @endif">
                                                 <a href="{{ site_url('rekon/process/direct-jurnal-rekap') }}">
                                                     <span class="nav-link-text text-left">Rekap Tx Direct Jurnal</span>
                                                 </a>
                                             </li>
+                                            @endif
+                                            @if ($rekon_penyelesaian_dispute)
                                             <li class="@if ($route == 'rekon/process/penyelesaian-dispute') active @endif">
                                                 <a href="{{ site_url('rekon/process/penyelesaian-dispute') }}">
                                                     <span class="nav-link-text text-left">Penyelesaian Dispute</span>
                                                 </a>
                                             </li>
+                                            @endif
                                         </ul>
                                     </li>
+                                    @endif
                                     
                                     <!-- 3. Rekon Indirect Jurnal -->
+                                    @if ($rekon_indirect_jurnal)
                                     <li class="@if (str_contains($route, 'rekon/process/indirect-jurnal')) active open @endif">
                                         <a href="javascript:void(0);" title="Rekon Indirect Jurnal">
                                             <span class="nav-link-text text-left">Rekon Indirect Jurnal</span>
                                         </a>
                                         <ul>
+                                            @if ($rekon_indirect_jurnal_rekap)
                                             <li class="@if ($route == 'rekon/process/indirect-jurnal-rekap') active @endif">
                                                 <a href="{{ site_url('rekon/process/indirect-jurnal-rekap') }}">
                                                     <span class="nav-link-text text-left">Rekap Tx Indirect Jurnal</span>
                                                 </a>
                                             </li>
+                                            @endif
+                                            @if ($rekon_indirect_dispute)
                                             <li class="@if ($route == 'rekon/process/indirect-dispute') active @endif">
                                                 <a href="{{ site_url('rekon/process/indirect-dispute') }}">
                                                     <span class="nav-link-text text-left">Penyelesaian Dispute</span>
                                                 </a>
                                             </li>
+                                            @endif
                                         </ul>
                                     </li>
+                                    @endif
                                 </ul>
                             </li>
+                            @endif
 
                             {{-- TAHAP 4 - SETTLEMENT--}}
+                            @if ($show_settlement)
                             <li class="@if (str_contains($route, 'settlement')) active open @endif">
                                 <a href="javascript:void(0);" title="Settlement" data-filter-tags="settlement jurnal">
                                     <i class="fal fa-file-invoice-dollar"></i>
@@ -175,56 +225,71 @@
                                 </a>
                                 <ul>
                                     <!-- 1. Buat Jurnal Settlement -->
+                                    @if ($settlement_buat_jurnal)
                                     <li class="@if ($route == 'settlement/buat-jurnal') active @endif">
                                         <a href="{{ site_url('settlement/buat-jurnal') }}">
                                             <span class="nav-link-text text-left">Buat Jurnal Settlement</span>
                                         </a>
                                     </li>
+                                    @endif
                                     
                                     <!-- 2. Approve Jurnal Settlement -->
+                                    @if ($settlement_approve_jurnal)
                                     <li class="@if ($route == 'settlement/approve-jurnal') active @endif">
                                         <a href="{{ site_url('settlement/approve-jurnal') }}">
                                             <span class="nav-link-text text-left">Approve Jurnal Settlement</span>
                                         </a>
                                     </li>
+                                    @endif
 
                                     <!-- 3. Jurnal CA to Escrow -->
+                                    @if ($settlement_jurnal_ca_escrow)
                                     <li class="@if ($route == 'settlement/jurnal-ca-escrow') active @endif">
                                         <a href="{{ site_url('settlement/jurnal-ca-escrow') }}">
                                             <span class="nav-link-text text-left">Jurnal CA to Escrow</span>
                                         </a>
                                     </li>
+                                    @endif
 
                                     <!-- 4. Jurnal Escrow to Biller PL -->
+                                    @if ($settlement_jurnal_escrow_biller)
                                     <li class="@if ($route == 'settlement/jurnal-escrow-biller-pl') active @endif">
                                         <a href="{{ site_url('settlement/jurnal-escrow-biller-pl') }}">
                                             <span class="nav-link-text text-left">Jurnal Escrow to Biller PL</span>
                                         </a>
                                     </li>
+                                    @endif
                                 </ul>
                             </li>
+                            @endif
 
                             {{-- Rekon Bi-fast Menu --}}
+                            @if ($show_rekon_bifast)
                             <li class="@if (str_contains($route, 'rekon-bifast')) active open @endif">
                                 <a href="javascript:void(0);" title="Rekon Bi-fast" data-filter-tags="rekon bifast">
                                     <i class="fal fa-exchange"></i>
                                     <span class="nav-link-text">Rekon Bi-fast</span>
                                 </a>
                                 <ul>
+                                    @if ($rekon_bifast_rekap)
                                     <li class="@if ($route == 'rekon-bifast/rekap') active @endif">
                                         <a href="{{ site_url('rekon-bifast/rekap') }}">
                                             <span class="nav-link-text text-left">Rekap Bi-fast</span>
                                         </a>
                                     </li>
+                                    @endif
+                                    @if ($rekon_bifast_dispute)
                                     <li class="@if ($route == 'rekon-bifast/dispute') active @endif">
                                         <a href="{{ site_url('rekon-bifast/dispute') }}">
                                             <span class="nav-link-text text-left">Penyelesaian Dispute</span>
                                         </a>
                                     </li>
+                                    @endif
                                 </ul>
                             </li>
-                       
-                        @if ($user || $unit_kerja || $permission || $role)
+                            @endif
+                        @endif
+                        @if ($show_user_management)
                             <li class="@if ($route == 'user' || $route == 'unit-kerja' || $route == 'permission' || $route == 'role') active open @endif">
                                 <a href="javascript:void(0);" title="User Management" data-filter-tags="user management">
                                     <i class="fal fa-users-cog"></i>
@@ -263,7 +328,7 @@
                             </li>
                         @endif
 
-                        @if ($activity || $error)
+                        @if ($show_log)
                             <li class="@if ($route == 'log/activity' || $route == 'log/error') active open @endif">
                                 <a href="javascript:void(0);" title="Log" data-filter-tags="log">
                                     <i class="fal fa-shield-alt"></i>
