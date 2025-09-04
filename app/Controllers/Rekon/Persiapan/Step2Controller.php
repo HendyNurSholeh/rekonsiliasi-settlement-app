@@ -3,6 +3,8 @@
 namespace App\Controllers\Rekon\Persiapan;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Traits\HasLogActivity;
 use App\Models\ProsesModel;
 use App\Models\AgnDetailModel;
@@ -80,6 +82,13 @@ class Step2Controller extends BaseController
                 'validationStatus' => $validationStatus,
                 'dataStats' => $dataStats
             ];
+
+            $this->logActivity([
+                'log_name' => LogEnum::VIEW,
+                'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+                'event' => EventLogEnum::VERIFIED,
+                'subject' => '-',
+		    ]);
 
             return $this->render('rekon/persiapan/step2/index.blade.php', $data);
             

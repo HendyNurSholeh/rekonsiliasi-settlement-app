@@ -3,10 +3,14 @@
 namespace App\Controllers\Rekon\Process;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
+use App\Traits\HasLogActivity;
 
 class DetailVsRekapController extends BaseController
 {
+    use HasLogActivity;
     protected $prosesModel;
 
     public function __construct()
@@ -29,6 +33,13 @@ class DetailVsRekapController extends BaseController
             'filterSelisih' => $filterSelisih,
             'route' => 'rekon/process/detail-vs-rekap'
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
 
         // For statistics, still get data from procedure if date is provided
         if ($tanggalData) {

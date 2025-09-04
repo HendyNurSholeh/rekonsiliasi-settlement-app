@@ -3,6 +3,8 @@
 namespace App\Controllers\Rekon\Persiapan;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
 use App\Traits\HasLogActivity;
 
@@ -30,6 +32,13 @@ class SetupController extends BaseController
             'route' => 'rekon',
             'defaultDate' => $defaultDate
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman Pilih Tanggal',
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
         
         return $this->render('rekon/persiapan/index/index.blade.php', $data);
     }

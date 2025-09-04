@@ -3,10 +3,14 @@
 namespace App\Controllers\Rekon\Process\IndirectJurnal;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
+use App\Traits\HasLogActivity;
 
 class RekapIndirectJurnalController extends BaseController
 {
+    use HasLogActivity;
     protected $prosesModel;
 
     public function __construct()
@@ -27,6 +31,13 @@ class RekapIndirectJurnalController extends BaseController
             'tanggalData' => $tanggalData,
             'route' => 'rekon/process/indirect-jurnal-rekap'
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
 
         return $this->render('rekon/process/indirect_jurnal/rekap_indirect_jurnal/index.blade.php', $data);
     }

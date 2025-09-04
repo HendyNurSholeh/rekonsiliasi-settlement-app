@@ -3,10 +3,15 @@
 namespace App\Controllers\Rekon\Process\DirectJurnal;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
+use App\Traits\HasLogActivity;
 
 class DisputeResolutionController extends BaseController
 {
+
+    use HasLogActivity;
     protected $prosesModel;
 
     public function __construct()
@@ -27,6 +32,13 @@ class DisputeResolutionController extends BaseController
             'tanggalData' => $tanggalData,
             'route' => 'rekon/process/direct-jurnal/dispute'
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
 
         // Get data from view if date is provided
         if ($tanggalData) {

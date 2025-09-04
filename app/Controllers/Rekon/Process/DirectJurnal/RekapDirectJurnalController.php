@@ -3,10 +3,14 @@
 namespace App\Controllers\Rekon\Process\DirectJurnal;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
+use App\Traits\HasLogActivity;
 
 class RekapDirectJurnalController extends BaseController
 {
+    use HasLogActivity;
     protected $prosesModel;
 
     public function __construct()
@@ -27,6 +31,13 @@ class RekapDirectJurnalController extends BaseController
             'tanggalData' => $tanggalData,
             'route' => 'rekon/process/direct-jurnal/rekap'
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
 
         // Get data from procedure if date is provided
         if ($tanggalData) {

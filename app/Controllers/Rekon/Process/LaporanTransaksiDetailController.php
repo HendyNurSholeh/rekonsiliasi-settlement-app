@@ -3,10 +3,14 @@
 namespace App\Controllers\Rekon\Process;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
+use App\Traits\HasLogActivity;
 
 class LaporanTransaksiDetailController extends BaseController
 {
+    use HasLogActivity;
     protected $prosesModel;
 
     public function __construct()
@@ -35,6 +39,13 @@ class LaporanTransaksiDetailController extends BaseController
             'idPelanggan' => $idPelanggan,
             'route' => 'rekon/process/laporan-transaksi-detail'
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
 
         return $this->render('rekon/process/laporan_transaksi_detail/index.blade.php', $data);
     }
