@@ -213,6 +213,24 @@ class BuatJurnalController extends BaseController
                 throw new \Exception('Failed to execute p_generate_settle_jurnal procedure');
             }
 
+            // Log the create activity
+            $this->logActivity([
+                'log_name' => LogEnum::DATA,
+                'description' => 'Create Data Button Settlement/Buat Jurnal Settlement',
+                'event' => EventLogEnum::CREATED,
+                'subject_id' => $namaProduk . '_' . $tanggalRekon,
+                'subject' => 'Menu: Settlement/Buat Jurnal Settlement',
+                'properties' => json_encode([
+                    'new' => [
+                        'nama_produk' => $namaProduk,
+                        'tanggal_rekon' => $tanggalRekon,
+                        'action' => 'generate_settle_jurnal',
+                        'created_by' => session('username'),
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]
+                ])
+            ]);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Jurnal settlement berhasil dibuat untuk produk ' . $namaProduk,
