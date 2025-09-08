@@ -3,11 +3,15 @@
 namespace App\Controllers\Settlement;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
 use App\Services\Settlement\JurnalCaEscrowService;
+use App\Traits\HasLogActivity;
 
 class JurnalCaEscrowController extends BaseController
 {
+    use HasLogActivity;
     protected $prosesModel;
     protected $jurnalService;
 
@@ -30,6 +34,13 @@ class JurnalCaEscrowController extends BaseController
             'tanggalData' => $tanggalData,
             'route' => 'settlement/jurnal-ca-escrow'
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
 
         return $this->render('settlement/jurnal_ca_escrow/index.blade.php', $data);
     }

@@ -3,10 +3,14 @@
 namespace App\Controllers\Settlement;
 
 use App\Controllers\BaseController;
+use App\Libraries\EventLogEnum;
+use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
+use App\Traits\HasLogActivity;
 
 class BuatJurnalController extends BaseController
 {
+    use HasLogActivity;
     protected $prosesModel;
 
     public function __construct()
@@ -29,6 +33,13 @@ class BuatJurnalController extends BaseController
             'fileSettle' => $fileSettle,
             'route' => 'settlement/buat-jurnal'
         ];
+
+        $this->logActivity([
+			'log_name' => LogEnum::VIEW,
+			'description' => session('username') . ' mengakses Halaman ' . $data['title'],
+			'event' => EventLogEnum::VERIFIED,
+			'subject' => '-',
+		]);
 
         return $this->render('settlement/buat_jurnal/index.blade.php', $data);
     }
