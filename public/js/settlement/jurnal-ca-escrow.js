@@ -1136,30 +1136,21 @@ function setBeforeUnloadWarning(enable) {
 }
 
 function showAlert(type, message) {
-    // Implementasi alert yang lebih baik (bisa diganti dengan toastr/sweet alert)
-    const alertClass = {
-        'success': 'alert-success',
-        'error': 'alert-danger', 
-        'warning': 'alert-warning',
-        'info': 'alert-info'
-    };
-    
-    const alertHtml = `
-        <div class="alert ${alertClass[type]} alert-dismissible fade show position-fixed" 
-             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-            <strong>${type.charAt(0).toUpperCase() + type.slice(1)}!</strong> ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>
-    `;
-    
-    $('body').append(alertHtml);
-    
-    // Auto hide after 5 seconds
-    setTimeout(function() {
-        $('.alert').alert('close');
-    }, 5000);
+    switch(type) {
+        case 'success':
+            toastr["success"](message);
+            break;
+        case 'error':
+            toastr["error"](message);
+            break;
+        case 'warning':
+            toastr["warning"](message);
+            break;
+        case 'info':
+        default:
+            toastr["info"](message);
+            break;
+    }
 }
 
 // Function untuk memproses semua detail transaksi dalam satu grup (batch processing)

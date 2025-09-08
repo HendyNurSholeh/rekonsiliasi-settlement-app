@@ -404,40 +404,20 @@ function formatNumber(num) {
 }
 
 function showAlert(type, message) {
-    let alertClass = 'alert-info';
-    let icon = 'fa-info-circle';
-    
     switch(type) {
         case 'success':
-            alertClass = 'alert-success';
-            icon = 'fa-check-circle';
+            toastr["success"](message);
             break;
         case 'error':
-            alertClass = 'alert-danger';
-            icon = 'fa-exclamation-circle';
+            toastr["error"](message);
             break;
         case 'warning':
-            alertClass = 'alert-warning';
-            icon = 'fa-exclamation-triangle';
+            toastr["warning"](message);
             break;
-    }
-    
-    let alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fal ${icon}"></i> ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    `;
-    
-    $('.subheader').after(alertHtml);
-    
-    // Auto hide success alerts
-    if (type === 'success') {
-        setTimeout(function() {
-            $('.alert-success').fadeOut();
-        }, 3000);
+        case 'info':
+        default:
+            toastr["info"](message);
+            break;
     }
 }
 
