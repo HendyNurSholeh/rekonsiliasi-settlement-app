@@ -301,6 +301,26 @@ class DisputeResolutionController extends BaseController
                 $vId, $statusBiller, $statusCore, $statusSettlement, $idpartner
             ]);
             
+            // Log the update activity
+            $this->logActivity([
+                'log_name' => LogEnum::DATA,
+                'description' => 'Update Data Button Proses Rekonsiliasi/Indirect Jurnal/Penyelesaian Dispute',
+                'event' => EventLogEnum::UPDATED,
+                'subject_id' => $vId,
+                'subject' => 'Menu: Proses Rekonsiliasi/Indirect Jurnal/Penyelesaian Dispute',
+                'properties' => json_encode([
+                    'new' => [
+                        'v_id' => $vId,
+                        'status_biller' => $statusBiller,
+                        'status_core' => $statusCore,
+                        'status_settlement' => $statusSettlement,
+                        'idpartner' => $idpartner,
+                        'updated_by' => session('username'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ]
+                ])
+            ]);
+            
             log_message('info', 'p_update_dispute_tx called successfully for v_ID: ' . $vId);
 
             return $this->response->setJSON([
