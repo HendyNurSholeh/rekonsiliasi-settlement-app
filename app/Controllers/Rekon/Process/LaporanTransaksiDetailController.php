@@ -340,6 +340,26 @@ class LaporanTransaksiDetailController extends BaseController
                 $id, $statusBiller, $statusCore, $statusSettlement, $idpartner
             ]);
 
+            // Log the update activity
+            $this->logActivity([
+                'log_name' => LogEnum::DATA,
+                'description' => 'Update Data Button Proses Rekonsiliasi/Laporan Transaksi Detail',
+                'event' => EventLogEnum::UPDATED,
+                'subject_id' => $id,
+                'subject' => 'Menu: Proses Rekonsiliasi/Laporan Transaksi Detail',
+                'properties' => json_encode([
+                    'new' => [
+                        'id' => $id,
+                        'status_biller' => $statusBiller,
+                        'status_core' => $statusCore,
+                        'status_settlement' => $statusSettlement,
+                        'idpartner' => $idpartner,
+                        'updated_by' => session('username'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ]
+                ])
+            ]);
+
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Data berhasil diupdate',
