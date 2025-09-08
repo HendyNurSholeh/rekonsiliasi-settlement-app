@@ -315,6 +315,27 @@ class ApproveJurnalController extends BaseController
                 throw new \Exception('Failed to execute p_approve_settle_jurnal procedure');
             }
 
+            // Log the approval activity
+            $this->logActivity([
+                'log_name' => LogEnum::DATA,
+                'description' => 'Process Approval Button Settlement/Approve Jurnal Settlement',
+                'event' => $action === 'approve' ? EventLogEnum::CREATED : EventLogEnum::UPDATED,
+                'subject_id' => $kdSettle,
+                'subject' => 'Menu: Settlement/Approve Jurnal Settlement',
+                'properties' => json_encode([
+                    'new' => [
+                        'kd_settle' => $kdSettle,
+                        'nama_produk' => $namaProduk,
+                        'tanggal_rekon' => $tanggalRekon,
+                        'action' => $action,
+                        'approval_status' => $approvalStatus,
+                        'action_text' => $actionText,
+                        'processed_by' => $username,
+                        'processed_at' => date('Y-m-d H:i:s')
+                    ]
+                ])
+            ]);
+
             // Log successful operation
             log_message('info', "Settlement approval processed - KD_SETTLE: {$kdSettle}, NAMA_PRODUK: {$namaProduk}, ACTION: {$action}, USER: {$username}");
 
