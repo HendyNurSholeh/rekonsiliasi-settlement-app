@@ -128,6 +128,24 @@ class RekapIndirectJurnalController extends BaseController
             // Call the stored procedure with IDPARTNER (sama dengan NAMA_GROUP) dan TGL_FILE
             $query = $db->query("CALL p_update_sukses_tx(?, ?)", [$group, $tanggalRekon]);
 
+            // Log the update activity
+            $this->logActivity([
+                'log_name' => LogEnum::DATA,
+                'description' => 'Update Data Button Proses Rekonsiliasi/Indirect Jurnal/Rekap Tx Indirect Jurnal',
+                'event' => EventLogEnum::UPDATED,
+                'subject_id' => $group,
+                'subject' => 'Menu: Proses Rekonsiliasi/Indirect Jurnal/Rekap Tx Indirect Jurnal',
+                'properties' => json_encode([
+                    'new' => [
+                        'group' => $group,
+                        'tanggal_rekon' => $tanggalRekon,
+                        'action' => 'konfirmasi_saldo_escrow',
+                        'updated_by' => session('username'),
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ]
+                ])
+            ]);
+
             log_message('info', "p_update_sukses_tx procedure called successfully for IDPARTNER: {$group}, TGL_FILE: {$tanggalRekon}");
 
             return $this->response->setJSON([
