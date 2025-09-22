@@ -111,6 +111,12 @@ $(document).ready(function() {
             disputeTable.ajax.reload();
         }
     });
+    
+    // Reset tombol simpan ketika modal ditutup
+    $('#disputeModal').on('hidden.bs.modal', function () {
+        const saveButton = $('.btn-primary[onclick="saveDispute()"]');
+        saveButton.prop('disabled', false).html('<i class="fal fa-save"></i> Simpan');
+    });
 });
 
 function initializeDataTable() {
@@ -285,6 +291,10 @@ function openDisputeModal(id) {
     $('#disputeForm')[0].reset();
     $('#dispute_id').val(id);
     
+    // Reset tombol simpan ke kondisi normal
+    const saveButton = $('.btn-primary[onclick="saveDispute()"]');
+    saveButton.prop('disabled', false).html('<i class="fal fa-save"></i> Simpan');
+    
     // Refresh CSRF token terlebih dahulu untuk memastikan valid
     refreshCSRFToken().then(function() {
         // Get dispute detail - CSRF otomatis ditambahkan dengan token fresh
@@ -349,12 +359,20 @@ function openDisputeModal(id) {
 }
 
 function saveDispute() {
+    // Disable tombol simpan untuk mencegah double click
+    const saveButton = $('.btn-primary[onclick="saveDispute()"]');
+    const originalText = saveButton.html();
+    saveButton.prop('disabled', true)
+             .html('<i class="fal fa-spinner fa-spin"></i> Menyimpan...');
+    
     const formData = new FormData($('#disputeForm')[0]);
     
     // Validate required fields
     if (!formData.get('idpartner') || !formData.get('status_biller') || 
         !formData.get('status_core') || !formData.get('status_settlement')) {
         showAlert('warning', 'Mohon lengkapi semua field yang wajib diisi');
+        // Re-enable tombol jika validasi gagal
+        saveButton.prop('disabled', false).html(originalText);
         return;
     }
     
@@ -368,6 +386,9 @@ function saveDispute() {
             processData: false,
             contentType: false,
             success: function(response) {
+                // Re-enable tombol setelah request selesai
+                saveButton.prop('disabled', false).html(originalText);
+                
                 // Update CSRF jika ada di response
                 if (response.csrf_token) {
                     currentCSRF = response.csrf_token;
@@ -385,6 +406,9 @@ function saveDispute() {
                 }
             },
             error: function(xhr) {
+                // Re-enable tombol jika terjadi error
+                saveButton.prop('disabled', false).html(originalText);
+                
                 if (xhr.status === 403) {
                     showAlert('error', 'Session expired. Please try again.');
                 } else {
@@ -393,6 +417,8 @@ function saveDispute() {
             }
         });
     }).catch(function(error) {
+        // Re-enable tombol jika CSRF refresh gagal
+        saveButton.prop('disabled', false).html(originalText);
         showAlert('error', 'Gagal memperbarui token. Silakan refresh halaman.');
     });
 }
