@@ -107,8 +107,8 @@ $(document).ready(function() {
             
             console.log('Updated URL:', url.toString());
             
-            // Reload DataTable with new filters
-            disputeTable.ajax.reload();
+            // Reload DataTable with new filters and reset to first page (for filter changes)
+            reloadDataTable(true); // true = reset to first page untuk filter baru
         }
     });
     
@@ -147,7 +147,7 @@ function initializeDataTable() {
                     console.log('CSRF error in DataTable, refreshing token...');
                     refreshCSRFToken().then(function() {
                         console.log('CSRF refreshed, reloading DataTable...');
-                        disputeTable.ajax.reload();
+                        reloadDataTable(false); // false = tetap di halaman saat ini
                     });
                 }
             }
@@ -397,10 +397,8 @@ function saveDispute() {
                 if (response.success) {
                     showAlert('success', response.message);
                     $('#disputeModal').modal('hide');
-                    // Reload DataTable instead of page
-                    if (disputeTable) {
-                        disputeTable.ajax.reload();
-                    }
+                    // Reload DataTable without resetting pagination (keep current page)
+                    reloadDataTable(false); // false = tetap di halaman saat ini
                 } else {
                     showAlert('error', response.message);
                 }
@@ -421,6 +419,14 @@ function saveDispute() {
         saveButton.prop('disabled', false).html(originalText);
         showAlert('error', 'Gagal memperbarui token. Silakan refresh halaman.');
     });
+}
+
+// Helper function untuk reload DataTable dengan opsi pagination
+function reloadDataTable(resetPaging = false) {
+    if (disputeTable) {
+        console.log('Reloading DataTable, reset paging:', resetPaging);
+        disputeTable.ajax.reload(null, resetPaging);
+    }
 }
 
 function formatNumber(num) {
