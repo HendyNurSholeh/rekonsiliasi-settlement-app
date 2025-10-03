@@ -93,8 +93,8 @@ $(document).ready(function() {
             
             console.log('Updated URL:', url.toString());
             
-            // Reload DataTable with new filters
-            disputeTable.ajax.reload();
+            // Reload DataTable with new filters (keep current page)
+            reloadDataTable(false);
         }
     });
 });
@@ -123,7 +123,7 @@ function initializeDataTable() {
                     console.log('CSRF error in DataTable, refreshing token...');
                     refreshCSRFToken().then(function() {
                         console.log('CSRF refreshed, reloading DataTable...');
-                        disputeTable.ajax.reload();
+                        reloadDataTable(false); // Keep current page
                     });
                 }
             }
@@ -227,6 +227,13 @@ function initializeDataTable() {
     });
 }
 
+// Helper function untuk reload DataTable dengan/tanpa reset pagination
+function reloadDataTable(resetPaging = true) {
+    if (disputeTable) {
+        disputeTable.ajax.reload(null, resetPaging);
+    }
+}
+
 function openDisputeModal(id) {
     if (!id) {
         showAlert('error', 'ID tidak ditemukan');
@@ -289,15 +296,25 @@ function openDisputeModal(id) {
     }).catch(function(error) {
         showAlert('error', 'Gagal memperbarui token. Silakan refresh halaman.');
     });
-}
+}   
 
 function saveDispute() {
+    // Disable tombol simpan untuk mencegah double click
+    const saveButton = $('.btn-primary[onclick="saveDispute()"]');
+    const originalText = saveButton.html();
+    saveButton.prop('disabled', true)
+             .html('<i class="fal fa-spinner fa-spin"></i> Menyimpan...');
+    
     const formData = new FormData($('#disputeForm')[0]);
     
     // Validate required fields
     if (!formData.get('idpartner') || !formData.get('status_biller') || 
         !formData.get('status_core') || !formData.get('status_settlement')) {
         showAlert('warning', 'Mohon lengkapi semua field yang wajib diisi');
+        // Re-enable tombol jika validasi gagal dan hapus class waves
+        saveButton.prop('disabled', false)
+                 .html(originalText)
+                 .removeClass('waves-effect waves-themed');
         return;
     }
     
@@ -311,6 +328,11 @@ function saveDispute() {
             processData: false,
             contentType: false,
             success: function(response) {
+                // Re-enable tombol setelah request selesai dan hapus class waves
+                saveButton.prop('disabled', false)
+                         .html(originalText)
+                         .removeClass('waves-effect waves-themed');
+                
                 // Update CSRF jika ada di response
                 if (response.csrf_token) {
                     currentCSRF = response.csrf_token;
@@ -319,15 +341,18 @@ function saveDispute() {
                 if (response.success) {
                     showAlert('success', response.message);
                     $('#disputeModal').modal('hide');
-                    // Reload DataTable instead of page
-                    if (disputeTable) {
-                        disputeTable.ajax.reload();
-                    }
+                    // Reload DataTable without resetting pagination (keep current page)
+                    reloadDataTable(false); // false = tetap di halaman saat ini
                 } else {
                     showAlert('error', response.message);
                 }
             },
             error: function(xhr) {
+                // Re-enable tombol jika terjadi error dan hapus class waves
+                saveButton.prop('disabled', false)
+                         .html(originalText)
+                         .removeClass('waves-effect waves-themed');
+                
                 if (xhr.status === 403) {
                     showAlert('error', 'Session expired. Please try again.');
                 } else {
@@ -336,6 +361,10 @@ function saveDispute() {
             }
         });
     }).catch(function(error) {
+        // Re-enable tombol jika gagal refresh token dan hapus class waves
+        saveButton.prop('disabled', false)
+                 .html(originalText)
+                 .removeClass('waves-effect waves-themed');
         showAlert('error', 'Gagal memperbarui token. Silakan refresh halaman.');
     });
 }
