@@ -149,12 +149,6 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
     $routes->post('jurnal-escrow-biller-pl/proses', 'JurnalEscrowBillerPlController::proses', ['as' => 'settlement.jurnal-escrow-biller-pl.proses']);
 });
 
-// Mock API Transfer Dana - HANYA untuk simulasi transfer dana CA to Escrow
-$routes->group('api/settlement', ['namespace' => 'App\Controllers\Api'], function($routes) {
-    // SATU-SATUNYA endpoint simulasi - untuk transfer dana ke core banking
-    $routes->post('ca-escrow/process', 'SettlementController::process');
-});
-
 $routes->get('get-csrf-token', 'CommonController::getCsrfToken');
 $routes->get('get-new-csrf-token', 'Rekon\RekonController::getCsrfToken');
 

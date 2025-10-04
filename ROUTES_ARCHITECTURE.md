@@ -36,9 +36,9 @@ app/Config/Routes/
 **Tim Settlement**
 - Buat Jurnal Settlement
 - Approve Jurnal Settlement
-- Transfer CA to Escrow
+- Transfer CA to Escrow (via AKSEL Gateway)
 - Transfer Escrow to Biller PL
-- Mock API untuk testing
+- AKSEL Gateway Callback
 
 ### 📄 user_management.php
 **Tim User Management**

@@ -6,9 +6,9 @@
  * File ini berisi routes untuk:
  * - Buat Jurnal Settlement
  * - Approve Jurnal Settlement
- * - Jurnal CA to Escrow (Transfer dana dari CA ke Escrow)
+ * - Jurnal CA to Escrow (Transfer dana dari CA ke Escrow via AKSEL Gateway)
  * - Jurnal Escrow to Biller PL (Transfer dana dari Escrow ke Biller)
- * - Mock API untuk simulasi transfer dana
+ * - AKSEL Gateway Callback (Public endpoint untuk menerima callback dari AKSEL Gateway)
  */
 
 // ============================================================================
@@ -68,15 +68,4 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
 
 $routes->group('aksel-gate', ['namespace' => 'App\Controllers\Settlement'], function($routes) {
     $routes->get('callback', 'AkselGateCallbackController::index', ['as' => 'aksel-gate.callback']);
-});
-
-// ============================================================================
-// MOCK API TRANSFER DANA
-// ============================================================================
-// API simulasi untuk testing transfer dana ke core banking
-// PENTING: Ini HANYA untuk testing/development!
-
-$routes->group('api/settlement', ['namespace' => 'App\Controllers\Api'], function($routes) {
-    // SATU-SATUNYA endpoint simulasi - untuk transfer dana ke core banking
-    $routes->post('ca-escrow/process', 'SettlementController::process');
 });
