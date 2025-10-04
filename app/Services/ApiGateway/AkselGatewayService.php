@@ -97,16 +97,6 @@ class AkselGatewayService
     public function sendBatchTransactions(array $transactionData): array
     {
         try {
-            // Validate payload structure
-            $validationErrors = $this->validateTransactionPayload($transactionData);
-            if (!empty($validationErrors)) {
-                log_message('error', 'AKSEL Gateway: Payload validation failed: ' . implode(', ', $validationErrors));
-                return [
-                    'success' => false,
-                    'message' => 'Format data tidak valid: ' . implode(', ', $validationErrors)
-                ];
-            }
-
             // Step 1: Login untuk mendapatkan token
             $loginResult = $this->login();
             
@@ -202,60 +192,8 @@ class AkselGatewayService
     }
 
     /**
-     * Validate transaction payload structure
-     */
-    private function validateTransactionPayload(array $data): array
-    {
-        $errors = [];
-        
-        // Check main structure
-        if (!isset($data['requestId']) || empty($data['requestId'])) {
-            $errors[] = 'requestId is required';
-        }
-        
-        if (!isset($data['totalTx']) || !is_string($data['totalTx'])) {
-            $errors[] = 'totalTx must be string';
-        }
-        
-        if (!isset($data['data']) || !is_array($data['data'])) {
-            $errors[] = 'data must be array';
-        }
-        
-        if (isset($data['data'])) {
-            foreach ($data['data'] as $index => $transaction) {
-                $prefix = "Transaction[$index]: ";
-                
-                // Required fields
-                $required = ['core', 'branchCode', 'branchName', 'debitAccount', 'creditAccount', 
-                           'amount', 'description', 'referenceNumber'];
-                
-                foreach ($required as $field) {
-                    if (!isset($transaction[$field]) || empty($transaction[$field])) {
-                        $errors[] = $prefix . "$field is required";
-                    }
-                }
-                
-                // Amount must be numeric string
-                if (isset($transaction['amount']) && !is_numeric($transaction['amount'])) {
-                    $errors[] = $prefix . "amount must be numeric string";
-                }
-                
-                // Account numbers validation
-                if (isset($transaction['debitAccount']) && strlen($transaction['debitAccount']) < 5) {
-                    $errors[] = $prefix . "debitAccount too short";
-                }
-                
-                if (isset($transaction['creditAccount']) && strlen($transaction['creditAccount']) < 5) {
-                    $errors[] = $prefix . "creditAccount too short";
-                }
-            }
-        }
-        
-        return $errors;
-    }
-
-    /**
      * Format transaksi data untuk API Gateway
+     * Return error jika ada transaksi yang tidak valid
      */
     public function formatTransactionData(string $kdSettle, array $transactions): array
     {
@@ -265,21 +203,40 @@ class AkselGatewayService
             'totalTx' => (string)count($transactions),
             'data' => []
         ];
+        
+        $validationErrors = [];
 
         log_message('info', 'AKSEL Gateway: Formatting transaction data for kd_settle: ' . $kdSettle . ', transaction count: ' . count($transactions));
 
         foreach ($transactions as $index => $trx) {
+            $transactionNumber = $index + 1;
+            $ref = $trx['d_NO_REF'] ?? 'unknown';
+            
             // Validate required fields
-            if (empty($trx['d_DEBIT_ACCOUNT']) || empty($trx['d_CREDIT_ACCOUNT']) || empty($trx['d_NO_REF'])) {
-                log_message('warning', 'AKSEL Gateway: Skipping transaction with missing required fields: ' . json_encode($trx));
+            if (empty($trx['d_DEBIT_ACCOUNT'])) {
+                $validationErrors[] = "Transaksi #{$transactionNumber} (REF: {$ref}): Debit Account tidak boleh kosong";
+                log_message('error', "AKSEL Gateway: Transaction #{$transactionNumber} - Missing debit account: " . json_encode($trx));
+                continue;
+            }
+            
+            if (empty($trx['d_CREDIT_ACCOUNT'])) {
+                $validationErrors[] = "Transaksi #{$transactionNumber} (REF: {$ref}): Credit Account tidak boleh kosong";
+                log_message('error', "AKSEL Gateway: Transaction #{$transactionNumber} - Missing credit account: " . json_encode($trx));
+                continue;
+            }
+            
+            if (empty($trx['d_NO_REF'])) {
+                $validationErrors[] = "Transaksi #{$transactionNumber}: Reference Number tidak boleh kosong";
+                log_message('error', "AKSEL Gateway: Transaction #{$transactionNumber} - Missing reference number: " . json_encode($trx));
                 continue;
             }
             
             // Clean and validate amount
             $amount = str_replace([',', '.'], '', $trx['d_AMOUNT'] ?? '0');
-            if (!is_numeric($amount)) {
-                log_message('warning', 'AKSEL Gateway: Invalid amount for transaction ' . $trx['d_NO_REF'] . ': ' . ($trx['d_AMOUNT'] ?? 'null'));
-                $amount = '0';
+            if (!is_numeric($amount) || $amount <= 0) {
+                $validationErrors[] = "Transaksi #{$transactionNumber} (REF: {$ref}): Amount tidak valid (" . ($trx['d_AMOUNT'] ?? 'null') . "), harus berupa angka lebih dari 0";
+                log_message('error', "AKSEL Gateway: Transaction #{$transactionNumber} - Invalid amount: " . ($trx['d_AMOUNT'] ?? 'null'));
+                continue;
             }
             
             $transactionData = [
@@ -300,12 +257,94 @@ class AkselGatewayService
             $apiData['data'][] = $transactionData;
         }
         
+        // Jika ada validation errors, return error response
+        if (!empty($validationErrors)) {
+            log_message('error', 'AKSEL Gateway: Validation failed with ' . count($validationErrors) . ' errors');
+            return [
+                'success' => false,
+                'message' => 'Validasi data transaksi gagal',
+                'errors' => $validationErrors,
+                'total_errors' => count($validationErrors)
+            ];
+        }
+        
         // Update totalTx setelah filtering
         $apiData['totalTx'] = (string)count($apiData['data']);
         
         log_message('info', 'AKSEL Gateway: Final payload prepared with ' . count($apiData['data']) . ' valid transactions');
         
-        return $apiData;
+        return [
+            'success' => true,
+            'data' => $apiData
+        ];
+    }
+
+    /**
+     * Process complete batch transaction workflow
+     * Menggabungkan format, validate, dan send dalam satu method
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param array $transactions Array data transaksi dari database
+     * @return array Response dengan success status dan data/error
+     */
+    public function processBatchTransaction(string $kdSettle, array $transactions): array
+    {
+        // Validasi input
+        if (empty($kdSettle)) {
+            return [
+                'success' => false,
+                'message' => 'Kode settle tidak boleh kosong',
+                'error_code' => 'INVALID_INPUT'
+            ];
+        }
+
+        if (empty($transactions)) {
+            return [
+                'success' => false,
+                'message' => 'Tidak ada data transaksi untuk kode settle: ' . $kdSettle,
+                'error_code' => 'NO_TRANSACTION_DATA'
+            ];
+        }
+
+        // Step 1: Format dan validasi transaksi
+        $formatResult = $this->formatTransactionData($kdSettle, $transactions);
+        
+        if (!$formatResult['success']) {
+            return $formatResult; // Return validation errors
+        }
+        
+        $apiData = $formatResult['data'];
+        
+        // Step 2: Cek apakah ada transaksi valid
+        if (empty($apiData['data'])) {
+            return [
+                'success' => false,
+                'message' => 'Tidak ada transaksi valid untuk diproses dari kode settle: ' . $kdSettle,
+                'error_code' => 'NO_VALID_TRANSACTION'
+            ];
+        }
+        
+        // Step 3: Kirim ke API Gateway
+        $apiResult = $this->sendBatchTransactions($apiData);
+        
+        // Step 4: Return result dengan tambahan informasi
+        if ($apiResult['success']) {
+            return [
+                'success' => true,
+                'message' => 'Transaksi berhasil dikirim ke API Gateway',
+                'request_id' => $apiData['requestId'],
+                'total_transaksi' => count($apiData['data']),
+                'status_code' => $apiResult['status_code'] ?? 'unknown',
+                'api_response' => $apiResult['data'] ?? null
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Gagal mengirim ke API Gateway: ' . $apiResult['message'],
+                'error_code' => 'API_GATEWAY_ERROR',
+                'status_code' => $apiResult['status_code'] ?? null
+            ];
+        }
     }
 
     /**

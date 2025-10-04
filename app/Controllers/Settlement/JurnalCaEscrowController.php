@@ -319,23 +319,6 @@ class JurnalCaEscrowController extends BaseController
             // Ambil data dari request
             $kdSettle = $this->request->getPost('kd_settle');
             $tanggalData = $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
-            
-            if (empty($kdSettle)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Kode settle tidak boleh kosong'
-                ]);
-            }
-
-            // Ambil semua transaksi untuk kode settle ini dari database
-            $transaksiData = $this->getTransaksiByKdSettle($kdSettle, $tanggalData);
-            
-            if (empty($transaksiData)) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Tidak ada data transaksi untuk kode settle: ' . $kdSettle
-                ]);
-            }
 
             // Cek apakah kd_settle sudah pernah diproses (prevent duplicate)
             $duplicateCheck = $this->checkDuplicateProcess($kdSettle);
@@ -358,54 +341,35 @@ class JurnalCaEscrowController extends BaseController
                 ]);
             }
 
-            // Format data menggunakan service
-            $apiData = $this->akselGatewayService->formatTransactionData($kdSettle, $transaksiData);
-            
-            if (empty($apiData['data'])) {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Tidak ada transaksi valid untuk diproses dari kode settle: ' . $kdSettle,
-                    'csrf_token' => csrf_hash()
-                ]);
-            }
+            // Ambil data transaksi dari database
+            $transaksiData = $this->getTransaksiByKdSettle($kdSettle, $tanggalData);
 
-            // Kirim ke API Gateway menggunakan service
-            $apiResult = $this->akselGatewayService->sendBatchTransactions($apiData);
+            // Process transaksi menggunakan service (validasi, format, dan send semua di service)
+            $result = $this->akselGatewayService->processBatchTransaction($kdSettle, $transaksiData);
             
-            if ($apiResult['success']) {
-                // Insert status ke database dengan status code dari API Gateway
-                $requestId = $apiData['requestId'];
-                $totalTransaksi = count($apiData['data']);
-                $statusCode = (string)($apiResult['status_code'] ?? '201');
-                
-                try {
-                    $this->updateTransaksiStatus($kdSettle, $requestId, $statusCode, $totalTransaksi, $apiResult);
-                } catch (\Exception $e) {
-                    log_message('error', 'Failed to insert process log but transaction sent: ' . $e->getMessage());
-                    // Lanjutkan karena transaksi sudah terkirim ke API Gateway
-                }
-                
-                log_message('info', 'Batch transaction successful for kd_settle: ' . $kdSettle . ', request_id: ' . $requestId . ', total: ' . $totalTransaksi);
-                
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => 'Transaksi berhasil dikirim ke API Gateway',
-                    'request_id' => $requestId,
-                    'total_transaksi' => $totalTransaksi,
-                    'status_code' => $apiResult['status_code'] ?? 'unknown',
-                    'api_response' => $apiResult['data'],
-                    'csrf_token' => csrf_hash()
-                ]);
-            } else {
-                // Jangan insert ke database jika gagal kirim ke API Gateway
-                log_message('error', 'Failed to send to API Gateway for kd_settle: ' . $kdSettle . ', error: ' . $apiResult['message']);
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal mengirim ke API Gateway: ' . $apiResult['message'],
-                    'error_code' => 'API_GATEWAY_ERROR',
-                    'csrf_token' => csrf_hash()
-                ]);
+            // Handle result
+            if (!$result['success']) {
+                log_message('error', 'Batch transaction failed for kd_settle: ' . $kdSettle . ', error: ' . $result['message']);
+                return $this->response->setJSON(array_merge($result, ['csrf_token' => csrf_hash()]));
             }
+            
+            // Success - Insert log ke database
+            try {
+                $this->updateTransaksiStatus(
+                    $kdSettle,
+                    $result['request_id'],
+                    (string)$result['status_code'],
+                    $result['total_transaksi'],
+                    $result
+                );
+            } catch (\Exception $e) {
+                log_message('error', 'Failed to insert process log but transaction sent: ' . $e->getMessage());
+                // Lanjutkan karena transaksi sudah terkirim ke API Gateway
+            }
+            
+            log_message('info', 'Batch transaction successful for kd_settle: ' . $kdSettle . ', request_id: ' . $result['request_id'] . ', total: ' . $result['total_transaksi']);
+            
+            return $this->response->setJSON(array_merge($result, ['csrf_token' => csrf_hash()]));
             
         } catch (\Exception $e) {
             log_message('error', 'JurnalCaEscrowController::proses() error: ' . $e->getMessage(), [
