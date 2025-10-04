@@ -1155,163 +1155,152 @@ function showAlert(type, message) {
 
 // Function untuk memproses semua detail transaksi dalam satu grup (batch processing)
 function processBatchJurnal(kdSettle) {
-    // Ambil child data dari map
-    const childData = window.childDataMap ? window.childDataMap[kdSettle] : null;
+    console.log('Processing batch jurnal for KD Settle:', kdSettle);
     
-    if (!childData || childData.length === 0) {
-        showAlert('warning', 'Tidak ada detail transaksi untuk diproses.');
+    // Cek apakah sudah ada proses yang sedang berjalan
+    if ($('.btn-processing').length > 0) {
+        showAlert('warning', 'Ada proses lain yang sedang berjalan. Mohon tunggu hingga selesai.');
         return;
     }
     
-    // Filter hanya yang belum selesai (belum ada response code yang berhasil)
-    const pendingData = childData.filter(child => 
-        !child.d_CODE_RES || !child.d_CODE_RES.startsWith('00')
-    );
-    
-    if (pendingData.length === 0) {
-        showAlert('info', 'Semua transaksi dalam grup ini sudah selesai diproses.');
-        return;
-    }
-    
-    // Konfirmasi sebelum proses batch
-    const confirmMessage = `Apakah Anda yakin ingin memproses ${pendingData.length} transaksi dalam grup ${kdSettle}?\n\n` +
-                          `Detail:\n` +
-                          pendingData.map((child, index) => 
-                              `${index + 1}. ${child.d_NO_REF} - ${formatCurrency(child.d_AMOUNT)}`
-                          ).join('\n');
+    // Konfirmasi untuk memproses semua transaksi
+    const confirmMessage = `Apakah Anda yakin ingin memproses SEMUA transaksi untuk kode settle: ${kdSettle}?\n\nSemua transaksi akan dikirim ke API Gateway secara bersamaan.\nProses ini tidak dapat dibatalkan!`;
     
     if (!confirm(confirmMessage)) {
+        console.log('Batch process cancelled by user');
         return;
     }
     
-    // Disable tombol batch dan tampilkan loading
+    // Disable semua button proses
+    hideAllProcessButtons();
+    
+    // Update button batch menjadi processing
     const $batchBtn = $(`#btn-batch-${kdSettle}`);
     const originalHtml = $batchBtn.html();
-    $batchBtn.prop('disabled', true);
-    $batchBtn.html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
+    $batchBtn.prop('disabled', true)
+           .html('<i class="fal fa-spinner fa-spin me-1"></i>Memproses...')
+           .addClass('btn-processing')
+           .show();
     
-    // Disable semua aksi lainnya
-    disableAllActions();
+    // Show progress modal
+    showBatchProgressModal(kdSettle);
+    
+    // Prevent browser close/refresh
     setBeforeUnloadWarning(true);
     
-    // Tampilkan modal progress untuk batch
-    showBatchProgressModal(kdSettle, pendingData);
+    console.log('Sending batch request to API Gateway...');
     
-    let processedCount = 0;
-    let successCount = 0;
-    let errorCount = 0;
-    const totalToProcess = pendingData.length;
-    
-    // Function untuk memproses satu child
-    function processNextChild() {
-        if (processedCount >= totalToProcess) {
-            // Semua selesai
-            finishBatchProcess();
-            return;
-        }
-        
-        const currentChild = pendingData[processedCount];
-        processedCount++;
-        
-        // Update progress
-        updateBatchProgress(processedCount, totalToProcess, currentChild);
-        
-        // Proses child dengan callback
-        prosesJurnalChild(currentChild, kdSettle, 0, null, function(success, message) {
-            if (success) {
-                successCount++;
-            } else {
-                errorCount++;
+    // AJAX call untuk batch process
+    $.ajax({
+        url: window.appConfig.baseUrl + "settlement/jurnal-ca-escrow/proses",
+        type: 'POST',
+        timeout: 300000, // 5 menit timeout untuk batch process
+        data: {
+            csrf_test_name: currentCSRF,
+            kd_settle: kdSettle,
+            tanggal: window.appConfig.tanggalData
+        },
+        beforeSend: function(xhr, settings) {
+            console.log('Batch request data:', settings.data);
+        },
+        success: function(response) {
+            console.log('Batch API response:', response);
+            
+            // Update CSRF token
+            if (response.csrf_token) {
+                currentCSRF = response.csrf_token;
             }
             
-            // Lanjut ke child berikutnya setelah delay kecil
-            setTimeout(processNextChild, 500);
-        });
-    }
-    
-    // Function untuk menyelesaikan batch process
-    function finishBatchProcess() {
-        // Enable kembali aksi
-        enableAllActions();
-        setBeforeUnloadWarning(false);
-        hideBatchProgressModal();
-        
-        // Reset tombol batch
-        $batchBtn.prop('disabled', false);
-        $batchBtn.html(originalHtml);
-        
-        // Tampilkan hasil
-        let resultMessage = `Batch process selesai!\n\n`;
-        resultMessage += `Total diproses: ${processedCount}\n`;
-        resultMessage += `Berhasil: ${successCount}\n`;
-        resultMessage += `Gagal: ${errorCount}\n\n`;
-        
-        if (errorCount === 0) {
-            showAlert('success', resultMessage);
-        } else if (successCount > 0) {
-            showAlert('warning', resultMessage + 'Beberapa transaksi gagal diproses.');
-        } else {
-            showAlert('error', resultMessage + 'Semua transaksi gagal diproses.');
+            if (response.success) {
+                // Show success message with details
+                const successMsg = `✅ Batch process berhasil!\n\n` +
+                                 `Request ID: ${response.request_id}\n` +
+                                 `Total Transaksi: ${response.total_transaksi}\n` +
+                                 `Status: Dikirim ke API Gateway\n\n` +
+                                 `Transaksi sedang diproses oleh sistem core banking.\n` +
+                                 `Status akan diupdate melalui callback.`;
+                
+                showAlert('success', successMsg);
+                
+                // Refresh data table setelah delay singkat
+                setTimeout(() => {
+                    refreshTableData();
+                }, 2000);
+                
+            } else {
+                showAlert('error', `❌ Batch process gagal!\n\n${response.message}`);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Batch process error:', status, error, xhr.responseText);
+            
+            let errorMessage = '❌ Terjadi kesalahan saat batch process!';
+            
+            if (xhr.status === 403 || xhr.status === 419) {
+                errorMessage = '❌ Session expired. Silakan refresh halaman dan coba lagi.';
+                
+                // Try to refresh CSRF token
+                refreshCSRFToken().then(function() {
+                    console.log('CSRF refreshed after error');
+                }).catch(function() {
+                    console.log('Failed to refresh CSRF after error');
+                });
+            } else if (xhr.status === 0) {
+                errorMessage = '❌ Koneksi terputus. Periksa koneksi internet Anda.';
+            } else if (xhr.status >= 500) {
+                errorMessage = '❌ Server error. Silakan coba lagi atau hubungi administrator.';
+            } else if (xhr.responseText) {
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    errorMessage = `❌ Error: ${errorResponse.message || error}`;
+                } catch (e) {
+                    errorMessage = `❌ Error: ${xhr.responseText}`;
+                }
+            }
+            
+            showAlert('error', errorMessage);
+        },
+        complete: function() {
+            // Reset UI state
+            $batchBtn.prop('disabled', false)
+                   .html(originalHtml)
+                   .removeClass('btn-processing');
+            
+            showAllProcessButtons();
+            hideBatchProgressModal();
+            setBeforeUnloadWarning(false);
+            
+            console.log('Batch process completed, UI state reset');
         }
-        
-        // Refresh table data
-        $('#jurnalCaEscrowTable').DataTable().ajax.reload(null, false);
-    }
-    
-    // Mulai proses batch
-    processNextChild();
+    });
 }
 
 // Function untuk menampilkan modal progress batch
-function showBatchProgressModal(kdSettle, pendingData) {
+function showBatchProgressModal(kdSettle) {
     const modalContent = `
         <div class="modal fade" id="batchProgressModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header" style="background: linear-gradient(135deg, #6c5190 0%, #553d73 100%); color: white; border-bottom: 1px solid #553d73;">
                         <h5 class="modal-title">
-                            <i class="fal fa-tasks"></i> Memproses Batch Transaksi
+                            <i class="fal fa-cloud-upload-alt me-2"></i>Mengirim ke API Gateway
                         </h5>
                     </div>
                     <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Informasi Grup:</h6>
-                                <div class="alert" style="background-color: #ede8f2; border-color: #6c5190; color: #553d73;">
-                                    <strong>Kode Settle:</strong> ${kdSettle}<br>
-                                    <strong>Total Transaksi:</strong> ${pendingData.length}<br>
-                                    <strong>Total Nominal:</strong> ${formatCurrency(pendingData.reduce((sum, child) => sum + (child.d_AMOUNT || 0), 0))}
+                        <div class="text-center py-4">
+                            <div class="mb-4">
+                                <i class="fal fa-spinner fa-spin" style="font-size: 3rem; color: #6c5190;"></i>
+                            </div>
+                            <h5>Memproses Transaksi Batch</h5>
+                            <p class="text-muted">Kode Settle: <strong>${kdSettle}</strong></p>
+                            <p class="text-muted">Sedang mengirim semua transaksi ke API Gateway...</p>
+                            
+                            <div class="mt-4">
+                                <div class="alert alert-info">
+                                    <i class="fal fa-info-circle me-2"></i>
+                                    Mohon tunggu, proses ini dapat memakan waktu beberapa saat.
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <h6>Progress:</h6>
-                                <div class="progress mb-3">
-                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                         role="progressbar" id="batchProgressBar" style="width: 0%"></div>
-                                </div>
-                                <div id="batchProgressText" class="text-center">
-                                    <strong>0 / ${pendingData.length}</strong> transaksi diproses
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-12">
-                                <h6>Transaksi Saat Ini:</h6>
-                                <div class="alert alert-info" id="currentTransactionInfo">
-                                    <i class="fal fa-spinner fa-spin"></i> Menunggu proses dimulai...
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="alert alert-warning">
-                            <i class="fal fa-exclamation-triangle"></i>
-                            <strong>PENTING:</strong><br>
-                            Jangan tutup atau refresh browser!<br>
-                            Batch transaksi sedang berlangsung...<br>
-                            <small class="text-muted">
-                                <i class="fal fa-lock"></i> Semua tombol proses lainnya disembunyikan untuk mencegah konflik
-                            </small>
                         </div>
                     </div>
                 </div>
@@ -1319,24 +1308,18 @@ function showBatchProgressModal(kdSettle, pendingData) {
         </div>
     `;
     
+    // Remove existing modal if any
+    $('#batchProgressModal').remove();
+    
+    // Add to DOM and show
     $('body').append(modalContent);
     $('#batchProgressModal').modal('show');
 }
 
-// Function untuk update progress batch
+// Function untuk update progress batch (tidak digunakan lagi untuk API Gateway approach)
 function updateBatchProgress(current, total, currentChild) {
-    const percentage = (current / total) * 100;
-    $('#batchProgressBar').css('width', percentage + '%');
-    $('#batchProgressText').html(`<strong>${current} / ${total}</strong> transaksi diproses`);
-    
-    const infoHtml = `
-        <strong>No Ref:</strong> ${currentChild.d_NO_REF}<br>
-        <strong>Amount:</strong> ${formatCurrency(currentChild.d_AMOUNT)}<br>
-        <strong>Debit:</strong> ${currentChild.d_DEBIT_ACCOUNT}<br>
-        <strong>Credit:</strong> ${currentChild.d_CREDIT_ACCOUNT}<br>
-        <strong>Status:</strong> ${currentChild.d_CODE_RES || 'Pending'}
-    `;
-    $('#currentTransactionInfo').html(infoHtml);
+    // Function ini tidak digunakan lagi karena batch dikirim sekaligus ke API Gateway
+    console.log('updateBatchProgress called but not used in API Gateway approach');
 }
 
 // Function untuk menyembunyikan modal progress batch

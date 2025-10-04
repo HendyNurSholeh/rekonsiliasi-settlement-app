@@ -49,7 +49,6 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
     $routes->get('jurnal-ca-escrow', 'JurnalCaEscrowController::index', ['as' => 'settlement.jurnal-ca-escrow']);
     $routes->get('jurnal-ca-escrow/datatable', 'JurnalCaEscrowController::datatable', ['as' => 'settlement.jurnal-ca-escrow.datatable']);
     $routes->post('jurnal-ca-escrow/proses', 'JurnalCaEscrowController::proses', ['as' => 'settlement.jurnal-ca-escrow.proses']);
-    $routes->get('jurnal-ca-escrow/status', 'JurnalCaEscrowController::status', ['as' => 'settlement.jurnal-ca-escrow.status']);
     
     // ========================================================================
     // JURNAL ESCROW TO BILLER PL
@@ -59,6 +58,16 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
     $routes->get('jurnal-escrow-biller-pl', 'JurnalEscrowBillerPlController::index', ['as' => 'settlement.jurnal-escrow-biller-pl']);
     $routes->get('jurnal-escrow-biller-pl/datatable', 'JurnalEscrowBillerPlController::datatable', ['as' => 'settlement.jurnal-escrow-biller-pl.datatable']);
     $routes->post('jurnal-escrow-biller-pl/proses', 'JurnalEscrowBillerPlController::proses', ['as' => 'settlement.jurnal-escrow-biller-pl.proses']);
+});
+
+// ============================================================================
+// AKSEL GATEWAY CALLBACK ROUTES
+// ============================================================================
+// Callback endpoint untuk menerima response dari AKSEL Gateway
+// Endpoint ini di-exempt dari auth dan CSRF (lihat Config\Filters.php)
+
+$routes->group('aksel-gate', ['namespace' => 'App\Controllers\Settlement'], function($routes) {
+    $routes->get('callback', 'AkselGateCallbackController::index', ['as' => 'aksel-gate.callback']);
 });
 
 // ============================================================================

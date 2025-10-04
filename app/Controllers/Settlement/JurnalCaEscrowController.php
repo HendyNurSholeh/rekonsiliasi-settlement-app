@@ -6,19 +6,26 @@ use App\Controllers\BaseController;
 use App\Libraries\EventLogEnum;
 use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
-use App\Services\Settlement\JurnalCaEscrowService;
+use App\Models\Settlement\JurnalCaEscrowProcessLog;
+use App\Models\Settlement\SettlementMessageModel;
+use App\Services\ApiGateway\AkselGatewayService;
 use App\Traits\HasLogActivity;
 
 class JurnalCaEscrowController extends BaseController
 {
     use HasLogActivity;
+    
     protected $prosesModel;
-    protected $jurnalService;
+    protected $akselGatewayService;
+    protected $settlementMessageModel;
+    protected $processLogModel;
 
     public function __construct()
     {
         $this->prosesModel = new ProsesModel();
-        $this->jurnalService = new JurnalCaEscrowService();
+        $this->akselGatewayService = new AkselGatewayService();
+        $this->settlementMessageModel = new SettlementMessageModel();
+        $this->processLogModel = new JurnalCaEscrowProcessLog();
     }
 
     /**
@@ -159,6 +166,9 @@ class JurnalCaEscrowController extends BaseController
             $formattedData = [];
             foreach ($pagedData as $parentRow) {
                 
+                // Check if already processed untuk disable button
+                $isProcessed = $this->isAlreadyProcessed($parentRow['r_KD_SETTLE']);
+                
                 // Add parent row
                 $formattedParent = [
                     'r_KD_SETTLE' => $parentRow['r_KD_SETTLE'] ?? '',
@@ -170,6 +180,7 @@ class JurnalCaEscrowController extends BaseController
                     'child_count' => count($parentRow['child_rows']),
                     'is_parent' => true,
                     'has_children' => count($parentRow['child_rows']) > 0,
+                    'is_processed' => $isProcessed, // Flag untuk disable button
                     'd_NO_REF' => '',
                     'd_DEBIT_ACCOUNT' => '',
                     'd_DEBIT_NAME' => '',
@@ -292,8 +303,7 @@ class JurnalCaEscrowController extends BaseController
     }
 
     /**
-     * Proses jurnal CA to Escrow menggunakan Service layer
-     * Implementasi best practices untuk financial transactions
+     * Proses jurnal CA to Escrow menggunakan API Gateway batch processing
      */
     public function proses()
     {
@@ -306,77 +316,341 @@ class JurnalCaEscrowController extends BaseController
                 ])->setStatusCode(403);
             }
 
-            // Kumpulkan data request untuk service
-            $requestData = [
-                'kd_settle' => $this->request->getPost('kd_settle'),
-                'no_ref' => $this->request->getPost('no_ref'),
-                'amount' => $this->request->getPost('amount'),
-                'debit_account' => $this->request->getPost('debit_account'),
-                'credit_account' => $this->request->getPost('credit_account'),
-                'is_reprocess' => $this->request->getPost('is_reprocess', FILTER_VALIDATE_BOOLEAN),
-                'ip_address' => $this->request->getIPAddress(),
-                'user_agent' => $this->request->getUserAgent()->getAgentString()
-            ];
+            // Ambil data dari request
+            $kdSettle = $this->request->getPost('kd_settle');
+            $tanggalData = $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
+            
+            if (empty($kdSettle)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Kode settle tidak boleh kosong'
+                ]);
+            }
 
-            // Proses melalui service layer
-            $result = $this->jurnalService->prosesJurnal($requestData);
+            // Ambil semua transaksi untuk kode settle ini dari database
+            $transaksiData = $this->getTransaksiByKdSettle($kdSettle, $tanggalData);
+            
+            if (empty($transaksiData)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada data transaksi untuk kode settle: ' . $kdSettle
+                ]);
+            }
 
-            // Tambahkan CSRF token baru untuk request berikutnya
-            $result['csrf_token'] = csrf_hash();
+            // Cek apakah kd_settle sudah pernah diproses (prevent duplicate)
+            $duplicateCheck = $this->checkDuplicateProcess($kdSettle);
+            
+            if ($duplicateCheck['exists']) {
+                log_message('warning', "Duplicate process attempt for kd_settle: {$kdSettle}, previous request_id: {$duplicateCheck['request_id']}");
+                
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Kode settle ' . $kdSettle . ' sudah pernah diproses sebelumnya',
+                    'error_code' => 'DUPLICATE_PROCESS',
+                    'previous_data' => [
+                        'status_code_res' => $duplicateCheck['status_code_res'],
+                        'is_success' => $duplicateCheck['is_success'],
+                        'request_id' => $duplicateCheck['request_id'],
+                        'sent_by' => $duplicateCheck['sent_by'],
+                        'sent_at' => $duplicateCheck['sent_at']
+                    ],
+                    'csrf_token' => csrf_hash()
+                ]);
+            }
 
-            return $this->response->setJSON($result);
+            // Format data menggunakan service
+            $apiData = $this->akselGatewayService->formatTransactionData($kdSettle, $transaksiData);
+            
+            if (empty($apiData['data'])) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada transaksi valid untuk diproses dari kode settle: ' . $kdSettle,
+                    'csrf_token' => csrf_hash()
+                ]);
+            }
+
+            // Kirim ke API Gateway menggunakan service
+            $apiResult = $this->akselGatewayService->sendBatchTransactions($apiData);
+            
+            if ($apiResult['success']) {
+                // Insert status ke database dengan status code dari API Gateway
+                $requestId = $apiData['requestId'];
+                $totalTransaksi = count($apiData['data']);
+                $statusCode = (string)($apiResult['status_code'] ?? '201');
+                
+                try {
+                    $this->updateTransaksiStatus($kdSettle, $requestId, $statusCode, $totalTransaksi, $apiResult);
+                } catch (\Exception $e) {
+                    log_message('error', 'Failed to insert process log but transaction sent: ' . $e->getMessage());
+                    // Lanjutkan karena transaksi sudah terkirim ke API Gateway
+                }
+                
+                log_message('info', 'Batch transaction successful for kd_settle: ' . $kdSettle . ', request_id: ' . $requestId . ', total: ' . $totalTransaksi);
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Transaksi berhasil dikirim ke API Gateway',
+                    'request_id' => $requestId,
+                    'total_transaksi' => $totalTransaksi,
+                    'status_code' => $apiResult['status_code'] ?? 'unknown',
+                    'api_response' => $apiResult['data'],
+                    'csrf_token' => csrf_hash()
+                ]);
+            } else {
+                // Jangan insert ke database jika gagal kirim ke API Gateway
+                log_message('error', 'Failed to send to API Gateway for kd_settle: ' . $kdSettle . ', error: ' . $apiResult['message']);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengirim ke API Gateway: ' . $apiResult['message'],
+                    'error_code' => 'API_GATEWAY_ERROR',
+                    'csrf_token' => csrf_hash()
+                ]);
+            }
             
         } catch (\Exception $e) {
             log_message('error', 'JurnalCaEscrowController::proses() error: ' . $e->getMessage(), [
-                'request_data' => $this->request->getPost(),
-                'ip_address' => $this->request->getIPAddress(),
-                'user_agent' => $this->request->getUserAgent()->getAgentString(),
+                'kd_settle' => $this->request->getPost('kd_settle'),
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
 
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi administrator.',
-                'response_code' => '99',
-                'timestamp' => date('Y-m-d H:i:s'),
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
                 'csrf_token' => csrf_hash()
             ])->setStatusCode(500);
         }
     }
 
     /**
-     * Get status transaksi untuk monitoring
+     * Ambil data transaksi berdasarkan kode settle
      */
-    public function status()
+    private function getTransaksiByKdSettle($kdSettle, $tanggalData)
     {
         try {
-            $kdSettle = $this->request->getGet('kd_settle');
-            $noRef = $this->request->getGet('no_ref');
+            $db = \Config\Database::connect();
+            
+            // Query untuk ambil detail transaksi per kode settle
+            $query = "CALL p_get_jurnal_ca_to_escrow(?)";
+            $result = $db->query($query, [$tanggalData]);
+            
+            if (!$result) {
+                throw new \Exception('Failed to get transaction data');
+            }
+            
+            $allData = $result->getResultArray();
+            
+            // Filter data hanya untuk kode settle yang diminta dan yang belum sukses
+            $filteredData = [];
+            foreach ($allData as $row) {
+                if ($row['r_KD_SETTLE'] === $kdSettle && 
+                    !empty($row['d_NO_REF']) && 
+                    (!isset($row['d_CODE_RES']) || !str_starts_with($row['d_CODE_RES'], '00'))) {
+                    $filteredData[] = $row;
+                }
+            }
+            
+            return $filteredData;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting transaction data: ' . $e->getMessage());
+            return [];
+        }
+    }
 
-            if (empty($kdSettle) || empty($noRef)) {
+    /**
+     * Insert status transaksi ke database
+     * Simpan log pemrosesan untuk tracking
+     */
+    private function updateTransaksiStatus($kdSettle, $requestId, $statusCodeRes, $totalTransaksi = 0, $apiResponse = null)
+    {
+        try {
+            $sentBy = session('username') ?? 'system';
+            
+            // Tentukan is_success berdasarkan status code response
+            $isSuccess = 0;
+            if ($statusCodeRes === '200' || $statusCodeRes === '201' || $statusCodeRes === '00') {
+                $isSuccess = 1;
+            }
+            
+            // Prepare data to insert
+            $insertData = [
+                'kd_settle' => $kdSettle,
+                'request_id' => $requestId,
+                'status_code_res' => $statusCodeRes,
+                'is_success' => $isSuccess,
+                'total_transaksi' => $totalTransaksi,
+                'sent_by' => $sentBy,
+                'sent_at' => date('Y-m-d H:i:s'),
+            ];
+            
+            // Add api_response if provided
+            if ($apiResponse !== null) {
+                $insertData['api_response'] = json_encode($apiResponse, JSON_PRETTY_PRINT);
+            }
+            
+            $this->processLogModel->insert($insertData);
+            
+            log_message('info', "Process log created - kd_settle: {$kdSettle}, request_id: {$requestId}, status_code: {$statusCodeRes}, is_success: {$isSuccess}, total: {$totalTransaksi}, user: {$sentBy}");
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error inserting transaction status: ' . $e->getMessage());
+            throw $e; // Re-throw untuk di-handle di level atas
+        }
+    }
+
+    /**
+     * Cek apakah kd_settle sudah pernah dikirim ke API Gateway
+     * Untuk prevent duplicate submission
+     */
+    private function checkDuplicateProcess($kdSettle): array
+    {
+        try {
+            $lastProcess = $this->processLogModel->getLastProcess($kdSettle);
+            
+            if ($lastProcess) {
+                return [
+                    'exists' => true,
+                    'status_code_res' => $lastProcess['status_code_res'],
+                    'is_success' => $lastProcess['is_success'],
+                    'request_id' => $lastProcess['request_id'],
+                    'sent_by' => $lastProcess['sent_by'],
+                    'sent_at' => $lastProcess['sent_at']
+                ];
+            }
+            
+            return ['exists' => false];
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error checking duplicate process: ' . $e->getMessage());
+            return ['exists' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Cek apakah kd_settle sudah pernah diproses (untuk disable button)
+     */
+    private function isAlreadyProcessed($kdSettle): bool
+    {
+        try {
+            return $this->processLogModel->isProcessed($kdSettle);
+        } catch (\Exception $e) {
+            log_message('error', 'Error checking process status: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Callback endpoint untuk menerima response dari API Gateway
+     * Simpan ke t_settle_message untuk tracking response individual transaction
+     */
+    public function callback()
+    {
+        try {
+            // Ambil parameter dari API Gateway
+            $ref = $this->request->getGet('ref') ?? null;
+            $rescore = $this->request->getGet('rescore') ?? null;
+            $rescoreref = $this->request->getGet('rescoreref') ?? null;
+            
+            log_message('info', 'Callback received from API Gateway', [
+                'ref' => $ref,
+                'rescore' => $rescore,
+                'rescoreref' => $rescoreref,
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
+            
+            // Validasi parameter required
+            if (empty($ref)) {
+                log_message('warning', 'Callback received without ref parameter');
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Parameter tidak lengkap'
+                    'message' => 'Parameter ref is required'
                 ]);
             }
-
-            $status = $this->jurnalService->getTransactionStatus($kdSettle, $noRef);
-
+            
+            // Simpan callback response ke t_settle_message
+            $this->saveCallbackToSettleMessage($ref, $rescore, $rescoreref);
+            
             return $this->response->setJSON([
                 'success' => true,
-                'data' => $status,
-                'csrf_token' => csrf_hash()
+                'message' => 'Callback processed successfully',
+                'timestamp' => date('Y-m-d H:i:s')
             ]);
-
+            
         } catch (\Exception $e) {
-            log_message('error', 'JurnalCaEscrowController::status() error: ' . $e->getMessage());
+            log_message('error', 'Callback error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Gagal mengambil status transaksi',
-                'csrf_token' => csrf_hash()
+                'message' => 'Callback processing failed: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Simpan callback response ke t_settle_message
+     * Hanya UPDATE record yang sudah ada, tidak ada INSERT
+     * 
+     * @param string $ref - r_referenceNumber (NO_REF)
+     * @param string $rescore - r_code dan r_message
+     * @param string $rescoreref - r_coreReference
+     */
+    private function saveCallbackToSettleMessage($ref, $rescore, $rescoreref)
+    {
+        try {
+            // Cek apakah record dengan REF_NUMBER sudah ada
+            $existing = $this->settlementMessageModel->where('REF_NUMBER', $ref)->first();
+            
+            if ($existing) {
+                // Tentukan message berdasarkan rescore
+                $message = 'failed';
+                if ($rescore === '00') {
+                    $message = 'success';
+                }
+                
+                // Update existing record dengan callback data
+                $updated = $this->settlementMessageModel->update($existing['ID'], [
+                    'r_code' => $rescore,
+                    'r_coreReference' => $rescoreref,
+                    'r_referenceNumber' => $ref,
+                    'r_message' => $message,
+                    'r_dateTime' => date('Y-m-d H:i:s'),
+                ]);
+                
+                if ($updated) {
+                    log_message('info', 'Callback updated in t_settle_message', [
+                        'ref' => $ref,
+                        'rescore' => $rescore,
+                        'rescoreref' => $rescoreref,
+                        'message' => $message,
+                        'callback_time' => date('Y-m-d H:i:s')
+                    ]);
+                } else {
+                    log_message('error', 'Failed to update callback in t_settle_message', [
+                        'ref' => $ref,
+                        'id' => $existing['ID']
+                    ]);
+                }
+            } else {
+                // Record tidak ditemukan, log warning
+                log_message('warning', 'Callback received but REF_NUMBER not found in t_settle_message', [
+                    'ref' => $ref,
+                    'rescore' => $rescore,
+                    'rescoreref' => $rescoreref
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error saving callback to t_settle_message: ' . $e->getMessage(), [
+                'ref' => $ref,
+                'rescore' => $rescore,
+                'rescoreref' => $rescoreref
+            ]);
+            throw $e; // Re-throw untuk di-handle di level atas
         }
     }
 }

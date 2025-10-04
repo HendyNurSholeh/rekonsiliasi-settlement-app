@@ -37,6 +37,7 @@ class Filters extends BaseConfig
 			'csrf' => [
 				'except' => [
 					'api/*',
+					'aksel-gate/*',
 				]
 			],
 			// 'invalidchars', 
@@ -46,6 +47,7 @@ class Filters extends BaseConfig
 					'logout',
 					'refresh/captcha',
 					'api/*',
+					'aksel-gate/*',
 				]
 			],
 			'isFirstLogin' => [
@@ -54,7 +56,8 @@ class Filters extends BaseConfig
 					'logout',
 					'profile',
 					'refresh/captcha',
-					'api/*'
+					'api/*',
+					'aksel-gate/*',
 				]
 			]
 		],
