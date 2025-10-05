@@ -18,14 +18,12 @@ class JurnalCaEscrowController extends BaseController
     protected $prosesModel;
     protected $akselGatewayService;
     protected $settlementMessageModel;
-    protected $processLogModel;
 
     public function __construct()
     {
         $this->prosesModel = new ProsesModel();
         $this->akselGatewayService = new AkselGatewayService();
         $this->settlementMessageModel = new SettlementMessageModel();
-        $this->processLogModel = new AkselgateTransactionLog();
     }
 
     /**
@@ -167,7 +165,7 @@ class JurnalCaEscrowController extends BaseController
             foreach ($pagedData as $parentRow) {
                 
                 // Check if already processed untuk disable button
-                $isProcessed = $this->isAlreadyProcessed($parentRow['r_KD_SETTLE'], AkselgateTransactionLog::TYPE_CA_ESCROW);
+                $isProcessed = $this->akselGatewayService->isAlreadyProcessed($parentRow['r_KD_SETTLE'], AkselgateTransactionLog::TYPE_CA_ESCROW);
                 
                 // Add parent row
                 $formattedParent = [
@@ -321,7 +319,7 @@ class JurnalCaEscrowController extends BaseController
             $tanggalData = $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
 
             // Cek apakah kd_settle sudah pernah diproses (prevent duplicate)
-            $duplicateCheck = $this->checkDuplicateProcess($kdSettle, AkselgateTransactionLog::TYPE_CA_ESCROW);
+            $duplicateCheck = $this->akselGatewayService->checkDuplicateProcess($kdSettle, AkselgateTransactionLog::TYPE_CA_ESCROW);
             
             if ($duplicateCheck['exists']) {
                 log_message('warning', "Duplicate process attempt for kd_settle: {$kdSettle}, previous request_id: {$duplicateCheck['request_id']}");
@@ -351,24 +349,10 @@ class JurnalCaEscrowController extends BaseController
                 AkselgateTransactionLog::TYPE_CA_ESCROW
             );
             
-            // Handle result
+            // Handle result (logging sudah di-handle oleh service)
             if (!$result['success']) {
                 log_message('error', 'Batch transaction failed for kd_settle: ' . $kdSettle . ', error: ' . $result['message']);
                 return $this->response->setJSON(array_merge($result, ['csrf_token' => csrf_hash()]));
-            }
-            
-            // Success - Insert log ke database
-            try {
-                $this->updateTransaksiStatus(
-                    $kdSettle,
-                    $result['request_id'],
-                    (string)$result['status_code'],
-                    $result['total_transaksi'],
-                    $result
-                );
-            } catch (\Exception $e) {
-                log_message('error', 'Failed to insert process log but transaction sent: ' . $e->getMessage());
-                // Lanjutkan karena transaksi sudah terkirim ke API Gateway
             }
             
             log_message('info', 'Batch transaction successful for kd_settle: ' . $kdSettle . ', request_id: ' . $result['request_id'] . ', total: ' . $result['total_transaksi']);
@@ -426,91 +410,4 @@ class JurnalCaEscrowController extends BaseController
         }
     }
 
-    /**
-     * Insert status transaksi ke database
-     * Simpan log pemrosesan untuk tracking
-     */
-    private function updateTransaksiStatus($kdSettle, $requestId, $statusCodeRes, $totalTransaksi = 0, $apiResponse = null)
-    {
-        try {
-            $sentBy = session('username') ?? 'system';
-            
-            // Tentukan is_success berdasarkan status code response
-            $isSuccess = 0;
-            if ($statusCodeRes === '200' || $statusCodeRes === '201' || $statusCodeRes === '00') {
-                $isSuccess = 1;
-            }
-            
-            // Prepare data to insert
-            $insertData = [
-                'kd_settle' => $kdSettle,
-                'request_id' => $requestId,
-                'status_code_res' => $statusCodeRes,
-                'is_success' => $isSuccess,
-                'total_transaksi' => $totalTransaksi,
-                'sent_by' => $sentBy,
-                'sent_at' => date('Y-m-d H:i:s'),
-            ];
-            
-            // Add api_response if provided
-            if ($apiResponse !== null) {
-                $insertData['api_response'] = json_encode($apiResponse, JSON_PRETTY_PRINT);
-            }
-            
-            $this->processLogModel->insert($insertData);
-            
-            log_message('info', "Process log created - kd_settle: {$kdSettle}, request_id: {$requestId}, status_code: {$statusCodeRes}, is_success: {$isSuccess}, total: {$totalTransaksi}, user: {$sentBy}");
-            
-        } catch (\Exception $e) {
-            log_message('error', 'Error inserting transaction status: ' . $e->getMessage());
-            throw $e; // Re-throw untuk di-handle di level atas
-        }
-    }
-
-    /**
-     * Cek apakah kd_settle sudah pernah dikirim ke API Gateway
-     * Untuk prevent duplicate submission
-     * 
-     * @param string $kdSettle Kode settlement
-     * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
-     */
-    private function checkDuplicateProcess(string $kdSettle, string $transactionType): array
-    {
-        try {
-            $lastProcess = $this->processLogModel->getLastProcess($kdSettle, $transactionType);
-            
-            if ($lastProcess) {
-                return [
-                    'exists' => true,
-                    'status_code_res' => $lastProcess['status_code_res'],
-                    'is_success' => $lastProcess['is_success'],
-                    'request_id' => $lastProcess['request_id'],
-                    'sent_by' => $lastProcess['sent_by'],
-                    'sent_at' => $lastProcess['sent_at']
-                ];
-            }
-            
-            return ['exists' => false];
-            
-        } catch (\Exception $e) {
-            log_message('error', 'Error checking duplicate process: ' . $e->getMessage());
-            return ['exists' => false, 'error' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Cek apakah kd_settle sudah pernah diproses (untuk disable button)
-     * 
-     * @param string $kdSettle Kode settlement
-     * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
-     */
-    private function isAlreadyProcessed(string $kdSettle, string $transactionType): bool
-    {
-        try {
-            return $this->processLogModel->isProcessed($kdSettle, $transactionType);
-        } catch (\Exception $e) {
-            log_message('error', 'Error checking process status: ' . $e->getMessage());
-            return false;
-        }
-    }
 }

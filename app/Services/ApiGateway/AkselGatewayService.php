@@ -29,6 +29,60 @@ class AkselGatewayService
     }
 
     /**
+     * Cek apakah kd_settle dengan transaction_type sudah pernah diproses
+     * Untuk prevent duplicate submission
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
+     * @return array ['exists' => bool, 'status_code_res' => string, 'is_success' => int, ...]
+     */
+    public function checkDuplicateProcess(string $kdSettle, string $transactionType): array
+    {
+        try {
+            $lastProcess = $this->logModel->getLastProcess($kdSettle, $transactionType);
+            
+            if ($lastProcess) {
+                log_message('info', "Duplicate check: Found existing process for kd_settle: {$kdSettle}, type: {$transactionType}");
+                return [
+                    'exists' => true,
+                    'transaction_type' => $lastProcess['transaction_type'],
+                    'status_code_res' => $lastProcess['status_code_res'],
+                    'response_code' => $lastProcess['response_code'],
+                    'is_success' => $lastProcess['is_success'],
+                    'request_id' => $lastProcess['request_id'],
+                    'sent_by' => $lastProcess['sent_by'],
+                    'sent_at' => $lastProcess['sent_at']
+                ];
+            }
+            
+            log_message('info', "Duplicate check: No existing process for kd_settle: {$kdSettle}, type: {$transactionType}");
+            return ['exists' => false];
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error checking duplicate process: ' . $e->getMessage());
+            return ['exists' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Cek apakah kd_settle dengan transaction_type sudah pernah diproses dengan sukses
+     * Untuk disable button atau show status di UI
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
+     * @return bool True jika sudah pernah diproses dengan sukses
+     */
+    public function isAlreadyProcessed(string $kdSettle, string $transactionType): bool
+    {
+        try {
+            return $this->logModel->isProcessed($kdSettle, $transactionType);
+        } catch (\Exception $e) {
+            log_message('error', 'Error checking process status: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Login ke API Gateway untuk mendapatkan token
      */
     public function login(): array
@@ -343,7 +397,7 @@ class AkselGatewayService
             'response_message' => $apiResult['message'] ?? null,
             'response_payload' => json_encode($apiResult['data'] ?? $apiResult),
             'is_success' => $apiResult['success'] ? 1 : 0,
-            'sent_by' => session()->get('user_id') ?? 'system',
+            'sent_by' => session('username') ?? 'system',
             'sent_at' => date('Y-m-d H:i:s')
         ];
         
