@@ -3,6 +3,7 @@
 namespace App\Services\ApiGateway;
 
 use CodeIgniter\HTTP\CURLRequest;
+use App\Models\ApiGateway\AkselgateTransactionLog;
 
 /**
  * AKSEL Gateway Service
@@ -16,6 +17,7 @@ class AkselGatewayService
     private $username;
     private $password;
     private $client;
+    private $logModel;
 
     public function __construct()
     {
@@ -23,6 +25,7 @@ class AkselGatewayService
         $this->username = env('AKSEL_GATE_USERNAME', 'admin');
         $this->password = env('AKSEL_GATE_PASSWORD', 'Bankkalsel1*');
         $this->client = \Config\Services::curlrequest();
+        $this->logModel = new AkselgateTransactionLog();
     }
 
     /**
@@ -281,13 +284,14 @@ class AkselGatewayService
 
     /**
      * Process complete batch transaction workflow
-     * Menggabungkan format, validate, dan send dalam satu method
+     * Menggabungkan format, validate, send, dan logging dalam satu method
      * 
      * @param string $kdSettle Kode settlement
      * @param array $transactions Array data transaksi dari database
+     * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
      * @return array Response dengan success status dan data/error
      */
-    public function processBatchTransaction(string $kdSettle, array $transactions): array
+    public function processBatchTransaction(string $kdSettle, array $transactions, string $transactionType): array
     {
         // Validasi input
         if (empty($kdSettle)) {
@@ -327,7 +331,31 @@ class AkselGatewayService
         // Step 3: Kirim ke API Gateway
         $apiResult = $this->sendBatchTransactions($apiData);
         
-        // Step 4: Return result dengan tambahan informasi
+        // Step 4: Save log
+        $logData = [
+            'transaction_type' => $transactionType,
+            'kd_settle' => $kdSettle,
+            'request_id' => $apiData['requestId'],
+            'total_transaksi' => count($apiData['data']),
+            'request_payload' => json_encode($apiData),
+            'status_code_res' => (string)($apiResult['status_code'] ?? 'unknown'),
+            'response_code' => $apiResult['response_code'] ?? null,
+            'response_message' => $apiResult['message'] ?? null,
+            'response_payload' => json_encode($apiResult['data'] ?? $apiResult),
+            'is_success' => $apiResult['success'] ? 1 : 0,
+            'sent_by' => session()->get('user_id') ?? 'system',
+            'sent_at' => date('Y-m-d H:i:s')
+        ];
+        
+        try {
+            $this->logModel->createLog($logData);
+            log_message('info', "AKSEL Gateway: Log saved for kd_settle: {$kdSettle}, type: {$transactionType}, success: " . ($apiResult['success'] ? 'YES' : 'NO'));
+        } catch (\Exception $e) {
+            log_message('error', "AKSEL Gateway: Failed to save log - " . $e->getMessage());
+            // Continue even if logging fails
+        }
+        
+        // Step 5: Return result dengan tambahan informasi
         if ($apiResult['success']) {
             return [
                 'success' => true,
@@ -342,7 +370,8 @@ class AkselGatewayService
                 'success' => false,
                 'message' => 'Gagal mengirim ke API Gateway: ' . $apiResult['message'],
                 'error_code' => 'API_GATEWAY_ERROR',
-                'status_code' => $apiResult['status_code'] ?? null
+                'status_code' => $apiResult['status_code'] ?? null,
+                'response_code' => $apiResult['response_code'] ?? null
             ];
         }
     }
