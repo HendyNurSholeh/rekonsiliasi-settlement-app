@@ -2,6 +2,34 @@
 // JURNAL CA ESCROW - BATCH PROCESS MODULE
 // ==========================================
 
+/**
+ * Update button state menjadi "Sudah Diproses"
+ * @param {jQuery} $button - jQuery button element
+ * @param {string} kdSettle - Kode settlement
+ */
+function markButtonAsProcessed($button, kdSettle) {
+    $button.prop('disabled', true)
+           .removeClass('btn-processing btn-primary')
+           .addClass('btn-secondary')
+           .html('<i class="fal fa-check-circle me-1"></i>Sudah Diproses');
+    
+    // Update status di global map
+    if (typeof window.processedStatusMap !== 'undefined') {
+        window.processedStatusMap[kdSettle] = true;
+    }
+}
+
+/**
+ * Reload datatable untuk menampilkan alert danger dengan error message
+ */
+function reloadDatatableForError() {
+    if (typeof jurnalCaEscrowTable !== 'undefined') {
+        setTimeout(function() {
+            jurnalCaEscrowTable.ajax.reload(null, false);
+        });
+    }
+}
+
 // Function untuk memproses semua detail transaksi dalam satu grup (batch processing)
 function processBatchJurnal(kdSettle) {
     console.log('Processing batch jurnal for KD Settle:', kdSettle);
@@ -13,7 +41,7 @@ function processBatchJurnal(kdSettle) {
     }
     
     // Konfirmasi untuk memproses semua transaksi
-    const confirmMessage = `Apakah Anda yakin ingin memproses SEMUA transaksi untuk kode settle: ${kdSettle}?\n\nSemua transaksi akan dikirim ke API Gateway secara bersamaan.\nProses ini tidak dapat dibatalkan!`;
+    const confirmMessage = `Apakah Anda yakin ingin memproses SEMUA transaksi untuk kode settle: ${kdSettle}?\n\nSemua transaksi akan dikirim ke Akselgate secara bersamaan.\nProses ini tidak dapat dibatalkan!`;
     
     if (!confirm(confirmMessage)) {
         console.log('Batch process cancelled by user');
@@ -33,7 +61,7 @@ function processBatchJurnal(kdSettle) {
     // Prevent browser close/refresh
     setBeforeUnloadWarning(true);
     
-    console.log('Sending batch request to API Gateway...');
+    console.log('Sending batch request to Akselgate...');
     
     // Safety timeout - force cleanup jika request terlalu lama (6 menit)
     const safetyTimeoutId = setTimeout(function() {
@@ -70,30 +98,25 @@ function processBatchJurnal(kdSettle) {
             }
             
             if (response.success) {
-                showAlert('success', 'Transaksi berhasil dikirim ke API Gateway!');
+                showAlert('success', 'Transaksi berhasil dikirim ke Akselgate!');
                 isSuccess = true;
                 
-                // Update button menjadi "Sudah Diproses" dengan style abu-abu disabled
-                $batchBtn.prop('disabled', true)
-                       .removeClass('btn-processing btn-primary')
-                       .addClass('btn-secondary')
-                       .html('<i class="fal fa-check-circle me-1"></i>Sudah Diproses');
-                
-                // Update status di global map agar tetap konsisten
-                if (typeof window.processedStatusMap !== 'undefined') {
-                    window.processedStatusMap[kdSettle] = true;
-                }
+                // Update button menjadi "Sudah Diproses"
+                markButtonAsProcessed($batchBtn, kdSettle);
                 
                 console.log('Success: Button changed to "Sudah Diproses"');
             } else {
+                // GAGAL: Juga ubah button jadi "Sudah Diproses" dan tandai sebagai processed
                 showAlert('error', `Batch process gagal: ${response.message || 'Unknown error'}`);
+                isSuccess = true; // Tandai sebagai "processed" walaupun gagal
                 
-                // Restore button untuk retry
-                $batchBtn.prop('disabled', false)
-                       .html(originalHtml)
-                       .removeClass('btn-processing');
+                // Update button menjadi "Sudah Diproses"
+                markButtonAsProcessed($batchBtn, kdSettle);
                 
-                console.log('Backend error: Button restored for retry');
+                console.log('Failed: Button changed to "Sudah Diproses" - error will be shown in alert');
+                
+                // Reload datatable untuk menampilkan alert danger dengan error message
+                reloadDatatableForError();
             }
         },
         error: function(xhr, status, error) {
@@ -135,12 +158,15 @@ function processBatchJurnal(kdSettle) {
             
             showAlert('error', errorMessage);
             
-            // Restore button untuk retry
-            $batchBtn.prop('disabled', false)
-                   .html(originalHtml)
-                   .removeClass('btn-processing');
+            // Network error: Juga ubah button jadi "Sudah Diproses"
+            isSuccess = true; // Tandai sebagai "processed"
             
-            console.log('Network/HTTP error: Button restored, modal force cleaned');
+            markButtonAsProcessed($batchBtn, kdSettle);
+            
+            console.log('Network/HTTP error: Button changed to "Sudah Diproses"');
+            
+            // Reload datatable untuk menampilkan alert danger dengan error message
+            reloadDatatableForError();
         },
         complete: function(xhr, status) {
             // Clear safety timeout
@@ -152,13 +178,8 @@ function processBatchJurnal(kdSettle) {
             
             console.log('Complete callback - isSuccess:', isSuccess);
             
-            // Safety net: restore button if not success
-            if (!isSuccess && $batchBtn.prop('disabled')) {
-                console.log('Safety net: Restoring button in complete callback');
-                $batchBtn.prop('disabled', false)
-                       .html(originalHtml)
-                       .removeClass('btn-processing');
-            }
+            // Tidak perlu restore button lagi karena semua case (sukses/gagal) 
+            // sudah mengubah button menjadi "Sudah Diproses"
             
             console.log('Batch process complete');
         }
