@@ -61,9 +61,19 @@ function cleanupProcessingState() {
     $('.btn-hidden-temp').removeClass('btn-hidden-temp').show();
     
     // Enable semua button
-    $('.child-details-container button').prop('disabled', false);
+    $('.child-details-container button').prop('disabled', false).show();
     
-    console.log('Processing state cleaned up');
+    // Hide modal jika masih ada
+    $('#progressModal').modal('hide').remove();
+    $('#batchProgressModal').modal('hide').remove();
+    
+    // Remove warning
+    setBeforeUnloadWarning(false);
+    
+    // Enable actions
+    enableAllActions();
+    
+    console.log('Processing state cleaned up - ALL buttons restored and enabled');
 }
 
 // DataTable instance
@@ -1171,18 +1181,14 @@ function processBatchJurnal(kdSettle) {
         return;
     }
     
-    // Disable semua button proses
-    hideAllProcessButtons();
-    
     // Update button batch menjadi processing
     const $batchBtn = $(`#btn-batch-${kdSettle}`);
     const originalHtml = $batchBtn.html();
     $batchBtn.prop('disabled', true)
            .html('<i class="fal fa-spinner fa-spin me-1"></i>Memproses...')
-           .addClass('btn-processing')
-           .show();
+           .addClass('btn-processing');
     
-    // Show progress modal
+    // Show progress modal (ini yang mencegah user klik yang lain)
     showBatchProgressModal(kdSettle);
     
     // Prevent browser close/refresh
@@ -1190,7 +1196,20 @@ function processBatchJurnal(kdSettle) {
     
     console.log('Sending batch request to API Gateway...');
     
+    // Safety timeout - force cleanup jika request terlalu lama (6 menit)
+    const safetyTimeoutId = setTimeout(function() {
+        console.warn('Safety timeout triggered - forcing cleanup');
+        $batchBtn.prop('disabled', false)
+               .html(originalHtml)
+               .removeClass('btn-processing');
+        hideBatchProgressModal();
+        setBeforeUnloadWarning(false);
+        showAlert('warning', 'Request timeout. Silakan periksa status transaksi atau coba lagi.');
+    }, 360000); // 6 menit
+    
     // AJAX call untuk batch process
+    let isSuccess = false; // Track success state
+    
     $.ajax({
         url: window.appConfig.baseUrl + "settlement/jurnal-ca-escrow/proses",
         type: 'POST',
@@ -1212,27 +1231,45 @@ function processBatchJurnal(kdSettle) {
             }
             
             if (response.success) {
-                // Show success message with details
-                const successMsg = `✅ Batch process berhasil!\n\n` +
-                                 `Request ID: ${response.request_id}\n` +
-                                 `Total Transaksi: ${response.total_transaksi}\n` +
-                                 `Status: Dikirim ke API Gateway\n\n` +
-                                 `Transaksi sedang diproses oleh sistem core banking.\n` +
-                                 `Status akan diupdate melalui callback.`;
-                
+                // Show success message - SINGKAT!
+                const successMsg = `Transaksi berhasil dikirim ke API Gateway!`;
                 showAlert('success', successMsg);
                 
-                // Refresh data table setelah delay singkat
-                setTimeout(() => {
-                    refreshTableData();
-                }, 2000);
+                // Mark as success
+                isSuccess = true;
+                
+                // Disable button permanently (tanpa ubah text/style)
+                $batchBtn.prop('disabled', true)
+                       .removeClass('btn-processing');
+                
+                console.log('Success: Button disabled permanently');
                 
             } else {
-                showAlert('error', `❌ Batch process gagal!\n\n${response.message}`);
+                // Error dari backend
+                showAlert('error', `Batch process gagal: ${response.message || 'Unknown error'}`);
+                
+                // Restore button untuk retry
+                $batchBtn.prop('disabled', false)
+                       .html(originalHtml)
+                       .removeClass('btn-processing');
+                
+                console.log('Backend error: Button restored for retry');
             }
         },
         error: function(xhr, status, error) {
             console.error('Batch process error:', status, error, xhr.responseText);
+            
+            // Clear safety timeout
+            clearTimeout(safetyTimeoutId);
+            
+            // FORCE hide modal immediately with full cleanup
+            console.log('Error callback - forcing modal cleanup');
+            $('#batchProgressModal').modal('hide');
+            $('#batchProgressModal').remove();
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
+            $('body').css('padding-right', '');
+            setBeforeUnloadWarning(false);
             
             let errorMessage = '❌ Terjadi kesalahan saat batch process!';
             
@@ -1259,18 +1296,33 @@ function processBatchJurnal(kdSettle) {
             }
             
             showAlert('error', errorMessage);
-        },
-        complete: function() {
-            // Reset UI state
+            
+            // Restore button untuk retry
             $batchBtn.prop('disabled', false)
                    .html(originalHtml)
                    .removeClass('btn-processing');
             
-            showAllProcessButtons();
+            console.log('Network/HTTP error: Button restored, modal force cleaned');
+        },
+        complete: function(xhr, status) {
+            // Clear safety timeout
+            clearTimeout(safetyTimeoutId);
+            
+            // Hide modal and remove warning
             hideBatchProgressModal();
             setBeforeUnloadWarning(false);
             
-            console.log('Batch process completed, UI state reset');
+            console.log('Complete callback - isSuccess:', isSuccess);
+            
+            // If not success and button not restored yet, restore it
+            if (!isSuccess && $batchBtn.prop('disabled')) {
+                console.log('Safety net: Restoring button in complete callback');
+                $batchBtn.prop('disabled', false)
+                       .html(originalHtml)
+                       .removeClass('btn-processing');
+            }
+            
+            console.log('Batch process complete');
         }
     });
 }
@@ -1324,8 +1376,15 @@ function updateBatchProgress(current, total, currentChild) {
 
 // Function untuk menyembunyikan modal progress batch
 function hideBatchProgressModal() {
+    // Hide modal
     $('#batchProgressModal').modal('hide');
+    
+    // Force cleanup - remove modal, backdrop, and body class
     setTimeout(function() {
         $('#batchProgressModal').remove();
-    }, 500);
+        $('.modal-backdrop').remove(); // Remove all backdrops
+        $('body').removeClass('modal-open'); // Remove modal-open class
+        $('body').css('padding-right', ''); // Reset padding
+        console.log('Batch progress modal fully cleaned up');
+    }, 300);
 }
