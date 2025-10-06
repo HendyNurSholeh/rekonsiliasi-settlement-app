@@ -65,17 +65,19 @@ class AkselGatewayService
     }
 
     /**
-     * Cek apakah kd_settle dengan transaction_type sudah pernah diproses dengan sukses
+     * Cek apakah kd_settle dengan transaction_type sudah pernah diproses
      * Untuk disable button atau show status di UI
+     * Menggunakan mekanisme yang sama dengan checkDuplicateProcess
      * 
      * @param string $kdSettle Kode settlement
      * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
-     * @return bool True jika sudah pernah diproses dengan sukses
+     * @return bool True jika sudah pernah diproses (ada record di log)
      */
     public function isAlreadyProcessed(string $kdSettle, string $transactionType): bool
     {
         try {
-            return $this->logModel->isProcessed($kdSettle, $transactionType);
+            $lastProcess = $this->logModel->getLastProcess($kdSettle, $transactionType);
+            return $lastProcess !== null; // Return true jika ada record, false jika tidak ada
         } catch (\Exception $e) {
             log_message('error', 'Error checking process status: ' . $e->getMessage());
             return false;

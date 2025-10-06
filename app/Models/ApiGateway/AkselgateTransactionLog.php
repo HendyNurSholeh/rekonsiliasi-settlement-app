@@ -42,21 +42,6 @@ class AkselgateTransactionLog extends Model
     const TYPE_ESCROW_BILLER_PL = 'ESCROW_BILLER_PL';
     
     /**
-     * Cek apakah kd_settle dengan transaction_type tertentu sudah pernah diproses
-     * 
-     * @param string $kdSettle Kode settlement
-     * @param string $transactionType Tipe transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
-     * @return bool
-     */
-    public function isProcessed(string $kdSettle, string $transactionType): bool
-    {
-        return $this->where('kd_settle', $kdSettle)
-            ->where('transaction_type', $transactionType)
-            ->where('is_success', 1)
-            ->countAllResults() > 0;
-    }
-    
-    /**
      * Get last process log untuk kd_settle dengan transaction_type tertentu
      * 
      * @param string $kdSettle Kode settlement
