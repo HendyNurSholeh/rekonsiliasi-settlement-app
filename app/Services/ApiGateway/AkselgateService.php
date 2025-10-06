@@ -29,8 +29,12 @@ class AkselgateService
     }
 
     /**
-     * Cek apakah kd_settle dengan transaction_type sudah pernah diproses
-     * Untuk prevent duplicate submission
+     * Cek apakah kd_settle dengan transaction_type sudah pernah diproses SUKSES
+     * Untuk prevent duplicate submission jika sudah berhasil
+     * 
+     * Aturan Bisnis:
+     * - Jika is_success = 1 (SUKSES): Return exists = true, tidak boleh proses ulang
+     * - Jika is_success = 0 (GAGAL): Return exists = false, boleh proses ulang
      * 
      * @param string $kdSettle Kode settlement
      * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
@@ -39,23 +43,26 @@ class AkselgateService
     public function checkDuplicateProcess(string $kdSettle, string $transactionType): array
     {
         try {
-            $lastProcess = $this->logModel->getLastProcess($kdSettle, $transactionType);
+            // Cek apakah ada record dengan is_success = 1 (sudah berhasil)
+            $successRecord = $this->logModel->checkSuccessExists($kdSettle, $transactionType);
             
-            if ($lastProcess) {
-                log_message('info', "Duplicate check: Found existing process for kd_settle: {$kdSettle}, type: {$transactionType}");
+            if ($successRecord) {
+                log_message('info', "Duplicate check: Found SUCCESS record for kd_settle: {$kdSettle}, type: {$transactionType}, attempt: {$successRecord['attempt_number']}");
                 return [
                     'exists' => true,
-                    'transaction_type' => $lastProcess['transaction_type'],
-                    'status_code_res' => $lastProcess['status_code_res'],
-                    'response_code' => $lastProcess['response_code'],
-                    'is_success' => $lastProcess['is_success'],
-                    'request_id' => $lastProcess['request_id'],
-                    'sent_by' => $lastProcess['sent_by'],
-                    'sent_at' => $lastProcess['sent_at']
+                    'transaction_type' => $successRecord['transaction_type'],
+                    'attempt_number' => $successRecord['attempt_number'],
+                    'status_code_res' => $successRecord['status_code_res'],
+                    'response_code' => $successRecord['response_code'],
+                    'is_success' => $successRecord['is_success'],
+                    'request_id' => $successRecord['request_id'],
+                    'sent_by' => $successRecord['sent_by'],
+                    'sent_at' => $successRecord['sent_at']
                 ];
             }
             
-            log_message('info', "Duplicate check: No existing process for kd_settle: {$kdSettle}, type: {$transactionType}");
+            // Tidak ada record sukses, boleh proses (bisa first attempt atau retry)
+            log_message('info', "Duplicate check: No SUCCESS record for kd_settle: {$kdSettle}, type: {$transactionType} - Process allowed");
             return ['exists' => false];
             
         } catch (\Exception $e) {
@@ -66,21 +73,38 @@ class AkselgateService
 
     /**
      * Cek apakah kd_settle dengan transaction_type sudah pernah diproses
-     * Untuk disable button atau show status di UI
-     * Menggunakan mekanisme yang sama dengan checkDuplicateProcess
+     * Untuk disable/enable button atau show status di UI
+     * 
+     * Return:
+     * - ['processed' => false] jika belum pernah diproses
+     * - ['processed' => true, 'is_success' => 1] jika sudah sukses (disable button, show "Sudah Diproses")
+     * - ['processed' => true, 'is_success' => 0] jika gagal (enable button "Proses Ulang")
      * 
      * @param string $kdSettle Kode settlement
      * @param string $transactionType Type transaksi (CA_ESCROW atau ESCROW_BILLER_PL)
-     * @return bool True jika sudah pernah diproses (ada record di log)
+     * @return array Status dan detail attempt terbaru
      */
-    public function isAlreadyProcessed(string $kdSettle, string $transactionType): bool
+    public function isAlreadyProcessed(string $kdSettle, string $transactionType): array
     {
         try {
-            $lastProcess = $this->logModel->getLastProcess($kdSettle, $transactionType);
-            return $lastProcess !== null; // Return true jika ada record, false jika tidak ada
+            $latestAttempt = $this->logModel->getLatestAttempt($kdSettle, $transactionType);
+            
+            if ($latestAttempt) {
+                return [
+                    'processed' => true,
+                    'is_success' => $latestAttempt['is_success'],
+                    'attempt_number' => $latestAttempt['attempt_number'],
+                    'status_code_res' => $latestAttempt['status_code_res'],
+                    'response_message' => $latestAttempt['response_message'],
+                    'sent_at' => $latestAttempt['sent_at']
+                ];
+            }
+            
+            return ['processed' => false];
+            
         } catch (\Exception $e) {
             log_message('error', 'Error checking process status: ' . $e->getMessage());
-            return false;
+            return ['processed' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -384,14 +408,26 @@ class AkselgateService
             ];
         }
         
-        // Step 3: Kirim ke Akselgate
+        // Step 3: Get next attempt number dan mark previous as not latest
+        $attemptNumber = $this->logModel->getNextAttemptNumber($kdSettle, $transactionType);
+        
+        // Mark all previous attempts as not latest before inserting new one
+        if ($attemptNumber > 1) {
+            $this->logModel->markAsNotLatest($kdSettle, $transactionType);
+            log_message('info', "Akselgate: Marked previous attempts as not latest for kd_settle: {$kdSettle}, type: {$transactionType}");
+        }
+        
+        log_message('info', "Akselgate: Processing attempt #{$attemptNumber} for kd_settle: {$kdSettle}, type: {$transactionType}");
+        
+        // Step 4: Kirim ke Akselgate
         $apiResult = $this->sendBatchTransactions($apiData);
         
-        // Step 4: Save log
+        // Step 5: Save log dengan versioning
         $logData = [
             'transaction_type' => $transactionType,
             'kd_settle' => $kdSettle,
             'request_id' => $apiData['requestId'],
+            'attempt_number' => $attemptNumber,
             'total_transaksi' => count($apiData['data']),
             'request_payload' => json_encode($apiData),
             'status_code_res' => (string)($apiResult['status_code'] ?? 'unknown'),
@@ -399,24 +435,26 @@ class AkselgateService
             'response_message' => $apiResult['message'] ?? null,
             'response_payload' => json_encode($apiResult['data'] ?? $apiResult),
             'is_success' => $apiResult['success'] ? 1 : 0,
+            'is_latest' => 1, // This is the latest attempt
             'sent_by' => session('username') ?? 'system',
             'sent_at' => date('Y-m-d H:i:s')
         ];
         
         try {
             $this->logModel->createLog($logData);
-            log_message('info', "Akselgate: Log saved for kd_settle: {$kdSettle}, type: {$transactionType}, success: " . ($apiResult['success'] ? 'YES' : 'NO'));
+            log_message('info', "Akselgate: Log saved - kd_settle: {$kdSettle}, type: {$transactionType}, attempt: {$attemptNumber}, success: " . ($apiResult['success'] ? 'YES' : 'NO'));
         } catch (\Exception $e) {
             log_message('error', "Akselgate: Failed to save log - " . $e->getMessage());
             // Continue even if logging fails
         }
         
-        // Step 5: Return result dengan tambahan informasi
+        // Step 6: Return result dengan tambahan informasi
         if ($apiResult['success']) {
             return [
                 'success' => true,
                 'message' => 'Transaksi berhasil dikirim ke Akselgate',
                 'request_id' => $apiData['requestId'],
+                'attempt_number' => $attemptNumber,
                 'total_transaksi' => count($apiData['data']),
                 'status_code' => $apiResult['status_code'] ?? 'unknown',
                 'api_response' => $apiResult['data'] ?? null
@@ -426,6 +464,7 @@ class AkselgateService
                 'success' => false,
                 'message' => 'Gagal mengirim ke Akselgate: ' . $apiResult['message'],
                 'error_code' => 'AKSELGATE_ERROR',
+                'attempt_number' => $attemptNumber,
                 'status_code' => $apiResult['status_code'] ?? null,
                 'response_code' => $apiResult['response_code'] ?? null
             ];

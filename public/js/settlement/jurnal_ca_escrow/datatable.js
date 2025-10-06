@@ -90,17 +90,22 @@ function initializeDataTable() {
                 // Store child data globally for use in row details
                 window.childDataMap = {};
                 
-                // Store processed status untuk setiap kd_settle
+                // Store processed status untuk setiap kd_settle dengan detail status
                 window.processedStatusMap = {};
                 
                 // Filter hanya parent rows untuk display utama
                 const parentRows = json.data.filter(row => row.is_parent);
                 
-                // Group child rows by parent dan simpan status
+                // Group child rows by parent dan simpan status lengkap
                 json.data.forEach(row => {
                     if (row.is_parent) {
-                        // Simpan status processed
-                        window.processedStatusMap[row.r_KD_SETTLE] = row.is_processed || false;
+                        // Simpan status processed dengan detail
+                        window.processedStatusMap[row.r_KD_SETTLE] = {
+                            processed: row.is_processed || false,
+                            is_success: row.is_success, // 1 = success, 0 = failed, null = not processed
+                            attempt_number: row.attempt_number || 0,
+                            response_message: row.response_message || '' // Error message dari Akselgate
+                        };
                     }
                     
                     if (!row.is_parent && row.parent_kd_settle) {
@@ -375,69 +380,53 @@ function restoreExpandedRows() {
 // Function to format child rows
 function formatChildRows(childData, kdSettle) {
     if (!childData || childData.length === 0) {
-        return '<div class="child-details-container">' +
-               '<div class="p-3 text-center text-muted">' +
-               '<i class="fal fa-info-circle me-2"></i>' +
-               '<em>Tidak ada detail transaksi</em>' +
-               '</div></div>';
+        return `<div class="child-details-container">
+                    <div class="p-3 text-center text-muted">
+                        <i class="fal fa-info-circle me-2"></i>
+                        <em>Tidak ada detail transaksi</em>
+                    </div>
+                </div>`;
     }
     
-    let html = '<div class="child-details-container">';
+    // Cek status processing
+    const status = window.processedStatusMap?.[kdSettle];
+    const isProcessed = status?.processed || false;
+    const isSuccess = status?.is_success; // '1' = success, '0' = failed (STRING dari backend)
+    const attemptNumber = status?.attempt_number || 0;
+    const responseMessage = status?.response_message || '';
     
-    // Cek apakah sudah diproses
-    const isProcessed = window.processedStatusMap && window.processedStatusMap[kdSettle];
-    
-    // Header dengan tombol batch process
-    html += '<div class="child-details-header d-flex justify-content-between align-items-center">';
-    html += '<div><i class="fal fa-list-alt"></i> Detail Transaksi (' + childData.length + ' item)</div>';
-    
-    // Render button sesuai status
-    if (isProcessed) {
-        // Button sudah diproses (abu-abu, disabled)
-        html += '<button type="button" class="btn btn-secondary btn-sm" disabled id="btn-batch-' + kdSettle + '">';
-        html += '<i class="fal fa-check-circle me-1"></i>Sudah Diproses';
-        html += '</button>';
+    // Build button HTML
+    let buttonHtml = '';
+    if (!isProcessed) {
+        buttonHtml = `<button type="button" class="btn btn-primary btn-sm" 
+                             onclick="processBatchJurnal('${kdSettle}')" 
+                             id="btn-batch-${kdSettle}">
+                        <i class="fal fa-play me-1"></i> Proses Semua (${childData.length})
+                      </button>`;
     } else {
-        // Button normal (biru, aktif)
-        html += '<button type="button" class="btn btn-primary btn-sm" onclick="processBatchJurnal(\'' + kdSettle + '\')" id="btn-batch-' + kdSettle + '">';
-        html += '<i class="fal fa-play me-1"></i> Proses Semua (' + childData.length + ')';
-        html += '</button>';
-    }
-    
-    html += '</div>';
-    
-    // Cek apakah ada error message (ambil dari child pertama yang punya error message)
-    let errorMessage = '';
-    for (let i = 0; i < childData.length; i++) {
-        if (childData[i].d_ERROR_MESSAGE && childData[i].d_ERROR_MESSAGE.trim() !== '') {
-            errorMessage = childData[i].d_ERROR_MESSAGE;
-            break;
+        buttonHtml = `<button type="button" class="btn btn-secondary btn-sm" disabled>
+                        <i class="fal fa-check-circle me-1"></i>Sudah Diproses (Attempt #${attemptNumber})
+                      </button>`;
+        
+        // Tambahkan button "Proses Ulang" jika gagal dengan error Akselgate
+        if ((isSuccess == 0 || isSuccess === '0') && responseMessage) {
+            buttonHtml += `<button type="button" class="btn btn-primary btn-sm ml-2" 
+                                  onclick="processBatchJurnal('${kdSettle}')" 
+                                  id="btn-batch-${kdSettle}">
+                            <i class="fal fa-redo me-1"></i> Proses Ulang
+                           </button>`;
         }
     }
     
-    // Tampilkan alert danger jika ada error message
-    if (errorMessage) {
-        html += '<div class="alert alert-danger fade show mx-2 my-1 mb-0" role="alert" style="font-size: 0.9rem;">';
-        html += '<i class="fal fa-exclamation-triangle me-2"></i>';
-        html += ' Akselgate response: ' + errorMessage;
-        html += '</div>';
-    }
+    // Cek error message dari child pertama
+    const errorMessage = childData.find(c => c.d_ERROR_MESSAGE?.trim())?.d_ERROR_MESSAGE || '';
+    const errorAlert = errorMessage ? 
+        `<div class="alert alert-danger fade show mx-2 my-1 mb-0" role="alert" style="font-size: 0.9rem;">
+            <i class="fal fa-exclamation-triangle me-2"></i> Akselgate response: ${errorMessage}
+         </div>` : '';
     
-    // Table detail
-    const tableHeaders = [
-        'No. Ref', 'Debit Account', 'Debit Name', 'Credit Account', 'Credit Name',
-        'Nominal', 'Core Res', 'Core Ref', 'Core DateTime', 'Status'
-    ];
-    const colWidths = ['10%', '11%', '13%', '11%', '13%', '10%', '8%', '9%', '10%', '8%'];
-    
-    html += '<div class="px-2 pb-2"><div class="table-responsive">';
-    html += '<table class="table table-sm table-hover child-table"><thead><tr>';
-    tableHeaders.forEach((header, idx) => {
-        html += `<th style="width: ${colWidths[idx]}">${header}</th>`;
-    });
-    html += '</tr></thead><tbody>';
-    
-    childData.forEach(function(child) {
+    // Build table rows
+    const tableRows = childData.map(child => {
         const rowData = [
             `<code>${child.d_NO_REF || '-'}</code>`,
             `<code>${child.d_DEBIT_ACCOUNT || '-'}</code>`,
@@ -451,17 +440,41 @@ function formatChildRows(childData, kdSettle) {
             renderTransactionStatus(child.d_CODE_RES)
         ];
         
-        html += '<tr>';
-        rowData.forEach((data, idx) => {
+        const cells = rowData.map((data, idx) => {
             const align = idx === 5 ? ' class="text-end"' : (idx >= 6 ? ' class="text-center"' : '');
-            html += `<td${align}>${data}</td>`;
-        });
-        html += '</tr>';
-    });
+            return `<td${align}>${data}</td>`;
+        }).join('');
+        
+        return `<tr>${cells}</tr>`;
+    }).join('');
     
-    html += '</tbody></table></div></div></div>';
+    // Table headers
+    const tableHeaders = [
+        'No. Ref', 'Debit Account', 'Debit Name', 'Credit Account', 'Credit Name',
+        'Nominal', 'Core Res', 'Core Ref', 'Core DateTime', 'Status'
+    ];
+    const colWidths = ['10%', '11%', '13%', '11%', '13%', '10%', '8%', '9%', '10%', '8%'];
     
-    return html;
+    const headerCells = tableHeaders.map((header, idx) => 
+        `<th style="width: ${colWidths[idx]}">${header}</th>`
+    ).join('');
+    
+    // Combine all HTML
+    return `<div class="child-details-container">
+                <div class="child-details-header d-flex justify-content-between align-items-center">
+                    <div><i class="fal fa-list-alt"></i> Detail Transaksi (${childData.length} item)</div>
+                    <div class="d-flex align-items-center">${buttonHtml}</div>
+                </div>
+                ${errorAlert}
+                <div class="px-2 pb-2">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover child-table">
+                            <thead><tr>${headerCells}</tr></thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
 }
 
 // Function untuk expand/collapse semua rows

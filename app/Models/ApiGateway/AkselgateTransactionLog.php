@@ -21,6 +21,7 @@ class AkselgateTransactionLog extends Model
         'transaction_type',
         'kd_settle',
         'request_id',
+        'attempt_number',
         'total_transaksi',
         'request_payload',
         'status_code_res',
@@ -28,6 +29,7 @@ class AkselgateTransactionLog extends Model
         'response_message',
         'response_payload',
         'is_success',
+        'is_latest',
         'sent_by',
         'sent_at',
     ];
@@ -54,6 +56,86 @@ class AkselgateTransactionLog extends Model
             ->where('transaction_type', $transactionType)
             ->orderBy('id', 'DESC')
             ->first();
+    }
+    
+    /**
+     * Get latest attempt (record dengan is_latest = 1)
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param string $transactionType Tipe transaksi
+     * @return array|null
+     */
+    public function getLatestAttempt(string $kdSettle, string $transactionType): ?array
+    {
+        return $this->where('kd_settle', $kdSettle)
+            ->where('transaction_type', $transactionType)
+            ->where('is_latest', 1)
+            ->first();
+    }
+    
+    /**
+     * Get all attempts untuk kd_settle dan transaction_type
+     * Untuk melihat history semua percobaan
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param string $transactionType Tipe transaksi
+     * @return array
+     */
+    public function getAllAttempts(string $kdSettle, string $transactionType): array
+    {
+        return $this->where('kd_settle', $kdSettle)
+            ->where('transaction_type', $transactionType)
+            ->orderBy('attempt_number', 'DESC')
+            ->findAll();
+    }
+    
+    /**
+     * Get next attempt number untuk kd_settle dan transaction_type
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param string $transactionType Tipe transaksi
+     * @return int Next attempt number
+     */
+    public function getNextAttemptNumber(string $kdSettle, string $transactionType): int
+    {
+        $lastAttempt = $this->where('kd_settle', $kdSettle)
+            ->where('transaction_type', $transactionType)
+            ->orderBy('attempt_number', 'DESC')
+            ->first();
+        
+        return $lastAttempt ? (int)$lastAttempt['attempt_number'] + 1 : 1;
+    }
+    
+    /**
+     * Cek apakah sudah ada record success (is_success = 1) untuk kd_settle dan transaction_type
+     * Aturan: Jika sudah success, tidak boleh proses ulang
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param string $transactionType Tipe transaksi
+     * @return array|null Return record success jika ada, null jika tidak ada
+     */
+    public function checkSuccessExists(string $kdSettle, string $transactionType): ?array
+    {
+        return $this->where('kd_settle', $kdSettle)
+            ->where('transaction_type', $transactionType)
+            ->where('is_success', 1)
+            ->first();
+    }
+    
+    /**
+     * Mark semua record lama sebagai not latest (is_latest = 0)
+     * Digunakan sebelum insert attempt baru
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param string $transactionType Tipe transaksi
+     * @return bool
+     */
+    public function markAsNotLatest(string $kdSettle, string $transactionType): bool
+    {
+        return $this->where('kd_settle', $kdSettle)
+            ->where('transaction_type', $transactionType)
+            ->set(['is_latest' => 0])
+            ->update();
     }
     
     /**

@@ -165,10 +165,19 @@ class JurnalCaEscrowController extends BaseController
             foreach ($pagedData as $parentRow) {
                 
                 // Check if already processed untuk disable button
-                $isProcessed = $this->akselgateService->isAlreadyProcessed(
+                $processStatus = $this->akselgateService->isAlreadyProcessed(
                     $parentRow['r_KD_SETTLE'], 
                     AkselgateTransactionLog::TYPE_CA_ESCROW
                 );
+                
+                // Determine button state
+                // - Jika belum pernah diproses: Show "Proses Semua" button (enabled)
+                // - Jika sudah sukses (is_success = 1): Show "Sudah Diproses" button (disabled)
+                // - Jika gagal (is_success = 0) dengan response_message: Show "Sudah Diproses" + "Proses Ulang" button
+                $isProcessed = $processStatus['processed'] ?? false;
+                $isSuccess = $processStatus['is_success'] ?? null;
+                $attemptNumber = $processStatus['attempt_number'] ?? 0;
+                $responseMessage = $processStatus['response_message'] ?? '';
                 
                 // Add parent row
                 $formattedParent = [
@@ -182,6 +191,9 @@ class JurnalCaEscrowController extends BaseController
                     'is_parent' => true,
                     'has_children' => count($parentRow['child_rows']) > 0,
                     'is_processed' => $isProcessed, // Flag untuk status button
+                    'is_success' => $isSuccess, // Success status (1 = success, 0 = failed, null = not processed)
+                    'attempt_number' => $attemptNumber, // Nomor percobaan
+                    'response_message' => $responseMessage, // Error message dari Akselgate untuk proses ulang
                     'd_NO_REF' => '',
                     'd_DEBIT_ACCOUNT' => '',
                     'd_DEBIT_NAME' => '',
@@ -378,9 +390,10 @@ class JurnalCaEscrowController extends BaseController
                 
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Kode settle ' . $kdSettle . ' sudah pernah diproses sebelumnya',
+                    'message' => 'Kode settle ' . $kdSettle . ' sudah berhasil diproses sebelumnya pada attempt #' . $duplicateCheck['attempt_number'],
                     'error_code' => 'DUPLICATE_PROCESS',
                     'previous_data' => [
+                        'attempt_number' => $duplicateCheck['attempt_number'],
                         'status_code_res' => $duplicateCheck['status_code_res'],
                         'is_success' => $duplicateCheck['is_success'],
                         'request_id' => $duplicateCheck['request_id'],
@@ -403,11 +416,11 @@ class JurnalCaEscrowController extends BaseController
             
             // Handle result (logging sudah di-handle oleh service)
             if (!$result['success']) {
-                log_message('error', 'Batch transaction failed for kd_settle: ' . $kdSettle . ', error: ' . $result['message']);
+                log_message('error', 'Batch transaction failed for kd_settle: ' . $kdSettle . ', attempt: ' . ($result['attempt_number'] ?? 'N/A') . ', error: ' . $result['message']);
                 return $this->response->setJSON(array_merge($result, ['csrf_token' => csrf_hash()]));
             }
             
-            log_message('info', 'Batch transaction successful for kd_settle: ' . $kdSettle . ', request_id: ' . $result['request_id'] . ', total: ' . $result['total_transaksi']);
+            log_message('info', 'Batch transaction successful for kd_settle: ' . $kdSettle . ', attempt: ' . $result['attempt_number'] . ', request_id: ' . $result['request_id'] . ', total: ' . $result['total_transaksi']);
             
             return $this->response->setJSON(array_merge($result, ['csrf_token' => csrf_hash()]));
             
