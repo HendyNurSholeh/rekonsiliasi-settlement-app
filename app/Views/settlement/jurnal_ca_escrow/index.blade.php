@@ -17,6 +17,9 @@
 
     <!-- Data Table -->
     @include('settlement.jurnal_ca_escrow._data_table')
+
+    <!-- Batch Progress Modal -->
+    @include('settlement.jurnal_ca_escrow._batch_progress_modal')
 @endsection
 
 @push('scripts')
