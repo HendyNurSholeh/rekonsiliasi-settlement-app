@@ -446,7 +446,7 @@ function formatChildRows(childData, kdSettle) {
             `<small>${child.d_CREDIT_NAME || '-'}</small>`,
             `<strong class="text-dark">${formatCurrency(child.d_AMOUNT || 0)}</strong>`,
             renderCoreResCode(child.d_CODE_RES),
-            renderTruncatedText(child.d_CORE_REF),
+            child.d_CORE_REF ? `<code>${child.d_CORE_REF}</code>` : '<span class="text-muted">NULL</span>',
             child.d_CORE_DATETIME ? `<small>${child.d_CORE_DATETIME}</small>` : '<span class="text-muted">NULL</span>',
             renderTransactionStatus(child.d_CODE_RES)
         ];
@@ -532,7 +532,6 @@ function searchInDetails(searchTerm) {
 // Function untuk refresh data table
 function refreshTableData() {
     if (jurnalCaEscrowTable) {
-        showAlert('info', 'Memuat ulang data...');
         console.log('Manual refresh with preserved expand state for:', Array.from(expandedRows));
         jurnalCaEscrowTable.ajax.reload(function() {
             showAlert('success', 'Data berhasil dimuat ulang!');
