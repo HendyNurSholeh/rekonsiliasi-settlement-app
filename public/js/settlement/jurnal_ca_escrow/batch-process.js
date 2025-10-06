@@ -75,7 +75,8 @@ function processBatchJurnal(kdSettle) {
                 
                 // Update button menjadi "Sudah Diproses" dengan style abu-abu disabled
                 $batchBtn.prop('disabled', true)
-                       .removeClass('btn-processing')
+                       .removeClass('btn-processing btn-primary')
+                       .addClass('btn-secondary')
                        .html('<i class="fal fa-check-circle me-1"></i>Sudah Diproses');
                 
                 // Update status di global map agar tetap konsisten

@@ -217,6 +217,7 @@ class JurnalCaEscrowController extends BaseController
                         'd_CODE_RES' => $childRow['d_CODE_RES'] ?? '',
                         'd_CORE_REF' => $childRow['d_CORE_REF'] ?? '',
                         'd_CORE_DATETIME' => $childRow['d_CORE_DATETIME'] ?? '',
+                        'd_ERROR_MESSAGE' => $childRow['d_ERROR_MESSAGE'] ?? '', // Error message dari log
                     ];
                     
                     $formattedData[] = $formattedChild;
@@ -265,6 +266,10 @@ class JurnalCaEscrowController extends BaseController
     {
         $grouped = [];
         
+        // Get error messages from transaction log untuk semua kd_settle
+        $kdSettleList = array_unique(array_column($rawData, 'r_KD_SETTLE'));
+        $errorMessages = $this->getErrorMessagesForKdSettle($kdSettleList);
+        
         foreach ($rawData as $row) {
             $kdSettle = $row['r_KD_SETTLE'] ?? '';
             
@@ -293,6 +298,7 @@ class JurnalCaEscrowController extends BaseController
                     'd_CODE_RES' => $row['d_CODE_RES'] ?? '',
                     'd_CORE_REF' => $row['d_CORE_REF'] ?? '',
                     'd_CORE_DATETIME' => $row['d_CORE_DATETIME'] ?? '',
+                    'd_ERROR_MESSAGE' => $errorMessages[$kdSettle] ?? '', // Tambah error message dari log
                 ];
                 
                 $grouped[$kdSettle]['child_rows'][] = $childRow;
@@ -301,6 +307,49 @@ class JurnalCaEscrowController extends BaseController
         
         // Convert to indexed array
         return array_values($grouped);
+    }
+
+    /**
+     * Get error messages dari t_akselgate_transaction_log untuk kd_settle yang gagal
+     * 
+     * @param array $kdSettleList Array of kd_settle
+     * @return array Map of kd_settle => error_message
+     */
+    private function getErrorMessagesForKdSettle(array $kdSettleList): array
+    {
+        if (empty($kdSettleList)) {
+            return [];
+        }
+        
+        try {
+            $db = \Config\Database::connect();
+            
+            // Query untuk ambil response_message dari transaksi yang gagal (status_code_res tidak dimulai dengan '00')
+            $builder = $db->table('t_akselgate_transaction_log');
+            $builder->select('kd_settle, response_message, status_code_res');
+            $builder->whereIn('kd_settle', $kdSettleList);
+            $builder->where('transaction_type', AkselgateTransactionLog::TYPE_CA_ESCROW);
+            $builder->where('is_success', 0); // Hanya ambil yang gagal
+            $builder->orderBy('id', 'DESC'); // Ambil yang terbaru
+            
+            $results = $builder->get()->getResultArray();
+            
+            // Map kd_settle => error_message
+            $errorMap = [];
+            foreach ($results as $result) {
+                $kdSettle = $result['kd_settle'];
+                // Hanya simpan jika belum ada (karena sudah diurutkan DESC, yang pertama adalah terbaru)
+                if (!isset($errorMap[$kdSettle])) {
+                    $errorMap[$kdSettle] = $result['response_message'] ?? 'Error: ' . ($result['status_code_res'] ?? 'Unknown');
+                }
+            }
+            
+            return $errorMap;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching error messages: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**

@@ -351,6 +351,23 @@ function formatChildRows(childData, kdSettle) {
     
     html += '</div>';
     
+    // Cek apakah ada error message (ambil dari child pertama yang punya error message)
+    let errorMessage = '';
+    for (let i = 0; i < childData.length; i++) {
+        if (childData[i].d_ERROR_MESSAGE && childData[i].d_ERROR_MESSAGE.trim() !== '') {
+            errorMessage = childData[i].d_ERROR_MESSAGE;
+            break;
+        }
+    }
+    
+    // Tampilkan alert danger jika ada error message
+    if (errorMessage) {
+        html += '<div class="alert alert-danger fade show mx-2 my-1 mb-0" role="alert" style="font-size: 0.9rem;">';
+        html += '<i class="fal fa-exclamation-triangle me-2"></i>';
+        html += ' Akselgate response: ' + errorMessage;
+        html += '</div>';
+    }
+    
     // Table detail
     html += '<div class="px-2 pb-2">';
     html += '<div class="table-responsive">';
