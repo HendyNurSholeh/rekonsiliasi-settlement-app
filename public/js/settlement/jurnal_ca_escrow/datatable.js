@@ -7,6 +7,63 @@ let jurnalCaEscrowTable;
 // State untuk menyimpan baris yang sedang di-expand
 let expandedRows = new Set();
 
+/**
+ * Helper function untuk render badge dengan count
+ * @param {number} count - Count value
+ * @param {string} badgeClass - Badge CSS class (warning, success, light)
+ * @returns {string} HTML badge
+ */
+function renderCountBadge(count, badgeClass) {
+    const parsedCount = parseInt(count || 0);
+    if (parsedCount > 0) {
+        return `<span class="badge badge-${badgeClass}">${parsedCount}</span>`;
+    }
+    return '<span class="badge badge-light">0</span>';
+}
+
+/**
+ * Helper function untuk render Core Response Code
+ * @param {string} coreRes - Core response code
+ * @returns {string} HTML badge atau text
+ */
+function renderCoreResCode(coreRes) {
+    if (!coreRes) {
+        return '<span class="text-muted">NULL</span>';
+    }
+    const badgeClass = coreRes.startsWith('00') ? 'success' : 'danger';
+    return `<span class="badge badge-${badgeClass} small">${coreRes}</span>`;
+}
+
+/**
+ * Helper function untuk render status transaksi
+ * @param {string} codeRes - Response code
+ * @returns {string} HTML status badge
+ */
+function renderTransactionStatus(codeRes) {
+    if (codeRes && codeRes.startsWith('00')) {
+        return '<span class="badge badge-success small"><i class="fal fa-check"></i> Selesai</span>';
+    } else if (codeRes) {
+        return '<span class="badge badge-warning small"><i class="fal fa-exclamation-triangle"></i> Gagal</span>';
+    }
+    return '<span class="badge badge-light small"><i class="fal fa-clock"></i> Pending</span>';
+}
+
+/**
+ * Helper function untuk truncate text dengan tooltip
+ * @param {string} text - Text to truncate
+ * @param {number} maxLength - Maximum length
+ * @returns {string} HTML with truncated text
+ */
+function renderTruncatedText(text, maxLength = 10) {
+    if (!text) {
+        return '<span class="text-muted">NULL</span>';
+    }
+    if (text.length > maxLength) {
+        return `<span title="${text}">${text.substring(0, maxLength)}...</span>`;
+    }
+    return `<span>${text}</span>`;
+}
+
 function initializeDataTable() {
     jurnalCaEscrowTable = $('#jurnalCaEscrowTable').DataTable({
         processing: true,
@@ -121,26 +178,14 @@ function initializeDataTable() {
                 name: 'r_JURNAL_PENDING',
                 className: 'text-center',
                 width: '10%',
-                render: function(data, type, row) {
-                    const count = parseInt(data || 0);
-                    if (count > 0) {
-                        return '<span class="badge badge-warning">' + count + '</span>';
-                    }
-                    return '<span class="badge badge-light">0</span>';
-                }
+                render: (data) => renderCountBadge(data, 'warning')
             },
             { 
                 data: 'r_JURNAL_SUKSES', 
                 name: 'r_JURNAL_SUKSES',
                 className: 'text-center',
                 width: '10%',
-                render: function(data, type, row) {
-                    const count = parseInt(data || 0);
-                    if (count > 0) {
-                        return '<span class="badge badge-success">' + count + '</span>';
-                    }
-                    return '<span class="badge badge-light">0</span>';
-                }
+                render: (data) => renderCountBadge(data, 'success')
             },
             { 
                 data: null,
@@ -214,8 +259,7 @@ function initializeDataTable() {
             $('.child-details-container').fadeOut(200, function() {
                 row.child.hide();
                 tr.removeClass('shown');
-                expandBtn.removeClass('fa-minus-square').addClass('fa-plus-square');
-                expandBtn.attr('title', 'Klik untuk melihat detail transaksi');
+                toggleExpandButton(expandBtn, false);
                 expandedRows.delete(kdSettle);
                 console.log('Row collapsed:', kdSettle);
             });
@@ -224,13 +268,11 @@ function initializeDataTable() {
             jurnalCaEscrowTable.rows().every(function() {
                 if (this.child.isShown()) {
                     this.child.hide();
-                    $(this.node()).removeClass('shown');
-                    $(this.node()).find('.expand-btn')
-                        .removeClass('fa-minus-square')
-                        .addClass('fa-plus-square')
-                        .attr('title', 'Klik untuk melihat detail transaksi');
+                    const $node = $(this.node());
+                    $node.removeClass('shown');
+                    toggleExpandButton($node.find('.expand-btn'), false);
                     
-                    const nodeKdSettle = $(this.node()).attr('data-kd-settle');
+                    const nodeKdSettle = $node.attr('data-kd-settle');
                     if (nodeKdSettle) {
                         expandedRows.delete(nodeKdSettle);
                     }
@@ -241,8 +283,7 @@ function initializeDataTable() {
             const childData = window.childDataMap[kdSettle] || [];
             row.child(formatChildRows(childData, kdSettle)).show();
             tr.addClass('shown');
-            expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
-            expandBtn.attr('title', 'Klik untuk menyembunyikan detail');
+            toggleExpandButton(expandBtn, true);
             expandedRows.add(kdSettle);
             
             $('.child-details-container').hide().fadeIn(300);
@@ -283,6 +324,21 @@ function initializeDataTable() {
     });
 }
 
+/**
+ * Toggle expand button icon dan title
+ * @param {jQuery} $btn - Expand button element
+ * @param {boolean} isExpanded - Apakah row sudah di-expand
+ */
+function toggleExpandButton($btn, isExpanded) {
+    if (isExpanded) {
+        $btn.removeClass('fa-plus-square').addClass('fa-minus-square')
+            .attr('title', 'Klik untuk menyembunyikan detail');
+    } else {
+        $btn.removeClass('fa-minus-square').addClass('fa-plus-square')
+            .attr('title', 'Klik untuk melihat detail transaksi');
+    }
+}
+
 // Function to initialize tooltips
 function initializeTooltips() {
     if (typeof $().tooltip === 'function') {
@@ -297,7 +353,7 @@ function initializeTooltips() {
 function restoreExpandedRows() {
     setTimeout(function() {
         expandedRows.forEach(function(kdSettle) {
-            const $row = $('tr[data-kd-settle="' + kdSettle + '"]');
+            const $row = $(`tr[data-kd-settle="${kdSettle}"]`);
             if ($row.length > 0) {
                 const row = jurnalCaEscrowTable.row($row);
                 const expandBtn = $row.find('.expand-btn');
@@ -306,8 +362,7 @@ function restoreExpandedRows() {
                     const childData = window.childDataMap[kdSettle] || [];
                     row.child(formatChildRows(childData, kdSettle)).show();
                     $row.addClass('shown');
-                    expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
-                    expandBtn.attr('title', 'Klik untuk menyembunyikan detail');
+                    toggleExpandButton(expandBtn, true);
                     console.log('Restored expanded state for:', kdSettle);
                 }
             }
@@ -369,75 +424,38 @@ function formatChildRows(childData, kdSettle) {
     }
     
     // Table detail
-    html += '<div class="px-2 pb-2">';
-    html += '<div class="table-responsive">';
-    html += '<table class="table table-sm table-hover child-table">';
-    html += '<thead>';
-    html += '<tr>';
-    html += '<th style="width: 10%">No. Ref</th>';
-    html += '<th style="width: 11%">Debit Account</th>';
-    html += '<th style="width: 13%">Debit Name</th>';
-    html += '<th style="width: 11%">Credit Account</th>';
-    html += '<th style="width: 13%">Credit Name</th>';
-    html += '<th style="width: 10%">Nominal</th>';
-    html += '<th style="width: 8%">Core Res</th>';
-    html += '<th style="width: 9%">Core Ref</th>';
-    html += '<th style="width: 10%">Core DateTime</th>';
-    html += '<th style="width: 8%">Status</th>';
-    html += '</tr>';
-    html += '</thead>';
-    html += '<tbody>';
+    const tableHeaders = [
+        'No. Ref', 'Debit Account', 'Debit Name', 'Credit Account', 'Credit Name',
+        'Nominal', 'Core Res', 'Core Ref', 'Core DateTime', 'Status'
+    ];
+    const colWidths = ['10%', '11%', '13%', '11%', '13%', '10%', '8%', '9%', '10%', '8%'];
     
-    childData.forEach(function(child, index) {
+    html += '<div class="px-2 pb-2"><div class="table-responsive">';
+    html += '<table class="table table-sm table-hover child-table"><thead><tr>';
+    tableHeaders.forEach((header, idx) => {
+        html += `<th style="width: ${colWidths[idx]}">${header}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    
+    childData.forEach(function(child) {
+        const rowData = [
+            `<code>${child.d_NO_REF || '-'}</code>`,
+            `<code>${child.d_DEBIT_ACCOUNT || '-'}</code>`,
+            `<small>${child.d_DEBIT_NAME || '-'}</small>`,
+            `<code>${child.d_CREDIT_ACCOUNT || '-'}</code>`,
+            `<small>${child.d_CREDIT_NAME || '-'}</small>`,
+            `<strong class="text-dark">${formatCurrency(child.d_AMOUNT || 0)}</strong>`,
+            renderCoreResCode(child.d_CODE_RES),
+            renderTruncatedText(child.d_CORE_REF),
+            child.d_CORE_DATETIME ? `<small>${child.d_CORE_DATETIME}</small>` : '<span class="text-muted">NULL</span>',
+            renderTransactionStatus(child.d_CODE_RES)
+        ];
+        
         html += '<tr>';
-        html += '<td><code>' + (child.d_NO_REF || '-') + '</code></td>';
-        html += '<td><code>' + (child.d_DEBIT_ACCOUNT || '-') + '</code></td>';
-        html += '<td><small>' + (child.d_DEBIT_NAME || '-') + '</small></td>';
-        html += '<td><code>' + (child.d_CREDIT_ACCOUNT || '-') + '</code></td>';
-        html += '<td><small>' + (child.d_CREDIT_NAME || '-') + '</small></td>';
-        html += '<td class="text-end"><strong class="text-dark">' + formatCurrency(child.d_AMOUNT || 0) + '</strong></td>';
-        
-        // Core Res
-        html += '<td class="text-center">';
-        const coreRes = child.d_CODE_RES;
-        if (!coreRes) {
-            html += '<span class="text-muted">NULL</span>';
-        } else if (coreRes.startsWith('00')) {
-            html += '<span class="badge badge-success small">' + coreRes + '</span>';
-        } else {
-            html += '<span class="badge badge-danger small">' + coreRes + '</span>';
-        }
-        html += '</td>';
-        
-        // Core Ref
-        html += '<td>';
-        const coreRef = child.d_CORE_REF;
-        if (!coreRef) {
-            html += '<span class="text-muted">NULL</span>';
-        } else if (coreRef.length > 10) {
-            html += '<span title="' + coreRef + '">' + coreRef.substring(0, 10) + '...</span>';
-        } else {
-            html += '<span>' + coreRef + '</span>';
-        }
-        html += '</td>';
-        
-        // Core DateTime
-        html += '<td>';
-        const coreDateTime = child.d_CORE_DATETIME;
-        html += coreDateTime ? '<small>' + coreDateTime + '</small>' : '<span class="text-muted">NULL</span>';
-        html += '</td>';
-        
-        // Status
-        html += '<td class="text-center">';
-        if (child.d_CODE_RES && child.d_CODE_RES.startsWith('00')) {
-            html += '<span class="badge badge-success small"><i class="fal fa-check"></i> Selesai</span>';
-        } else if (child.d_CODE_RES && !child.d_CODE_RES.startsWith('00')) {
-            html += '<span class="badge badge-warning small"><i class="fal fa-exclamation-triangle"></i> Gagal</span>';
-        } else {
-            html += '<span class="badge badge-light small"><i class="fal fa-clock"></i> Pending</span>';
-        }
-        html += '</td>';
-        
+        rowData.forEach((data, idx) => {
+            const align = idx === 5 ? ' class="text-end"' : (idx >= 6 ? ' class="text-center"' : '');
+            html += `<td${align}>${data}</td>`;
+        });
         html += '</tr>';
     });
     
@@ -457,12 +475,12 @@ function toggleAllRows(expand = true) {
             const childData = window.childDataMap[kdSettle] || [];
             this.child(formatChildRows(childData, kdSettle)).show();
             tr.addClass('shown');
-            expandBtn.removeClass('fa-plus-square').addClass('fa-minus-square');
+            toggleExpandButton(expandBtn, true);
             if (kdSettle) expandedRows.add(kdSettle);
         } else if (!expand && this.child.isShown()) {
             this.child.hide();
             tr.removeClass('shown');
-            expandBtn.removeClass('fa-minus-square').addClass('fa-plus-square');
+            toggleExpandButton(expandBtn, false);
             if (kdSettle) expandedRows.delete(kdSettle);
         }
     });
