@@ -165,7 +165,10 @@ class JurnalCaEscrowController extends BaseController
             foreach ($pagedData as $parentRow) {
                 
                 // Check if already processed untuk disable button
-                $isProcessed = $this->akselGatewayService->isAlreadyProcessed($parentRow['r_KD_SETTLE'], AkselgateTransactionLog::TYPE_CA_ESCROW);
+                $isProcessed = $this->akselGatewayService->isAlreadyProcessed(
+                    $parentRow['r_KD_SETTLE'], 
+                    AkselgateTransactionLog::TYPE_CA_ESCROW
+                );
                 
                 // Add parent row
                 $formattedParent = [
@@ -178,7 +181,7 @@ class JurnalCaEscrowController extends BaseController
                     'child_count' => count($parentRow['child_rows']),
                     'is_parent' => true,
                     'has_children' => count($parentRow['child_rows']) > 0,
-                    'is_processed' => $isProcessed, // Flag untuk disable button
+                    'is_processed' => $isProcessed, // Flag untuk status button
                     'd_NO_REF' => '',
                     'd_DEBIT_ACCOUNT' => '',
                     'd_DEBIT_NAME' => '',

@@ -73,11 +73,17 @@ function processBatchJurnal(kdSettle) {
                 showAlert('success', 'Transaksi berhasil dikirim ke API Gateway!');
                 isSuccess = true;
                 
-                // Disable button permanently
+                // Update button menjadi "Sudah Diproses" dengan style abu-abu disabled
                 $batchBtn.prop('disabled', true)
-                       .removeClass('btn-processing');
+                       .removeClass('btn-processing')
+                       .html('<i class="fal fa-check-circle me-1"></i>Sudah Diproses');
                 
-                console.log('Success: Button disabled permanently');
+                // Update status di global map agar tetap konsisten
+                if (typeof window.processedStatusMap !== 'undefined') {
+                    window.processedStatusMap[kdSettle] = true;
+                }
+                
+                console.log('Success: Button changed to "Sudah Diproses"');
             } else {
                 showAlert('error', `Batch process gagal: ${response.message || 'Unknown error'}`);
                 

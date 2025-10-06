@@ -33,11 +33,19 @@ function initializeDataTable() {
                 // Store child data globally for use in row details
                 window.childDataMap = {};
                 
+                // Store processed status untuk setiap kd_settle
+                window.processedStatusMap = {};
+                
                 // Filter hanya parent rows untuk display utama
                 const parentRows = json.data.filter(row => row.is_parent);
                 
-                // Group child rows by parent
+                // Group child rows by parent dan simpan status
                 json.data.forEach(row => {
+                    if (row.is_parent) {
+                        // Simpan status processed
+                        window.processedStatusMap[row.r_KD_SETTLE] = row.is_processed || false;
+                    }
+                    
                     if (!row.is_parent && row.parent_kd_settle) {
                         if (!window.childDataMap[row.parent_kd_settle]) {
                             window.childDataMap[row.parent_kd_settle] = [];
@@ -321,12 +329,26 @@ function formatChildRows(childData, kdSettle) {
     
     let html = '<div class="child-details-container">';
     
+    // Cek apakah sudah diproses
+    const isProcessed = window.processedStatusMap && window.processedStatusMap[kdSettle];
+    
     // Header dengan tombol batch process
     html += '<div class="child-details-header d-flex justify-content-between align-items-center">';
     html += '<div><i class="fal fa-list-alt"></i> Detail Transaksi (' + childData.length + ' item)</div>';
-    html += '<button type="button" class="btn btn-primary btn-sm" onclick="processBatchJurnal(\'' + kdSettle + '\')" id="btn-batch-' + kdSettle + '">';
-    html += '<i class="fal fa-play me-1"></i> Proses Semua (' + childData.length + ')';
-    html += '</button>';
+    
+    // Render button sesuai status
+    if (isProcessed) {
+        // Button sudah diproses (abu-abu, disabled)
+        html += '<button type="button" class="btn btn-secondary btn-sm" disabled id="btn-batch-' + kdSettle + '">';
+        html += '<i class="fal fa-check-circle me-1"></i>Sudah Diproses';
+        html += '</button>';
+    } else {
+        // Button normal (biru, aktif)
+        html += '<button type="button" class="btn btn-primary btn-sm" onclick="processBatchJurnal(\'' + kdSettle + '\')" id="btn-batch-' + kdSettle + '">';
+        html += '<i class="fal fa-play me-1"></i> Proses Semua (' + childData.length + ')';
+        html += '</button>';
+    }
+    
     html += '</div>';
     
     // Table detail
