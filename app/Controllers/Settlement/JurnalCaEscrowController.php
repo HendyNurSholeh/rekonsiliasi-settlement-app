@@ -8,7 +8,7 @@ use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
 use App\Models\ApiGateway\AkselgateTransactionLog;
 use App\Models\Settlement\SettlementMessageModel;
-use App\Services\ApiGateway\AkselGatewayService;
+use App\Services\ApiGateway\AkselgateService;
 use App\Traits\HasLogActivity;
 
 class JurnalCaEscrowController extends BaseController
@@ -16,13 +16,13 @@ class JurnalCaEscrowController extends BaseController
     use HasLogActivity;
     
     protected $prosesModel;
-    protected $akselGatewayService;
+    protected $akselgateService;
     protected $settlementMessageModel;
 
     public function __construct()
     {
         $this->prosesModel = new ProsesModel();
-        $this->akselGatewayService = new AkselGatewayService();
+        $this->akselgateService = new AkselgateService();
         $this->settlementMessageModel = new SettlementMessageModel();
     }
 
@@ -165,7 +165,7 @@ class JurnalCaEscrowController extends BaseController
             foreach ($pagedData as $parentRow) {
                 
                 // Check if already processed untuk disable button
-                $isProcessed = $this->akselGatewayService->isAlreadyProcessed(
+                $isProcessed = $this->akselgateService->isAlreadyProcessed(
                     $parentRow['r_KD_SETTLE'], 
                     AkselgateTransactionLog::TYPE_CA_ESCROW
                 );
@@ -353,7 +353,7 @@ class JurnalCaEscrowController extends BaseController
     }
 
     /**
-     * Proses jurnal CA to Escrow menggunakan API Gateway batch processing
+     * Proses jurnal CA to Escrow menggunakan Akselgate batch processing
      */
     public function proses()
     {
@@ -371,7 +371,7 @@ class JurnalCaEscrowController extends BaseController
             $tanggalData = $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
 
             // Cek apakah kd_settle sudah pernah diproses (prevent duplicate)
-            $duplicateCheck = $this->akselGatewayService->checkDuplicateProcess($kdSettle, AkselgateTransactionLog::TYPE_CA_ESCROW);
+            $duplicateCheck = $this->akselgateService->checkDuplicateProcess($kdSettle, AkselgateTransactionLog::TYPE_CA_ESCROW);
             
             if ($duplicateCheck['exists']) {
                 log_message('warning', "Duplicate process attempt for kd_settle: {$kdSettle}, previous request_id: {$duplicateCheck['request_id']}");
@@ -395,7 +395,7 @@ class JurnalCaEscrowController extends BaseController
             $transaksiData = $this->getTransaksiByKdSettle($kdSettle, $tanggalData);
 
             // Process transaksi menggunakan service (validasi, format, send, dan logging semua di service)
-            $result = $this->akselGatewayService->processBatchTransaction(
+            $result = $this->akselgateService->processBatchTransaction(
                 $kdSettle, 
                 $transaksiData, 
                 AkselgateTransactionLog::TYPE_CA_ESCROW
