@@ -27,6 +27,8 @@
         csrfToken: "{{ csrf_token() }}"
     };
     </script>
-    <script src="{{ base_url('js/settlement/jurnal-ca-escrow.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_ca_escrow/index.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_ca_escrow/datatable.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_ca_escrow/batch-process.js') }}"></script>
 @endpush
 
