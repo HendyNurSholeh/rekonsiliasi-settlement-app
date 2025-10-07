@@ -9,6 +9,7 @@ use App\Models\ProsesModel;
 use App\Models\ApiGateway\AkselgateTransactionLog;
 use App\Models\Settlement\SettlementMessageModel;
 use App\Services\ApiGateway\AkselgateService;
+use App\Services\ParentChildDataTableService;
 use App\Traits\HasLogActivity;
 
 class JurnalCaEscrowController extends BaseController
@@ -19,6 +20,7 @@ class JurnalCaEscrowController extends BaseController
     protected $akselgateService;
     protected $settlementMessageModel;
     protected $akselgateLogModel;
+    protected $dataTableService;
 
     public function __construct()
     {
@@ -26,6 +28,7 @@ class JurnalCaEscrowController extends BaseController
         $this->akselgateService = new AkselgateService();
         $this->settlementMessageModel = new SettlementMessageModel();
         $this->akselgateLogModel = new AkselgateTransactionLog();
+        $this->dataTableService = new ParentChildDataTableService();
     }
 
     /**
@@ -57,28 +60,11 @@ class JurnalCaEscrowController extends BaseController
      */
     public function datatable()
     {
-        // Get parameters from both GET and POST to handle DataTables requests
+        // Get tanggal parameter
         $tanggalData = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         // Debug log
         log_message('info', 'Jurnal CA to Escrow DataTable parameters - Tanggal: ' . $tanggalData);
-        
-        // DataTables parameters
-        $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
-        $start = $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0;
-        $length = $this->request->getGet('length') ?? $this->request->getPost('length') ?? 15; // Ubah default ke 15
-        
-        // Debug log parameters
-        log_message('info', 'DataTable Parameters - Draw: ' . $draw . ', Start: ' . $start . ', Length: ' . $length);
-        
-        // Handle search parameter
-        $searchArray = $this->request->getGet('search') ?? $this->request->getPost('search') ?? [];
-        $searchValue = isset($searchArray['value']) ? $searchArray['value'] : '';
-        
-        // Handle order parameter
-        $orderArray = $this->request->getGet('order') ?? $this->request->getPost('order') ?? [];
-        $orderColumn = isset($orderArray[0]['column']) ? $orderArray[0]['column'] : 0;
-        $orderDir = isset($orderArray[0]['dir']) ? $orderArray[0]['dir'] : 'asc';
 
         try {
             $db = \Config\Database::connect();
@@ -96,75 +82,25 @@ class JurnalCaEscrowController extends BaseController
             // Process and group data by r_KD_SETTLE to create parent-child structure
             $processedData = $this->processJurnalData($rawData);
             
-            // Apply search filter if provided
-            $filteredData = $processedData;
-            if (!empty($searchValue)) {
-                $filteredData = array_filter($processedData, function($row) use ($searchValue) {
-                    $searchLower = strtolower($searchValue);
-                    
-                    // Search in parent row data
-                    $parentMatch = strpos(strtolower($row['r_KD_SETTLE'] ?? ''), $searchLower) !== false ||
-                                  strpos(strtolower($row['r_NAMA_PRODUK'] ?? ''), $searchLower) !== false;
-                    
-                    // Search in child rows data
-                    $childMatch = false;
-                    if (isset($row['child_rows'])) {
-                        foreach ($row['child_rows'] as $child) {
-                            if (strpos(strtolower($child['d_NO_REF'] ?? ''), $searchLower) !== false ||
-                                strpos(strtolower($child['d_DEBIT_ACCOUNT'] ?? ''), $searchLower) !== false ||
-                                strpos(strtolower($child['d_CREDIT_ACCOUNT'] ?? ''), $searchLower) !== false ||
-                                strpos(strtolower($child['d_CODE_RES'] ?? ''), $searchLower) !== false) {
-                                $childMatch = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    return $parentMatch || $childMatch;
-                });
-                $filteredData = array_values($filteredData); // Reset array keys
-            }
+            // Prepare DataTables request parameters
+            $dtRequest = [
+                'draw' => $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1,
+                'start' => $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0,
+                'length' => $this->request->getGet('length') ?? $this->request->getPost('length') ?? 15,
+                'search' => $this->request->getGet('search') ?? $this->request->getPost('search') ?? ['value' => ''],
+                'order' => $this->request->getGet('order') ?? $this->request->getPost('order') ?? [['column' => 0, 'dir' => 'asc']],
+                'columns' => $this->request->getGet('columns') ?? $this->request->getPost('columns') ?? []
+            ];
             
-            // Apply sorting on parent level data
-            if ($orderColumn > 0 && $orderColumn <= 6) {
-                $sortColumns = [
-                    1 => 'r_KD_SETTLE',
-                    2 => 'r_NAMA_PRODUK', 
-                    3 => 'r_AMOUNT_ESCROW',
-                    4 => 'r_TOTAL_JURNAL',
-                    5 => 'r_JURNAL_PENDING',
-                    6 => 'r_JURNAL_SUKSES'
-                ];
-                
-                if (isset($sortColumns[$orderColumn])) {
-                    $sortKey = $sortColumns[$orderColumn];
-                    usort($filteredData, function($a, $b) use ($sortKey, $orderDir) {
-                        $valA = $a[$sortKey] ?? '';
-                        $valB = $b[$sortKey] ?? '';
-                        
-                        if (is_numeric($valA) && is_numeric($valB)) {
-                            $result = $valA <=> $valB;
-                        } else {
-                            $result = strcasecmp($valA, $valB);
-                        }
-                        
-                        return $orderDir === 'desc' ? -$result : $result;
-                    });
-                }
-            }
+            // Define searchable fields (bisa search di parent dan child)
+            $searchFields = ['r_KD_SETTLE', 'r_NAMA_PRODUK'];
             
-            $totalRecords = count($processedData);
-            $filteredRecords = count($filteredData);
+            // Use service to handle filtering, sorting, and pagination
+            $dtResponse = $this->dataTableService->handleRequest($dtRequest, $processedData, $searchFields);
             
-            // Debug log untuk troubleshooting pagination
-            log_message('info', 'Pagination Debug - Total Parent Rows: ' . $totalRecords . ', Filtered: ' . $filteredRecords . ', Start: ' . $start . ', Length: ' . $length);
-            
-            // Apply pagination pada parent level saja
-            $pagedData = array_slice($filteredData, $start, $length);
-            
-            // Format data for DataTables - kirim parent dan child rows tapi recordsTotal tetap parent saja
+            // Format data dengan parent-child structure
             $formattedData = [];
-            foreach ($pagedData as $parentRow) {
+            foreach ($dtResponse['data'] as $parentRow) {
                 
                 // Check if already processed untuk disable button
                 $processStatus = $this->akselgateService->isAlreadyProcessed(
@@ -238,31 +174,16 @@ class JurnalCaEscrowController extends BaseController
                 }
             }
             
-            return $this->response->setJSON([
-                'draw' => intval($draw),
-                'recordsTotal' => intval($totalRecords), // Total parent rows tanpa filter
-                'recordsFiltered' => intval($filteredRecords), // Parent rows setelah filter
-                'data' => $formattedData, // Parent + child data
-                'debug' => [
-                    'rawDataCount' => count($rawData),
-                    'processedParentCount' => $totalRecords,
-                    'filteredParentCount' => $filteredRecords,
-                    'pagedParentCount' => count($pagedData),
-                    'formattedDataCount' => count($formattedData),
-                    'pagination' => [
-                        'start' => $start,
-                        'length' => $length,
-                        'currentPage' => floor($start / $length) + 1,
-                        'totalPages' => ceil($filteredRecords / $length)
-                    ]
-                ],
-                'csrf_token' => csrf_hash()
-            ]);
+            // Return DataTables response with CSRF token
+            $dtResponse['data'] = $formattedData;
+            $dtResponse['csrf_token'] = csrf_hash();
+            
+            return $this->response->setJSON($dtResponse);
             
         } catch (\Exception $e) {
             log_message('error', 'Error in Jurnal CA to Escrow DataTable: ' . $e->getMessage());
             return $this->response->setJSON([
-                'draw' => intval($draw),
+                'draw' => intval($dtRequest['draw'] ?? 1),
                 'recordsTotal' => 0,
                 'recordsFiltered' => 0,
                 'data' => [],
