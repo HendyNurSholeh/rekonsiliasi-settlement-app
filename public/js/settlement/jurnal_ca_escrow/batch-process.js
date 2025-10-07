@@ -3,19 +3,7 @@
 // ==========================================
 
 /**
- * Update button state menjadi "Sedang Diproses" (setelah request selesai, masih ada modal)
- * @param {jQuery} $button - jQuery button element
- * @param {string} kdSettle - Kode settlement
- */
-function markButtonAsProcessing($button, kdSettle) {
-    $button.prop('disabled', true)
-           .removeClass('btn-processing btn-primary')
-           .addClass('btn-secondary')
-           .html('<i class="fal fa-clock me-1"></i>Sedang Diproses');
-}
-
-/**
- * Update button state menjadi "Sudah Diproses" (setelah modal ditutup)
+ * Update button state menjadi "Sudah Diproses"
  * @param {jQuery} $button - jQuery button element
  * @param {string} kdSettle - Kode settlement
  */
@@ -118,19 +106,19 @@ function processBatchJurnal(kdSettle) {
                 showAlert('success', 'Transaksi berhasil dikirim ke Akselgate!');
                 isSuccess = true;
                 
-                // Update button menjadi "Sedang Diproses" (biru)
-                markButtonAsProcessing($batchBtn, kdSettle);
+                // Update button menjadi "Sudah Diproses"
+                markButtonAsProcessed($batchBtn, kdSettle);
                 
-                console.log('Success: Button changed to "Sedang Diproses"');
+                console.log('Success: Button changed to "Sudah Diproses"');
             } else {
-                // GAGAL: Ubah button jadi "Sedang Diproses" dulu (masih ada modal)
+                // GAGAL: Ubah button jadi "Sudah Diproses"
                 showAlert('error', `Batch process gagal: ${response.message || 'Unknown error'}`);
                 isSuccess = true; // Tandai sebagai "processed" walaupun gagal
                 
-                // Update button menjadi "Sedang Diproses" (biru)
-                markButtonAsProcessing($batchBtn, kdSettle);
+                // Update button menjadi "Sudah Diproses"
+                markButtonAsProcessed($batchBtn, kdSettle);
                 
-                console.log('Failed: Button changed to "Sedang Diproses" - error will be shown in alert');
+                console.log('Failed: Button changed to "Sudah Diproses" - error will be shown in alert');
                 
                 // Reload datatable untuk menampilkan alert danger dengan error message
                 reloadDatatableForError();
@@ -193,7 +181,7 @@ function processBatchJurnal(kdSettle) {
             showAlert('error', errorMessage);
             
             // Button sudah diubah jadi "Sudah Diproses" di setTimeout cleanup di atas
-            // Tidak perlu markButtonAsProcessing lagi
+            // Tidak perlu panggil lagi
             
             console.log('Network/HTTP error: Button akan diubah jadi "Sudah Diproses" setelah modal ditutup');
             
@@ -204,16 +192,9 @@ function processBatchJurnal(kdSettle) {
             // Clear safety timeout
             clearTimeout(safetyTimeoutId);
             
-            // Simpan reference untuk diubah saat modal ditutup
-            window.currentProcessedButton = { $button: $batchBtn, kdSettle: kdSettle };
-            
             // Hide modal and remove warning
             hideBatchProgressModal();
             setBeforeUnloadWarning(false);
-            
-            console.log('Complete callback - isSuccess:', isSuccess);
-            
-            // Button akan diubah jadi "Sudah Diproses" saat modal ditutup (di event listener)
             
             console.log('Batch process complete');
         }
@@ -232,19 +213,6 @@ function showBatchProgressModal(kdSettle) {
 // Function untuk menyembunyikan modal progress batch
 function hideBatchProgressModal() {
     const $modal = $('#batchProgressModal');
-    
-    // Event listener saat modal benar-benar tertutup
-    $modal.one('hidden.bs.modal', function() {
-        // Ubah button jadi "Sudah Diproses" setelah modal ditutup
-        if (window.currentProcessedButton) {
-            const { $button, kdSettle } = window.currentProcessedButton;
-            markButtonAsProcessed($button, kdSettle);
-            console.log('Modal closed - Button changed to "Sudah Diproses"');
-            
-            // Cleanup reference
-            delete window.currentProcessedButton;
-        }
-    });
     
     // Hide modal
     $modal.modal('hide');
