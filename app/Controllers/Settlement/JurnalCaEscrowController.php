@@ -18,12 +18,14 @@ class JurnalCaEscrowController extends BaseController
     protected $prosesModel;
     protected $akselgateService;
     protected $settlementMessageModel;
+    protected $akselgateLogModel;
 
     public function __construct()
     {
         $this->prosesModel = new ProsesModel();
         $this->akselgateService = new AkselgateService();
         $this->settlementMessageModel = new SettlementMessageModel();
+        $this->akselgateLogModel = new AkselgateTransactionLog();
     }
 
     /**
@@ -323,6 +325,7 @@ class JurnalCaEscrowController extends BaseController
 
     /**
      * Get error messages dari t_akselgate_transaction_log untuk kd_settle yang gagal
+     * Hanya ambil dari attempt terbaru (is_latest = 1)
      * 
      * @param array $kdSettleList Array of kd_settle
      * @return array Map of kd_settle => error_message
@@ -334,26 +337,19 @@ class JurnalCaEscrowController extends BaseController
         }
         
         try {
-            $db = \Config\Database::connect();
-            
-            // Query untuk ambil response_message dari transaksi yang gagal (status_code_res tidak dimulai dengan '00')
-            $builder = $db->table('t_akselgate_transaction_log');
-            $builder->select('kd_settle, response_message, status_code_res');
-            $builder->whereIn('kd_settle', $kdSettleList);
-            $builder->where('transaction_type', AkselgateTransactionLog::TYPE_CA_ESCROW);
-            $builder->where('is_success', 0); // Hanya ambil yang gagal
-            $builder->orderBy('id', 'DESC'); // Ambil yang terbaru
-            
-            $results = $builder->get()->getResultArray();
+            // Query menggunakan model CI4 - lebih clean dan best practice
+            $results = $this->akselgateLogModel->select('kd_settle, response_message, status_code_res, attempt_number')
+                ->whereIn('kd_settle', $kdSettleList)
+                ->where('transaction_type', AkselgateTransactionLog::TYPE_CA_ESCROW)
+                ->where('is_latest', 1) // PENTING: Hanya ambil attempt terbaru
+                ->where('is_success', 0) // Hanya ambil yang gagal
+                ->findAll();
             
             // Map kd_settle => error_message
             $errorMap = [];
             foreach ($results as $result) {
                 $kdSettle = $result['kd_settle'];
-                // Hanya simpan jika belum ada (karena sudah diurutkan DESC, yang pertama adalah terbaru)
-                if (!isset($errorMap[$kdSettle])) {
-                    $errorMap[$kdSettle] = $result['response_message'] ?? 'Error: ' . ($result['status_code_res'] ?? 'Unknown');
-                }
+                $errorMap[$kdSettle] = $result['response_message'] ?? 'Error: ' . ($result['status_code_res'] ?? 'Unknown');
             }
             
             return $errorMap;
