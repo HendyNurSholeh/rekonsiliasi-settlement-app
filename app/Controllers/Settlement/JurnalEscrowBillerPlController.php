@@ -190,83 +190,38 @@ class JurnalEscrowBillerPlController extends BaseController
      */
     private function processEscrowBillerData(array $rawData): array
     {
-        $grouped = [];
-        
         // Get error messages from transaction log untuk semua kd_settle
         $kdSettleList = array_unique(array_column($rawData, 'r_KD_SETTLE'));
-        $errorMessages = $this->getErrorMessagesForKdSettle($kdSettleList);
+        $errorMessages = $this->dataTableService->getErrorMessages(
+            $this->akselgateLogModel,
+            $kdSettleList,
+            AkselgateTransactionLog::TYPE_ESCROW_BILLER_PL
+        );
         
-        foreach ($rawData as $row) {
-            $kdSettle = $row['r_KD_SETTLE'] ?? '';
-            
-            // Create parent row if not exists
-            if (!isset($grouped[$kdSettle])) {
-                $grouped[$kdSettle] = [
-                    'r_KD_SETTLE' => $row['r_KD_SETTLE'] ?? '',
-                    'r_NAMA_PRODUK' => $row['r_NAMA_PRODUK'] ?? '',
-                    'child_rows' => []
-                ];
-            }
-            
-            // Add child row data (d_ fields)
-            if (!empty($row['d_NO_REF'])) {
-                $childRow = [
-                    'd_STATUS_KR_ESCROW' => $row['d_STATUS_KR_ESCROW'] ?? '',
-                    'd_NO_REF' => $row['d_NO_REF'] ?? '',
-                    'd_DEBIT_ACCOUNT' => $row['d_DEBIT_ACCOUNT'] ?? '',
-                    'd_DEBIT_NAME' => $row['d_DEBIT_NAME'] ?? '',
-                    'd_CREDIT_ACCOUNT' => $row['d_CREDIT_ACCOUNT'] ?? '',
-                    'd_CREDIT_NAME' => $row['d_CREDIT_NAME'] ?? '',
-                    'd_AMOUNT' => $row['d_AMOUNT'] ?? '0',
-                    'd_CODE_RES' => $row['d_CODE_RES'] ?? '',
-                    'd_CORE_REF' => $row['d_CORE_REF'] ?? '',
-                    'd_CORE_DATETIME' => $row['d_CORE_DATETIME'] ?? '',
-                    'd_ERROR_MESSAGE' => $errorMessages[$kdSettle] ?? '',
-                ];
-                
-                $grouped[$kdSettle]['child_rows'][] = $childRow;
-            }
-        }
+        // Define parent and child fields for Escrow Biller PL
+        // Parent hanya punya 2 fields (simplified dari CA Escrow)
+        $parentFields = [];
         
-        // Convert to indexed array
-        return array_values($grouped);
-    }
-
-    /**
-     * Get error messages dari t_akselgate_transaction_log untuk kd_settle yang gagal
-     * Hanya ambil dari attempt terbaru (is_latest = 1)
-     * 
-     * @param array $kdSettleList Array of kd_settle
-     * @return array Map of kd_settle => error_message
-     */
-    private function getErrorMessagesForKdSettle(array $kdSettleList): array
-    {
-        if (empty($kdSettleList)) {
-            return [];
-        }
+        $childFields = [
+            'd_STATUS_KR_ESCROW', // Unique field untuk Escrow Biller PL
+            'd_NO_REF',
+            'd_DEBIT_ACCOUNT',
+            'd_DEBIT_NAME',
+            'd_CREDIT_ACCOUNT',
+            'd_CREDIT_NAME',
+            'd_AMOUNT',
+            'd_CODE_RES',
+            'd_CORE_REF',
+            'd_CORE_DATETIME'
+        ];
         
-        try {
-            // Query menggunakan model CI4 - lebih clean dan best practice
-            $results = $this->akselgateLogModel->select('kd_settle, response_message, status_code_res, attempt_number')
-                ->whereIn('kd_settle', $kdSettleList)
-                ->where('transaction_type', AkselgateTransactionLog::TYPE_ESCROW_BILLER_PL)
-                ->where('is_latest', 1) // PENTING: Hanya ambil attempt terbaru
-                ->where('is_success', 0) // Hanya ambil yang gagal
-                ->findAll();
-            
-            // Map kd_settle => error_message
-            $errorMap = [];
-            foreach ($results as $result) {
-                $kdSettle = $result['kd_settle'];
-                $errorMap[$kdSettle] = $result['response_message'] ?? 'Error: ' . ($result['status_code_res'] ?? 'Unknown');
-            }
-            
-            return $errorMap;
-            
-        } catch (\Exception $e) {
-            log_message('error', 'Error fetching error messages: ' . $e->getMessage());
-            return [];
-        }
+        // Use service to process parent-child data
+        return $this->dataTableService->processParentChildData(
+            $rawData,
+            $parentFields,
+            $childFields,
+            $errorMessages
+        );
     }
 
     /**

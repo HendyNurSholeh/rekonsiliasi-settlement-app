@@ -135,4 +135,100 @@ class ParentChildDataTableService
             'data' => $data
         ];
     }
+    
+    /**
+     * Process raw data from stored procedure to create parent-child structure
+     * Group rows by r_KD_SETTLE and create child rows for detail data
+     * 
+     * @param array $rawData Raw data from stored procedure
+     * @param array $parentFields List of parent field names to extract (e.g., ['r_AMOUNT_ESCROW', 'r_TOTAL_JURNAL'])
+     * @param array $childFields List of child field names to extract (e.g., ['d_NO_REF', 'd_DEBIT_ACCOUNT'])
+     * @param array $errorMessages Map of kd_settle => error_message
+     * @return array Grouped data with parent-child structure
+     */
+    public function processParentChildData(
+        array $rawData,
+        array $parentFields,
+        array $childFields,
+        array $errorMessages = []
+    ): array {
+        $grouped = [];
+        
+        foreach ($rawData as $row) {
+            $kdSettle = $row['r_KD_SETTLE'] ?? '';
+            
+            // Create parent row if not exists
+            if (!isset($grouped[$kdSettle])) {
+                // Always include r_KD_SETTLE and r_NAMA_PRODUK
+                $parentRow = [
+                    'r_KD_SETTLE' => $row['r_KD_SETTLE'] ?? '',
+                    'r_NAMA_PRODUK' => $row['r_NAMA_PRODUK'] ?? '',
+                ];
+                
+                // Add additional parent fields
+                foreach ($parentFields as $field) {
+                    $parentRow[$field] = $row[$field] ?? '0';
+                }
+                
+                $parentRow['child_rows'] = [];
+                $grouped[$kdSettle] = $parentRow;
+            }
+            
+            // Add child row data (d_ fields)
+            if (!empty($row['d_NO_REF'])) {
+                $childRow = [];
+                
+                foreach ($childFields as $field) {
+                    $childRow[$field] = $row[$field] ?? '';
+                }
+                
+                // Always add error message if exists
+                $childRow['d_ERROR_MESSAGE'] = $errorMessages[$kdSettle] ?? '';
+                
+                $grouped[$kdSettle]['child_rows'][] = $childRow;
+            }
+        }
+        
+        // Convert to indexed array
+        return array_values($grouped);
+    }
+    
+    /**
+     * Get error messages dari t_akselgate_transaction_log untuk kd_settle yang gagal
+     * Hanya ambil dari attempt terbaru (is_latest = 1)
+     * 
+     * @param \App\Models\ApiGateway\AkselgateTransactionLog $logModel Instance of log model
+     * @param array $kdSettleList Array of kd_settle
+     * @param string $transactionType Transaction type (CA_ESCROW atau ESCROW_BILLER_PL)
+     * @return array Map of kd_settle => error_message
+     */
+    public function getErrorMessages($logModel, array $kdSettleList, string $transactionType): array
+    {
+        if (empty($kdSettleList)) {
+            return [];
+        }
+        
+        try {
+            // Query menggunakan model CI4
+            $results = $logModel->select('kd_settle, response_message, status_code_res, attempt_number')
+                ->whereIn('kd_settle', $kdSettleList)
+                ->where('transaction_type', $transactionType)
+                ->where('is_latest', 1) // PENTING: Hanya ambil attempt terbaru
+                ->where('is_success', 0) // Hanya ambil yang gagal
+                ->findAll();
+            
+            // Map kd_settle => error_message
+            $errorMap = [];
+            foreach ($results as $result) {
+                $kdSettle = $result['kd_settle'];
+                $errorMap[$kdSettle] = $result['response_message'] ?? 'Error: ' . ($result['status_code_res'] ?? 'Unknown');
+            }
+            
+            return $errorMap;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'ParentChildDataTableService: Error fetching error messages: ' . $e->getMessage());
+            return [];
+        }
+    }
 }
