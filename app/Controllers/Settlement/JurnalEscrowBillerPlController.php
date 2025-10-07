@@ -6,16 +6,29 @@ use App\Controllers\BaseController;
 use App\Libraries\EventLogEnum;
 use App\Libraries\LogEnum;
 use App\Models\ProsesModel;
+use App\Models\ApiGateway\AkselgateTransactionLog;
+use App\Models\Settlement\SettlementMessageModel;
+use App\Services\ApiGateway\AkselgateService;
+use App\Services\ParentChildDataTableService;
 use App\Traits\HasLogActivity;
 
 class JurnalEscrowBillerPlController extends BaseController
 {
     use HasLogActivity;
+    
     protected $prosesModel;
+    protected $akselgateService;
+    protected $settlementMessageModel;
+    protected $akselgateLogModel;
+    protected $dataTableService;
 
     public function __construct()
     {
         $this->prosesModel = new ProsesModel();
+        $this->akselgateService = new AkselgateService();
+        $this->settlementMessageModel = new SettlementMessageModel();
+        $this->akselgateLogModel = new AkselgateTransactionLog();
+        $this->dataTableService = new ParentChildDataTableService();
     }
 
     /**
@@ -47,28 +60,11 @@ class JurnalEscrowBillerPlController extends BaseController
      */
     public function datatable()
     {
-        // Get parameters from both GET and POST to handle DataTables requests
+        // Get tanggal parameter
         $tanggalData = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
         
         // Debug log
         log_message('info', 'Jurnal Escrow to Biller PL DataTable parameters - Tanggal: ' . $tanggalData);
-        
-        // DataTables parameters
-        $draw = $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1;
-        $start = $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0;
-        $length = $this->request->getGet('length') ?? $this->request->getPost('length') ?? 15;
-        
-        // Debug log parameters
-        log_message('info', 'DataTable Parameters - Draw: ' . $draw . ', Start: ' . $start . ', Length: ' . $length);
-        
-        // Handle search parameter
-        $searchArray = $this->request->getGet('search') ?? $this->request->getPost('search') ?? [];
-        $searchValue = isset($searchArray['value']) ? $searchArray['value'] : '';
-        
-        // Handle order parameter
-        $orderArray = $this->request->getGet('order') ?? $this->request->getPost('order') ?? [];
-        $orderColumn = isset($orderArray[0]['column']) ? $orderArray[0]['column'] : 0;
-        $orderDir = isset($orderArray[0]['dir']) ? $orderArray[0]['dir'] : 'asc';
 
         try {
             $db = \Config\Database::connect();
@@ -86,85 +82,49 @@ class JurnalEscrowBillerPlController extends BaseController
             // Process and group data by r_KD_SETTLE to create parent-child structure
             $processedData = $this->processEscrowBillerData($rawData);
             
-            // Apply search filter if provided
-            $filteredData = $processedData;
-            if (!empty($searchValue)) {
-                $filteredData = array_filter($processedData, function($row) use ($searchValue) {
-                    $searchLower = strtolower($searchValue);
-                    
-                    // Search in parent row data - HANYA kode settle dan nama produk
-                    $parentMatch = strpos(strtolower($row['r_KD_SETTLE'] ?? ''), $searchLower) !== false ||
-                                  strpos(strtolower($row['r_NAMA_PRODUK'] ?? ''), $searchLower) !== false;
-                    
-                    // Search in child rows data
-                    $childMatch = false;
-                    if (isset($row['child_rows'])) {
-                        foreach ($row['child_rows'] as $child) {
-                            if (strpos(strtolower($child['d_STATUS_KR_ESCROW'] ?? ''), $searchLower) !== false ||
-                                strpos(strtolower($child['d_NO_REF'] ?? ''), $searchLower) !== false ||
-                                strpos(strtolower($child['d_DEBIT_ACCOUNT'] ?? ''), $searchLower) !== false ||
-                                strpos(strtolower($child['d_CREDIT_ACCOUNT'] ?? ''), $searchLower) !== false ||
-                                strpos(strtolower($child['d_CODE_RES'] ?? ''), $searchLower) !== false) {
-                                $childMatch = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    return $parentMatch || $childMatch;
-                });
-                $filteredData = array_values($filteredData); // Reset array keys
-            }
+            // Prepare DataTables request parameters
+            $dtRequest = [
+                'draw' => $this->request->getGet('draw') ?? $this->request->getPost('draw') ?? 1,
+                'start' => $this->request->getGet('start') ?? $this->request->getPost('start') ?? 0,
+                'length' => $this->request->getGet('length') ?? $this->request->getPost('length') ?? 15,
+                'search' => $this->request->getGet('search') ?? $this->request->getPost('search') ?? ['value' => ''],
+                'order' => $this->request->getGet('order') ?? $this->request->getPost('order') ?? [['column' => 0, 'dir' => 'asc']],
+                'columns' => $this->request->getGet('columns') ?? $this->request->getPost('columns') ?? []
+            ];
             
-            // Apply sorting on parent level data
-            if ($orderColumn > 0 && $orderColumn <= 6) {
-                $sortColumns = [
-                    1 => 'r_KD_SETTLE',
-                    2 => 'r_NAMA_PRODUK', 
-                    3 => 'd_STATUS_KR_ESCROW',
-                    4 => 'r_TOTAL_AMOUNT',
-                    5 => 'r_TOTAL_JURNAL',
-                    6 => 'r_JURNAL_STATUS'
-                ];
-                
-                if (isset($sortColumns[$orderColumn])) {
-                    $sortKey = $sortColumns[$orderColumn];
-                    usort($filteredData, function($a, $b) use ($sortKey, $orderDir) {
-                        $valA = $a[$sortKey] ?? '';
-                        $valB = $b[$sortKey] ?? '';
-                        
-                        if (is_numeric($valA) && is_numeric($valB)) {
-                            $result = $valA <=> $valB;
-                        } else {
-                            $result = strcasecmp($valA, $valB);
-                        }
-                        
-                        return $orderDir === 'desc' ? -$result : $result;
-                    });
-                }
-            }
+            // Define searchable fields (bisa search di parent dan child)
+            $searchFields = ['r_KD_SETTLE', 'r_NAMA_PRODUK'];
             
-            $totalRecords = count($processedData);
-            $filteredRecords = count($filteredData);
+            // Use service to handle filtering, sorting, and pagination
+            $dtResponse = $this->dataTableService->handleRequest($dtRequest, $processedData, $searchFields);
             
-            // Debug log untuk troubleshooting pagination
-            log_message('info', 'Pagination Debug - Total Parent Rows: ' . $totalRecords . ', Filtered: ' . $filteredRecords . ', Start: ' . $start . ', Length: ' . $length);
-            
-            // Apply pagination pada parent level saja
-            $pagedData = array_slice($filteredData, $start, $length);
-            
-            // Format data for DataTables - kirim parent dan child rows sesuai database
+            // Format data dengan parent-child structure
             $formattedData = [];
-            foreach ($pagedData as $parentRow) {
+            foreach ($dtResponse['data'] as $parentRow) {
                 
-                // Add parent row - HANYA kode settle dan nama produk
+                // Check if already processed untuk disable button
+                $processStatus = $this->akselgateService->isAlreadyProcessed(
+                    $parentRow['r_KD_SETTLE'], 
+                    AkselgateTransactionLog::TYPE_ESCROW_BILLER_PL
+                );
+                
+                // Determine button state (sama seperti JurnalCaEscrow)
+                $isProcessed = $processStatus['processed'] ?? false;
+                $isSuccess = $processStatus['is_success'] ?? null;
+                $attemptNumber = $processStatus['attempt_number'] ?? 0;
+                $responseMessage = $processStatus['response_message'] ?? '';
+                
+                // Add parent row
                 $formattedParent = [
                     'r_KD_SETTLE' => $parentRow['r_KD_SETTLE'] ?? '',
                     'r_NAMA_PRODUK' => $parentRow['r_NAMA_PRODUK'] ?? '',
                     'child_count' => count($parentRow['child_rows']),
                     'is_parent' => true,
                     'has_children' => count($parentRow['child_rows']) > 0,
-                    // Child fields kosong untuk parent
+                    'is_processed' => $isProcessed,
+                    'is_success' => $isSuccess,
+                    'attempt_number' => $attemptNumber,
+                    'response_message' => $responseMessage,
                     'd_STATUS_KR_ESCROW' => '',
                     'd_NO_REF' => '',
                     'd_DEBIT_ACCOUNT' => '',
@@ -179,7 +139,7 @@ class JurnalEscrowBillerPlController extends BaseController
                 
                 $formattedData[] = $formattedParent;
                 
-                // Add child rows untuk dikirim ke frontend (untuk disimpan di childDataMap)
+                // Add child rows
                 foreach ($parentRow['child_rows'] as $childRow) {
                     $formattedChild = [
                         'r_KD_SETTLE' => '',
@@ -188,7 +148,6 @@ class JurnalEscrowBillerPlController extends BaseController
                         'is_parent' => false,
                         'has_children' => false,
                         'parent_kd_settle' => $parentRow['r_KD_SETTLE'],
-                        // Child data sesuai database
                         'd_STATUS_KR_ESCROW' => $childRow['d_STATUS_KR_ESCROW'] ?? '',
                         'd_NO_REF' => $childRow['d_NO_REF'] ?? '',
                         'd_DEBIT_ACCOUNT' => $childRow['d_DEBIT_ACCOUNT'] ?? '',
@@ -199,37 +158,23 @@ class JurnalEscrowBillerPlController extends BaseController
                         'd_CODE_RES' => $childRow['d_CODE_RES'] ?? '',
                         'd_CORE_REF' => $childRow['d_CORE_REF'] ?? '',
                         'd_CORE_DATETIME' => $childRow['d_CORE_DATETIME'] ?? '',
+                        'd_ERROR_MESSAGE' => $childRow['d_ERROR_MESSAGE'] ?? '',
                     ];
                     
                     $formattedData[] = $formattedChild;
                 }
             }
             
-            return $this->response->setJSON([
-                'draw' => intval($draw),
-                'recordsTotal' => intval($totalRecords), // Total parent rows tanpa filter
-                'recordsFiltered' => intval($filteredRecords), // Parent rows setelah filter
-                'data' => $formattedData, // Parent + child data
-                'debug' => [
-                    'rawDataCount' => count($rawData),
-                    'processedParentCount' => $totalRecords,
-                    'filteredParentCount' => $filteredRecords,
-                    'pagedParentCount' => count($pagedData),
-                    'formattedDataCount' => count($formattedData),
-                    'pagination' => [
-                        'start' => $start,
-                        'length' => $length,
-                        'currentPage' => floor($start / $length) + 1,
-                        'totalPages' => ceil($filteredRecords / $length)
-                    ]
-                ],
-                'csrf_token' => csrf_hash()
-            ]);
+            // Return DataTables response with CSRF token
+            $dtResponse['data'] = $formattedData;
+            $dtResponse['csrf_token'] = csrf_hash();
+            
+            return $this->response->setJSON($dtResponse);
             
         } catch (\Exception $e) {
             log_message('error', 'Error in Jurnal Escrow to Biller PL DataTable: ' . $e->getMessage());
             return $this->response->setJSON([
-                'draw' => intval($draw),
+                'draw' => intval($dtRequest['draw'] ?? 1),
                 'recordsTotal' => 0,
                 'recordsFiltered' => 0,
                 'data' => [],
@@ -247,10 +192,14 @@ class JurnalEscrowBillerPlController extends BaseController
     {
         $grouped = [];
         
+        // Get error messages from transaction log untuk semua kd_settle
+        $kdSettleList = array_unique(array_column($rawData, 'r_KD_SETTLE'));
+        $errorMessages = $this->getErrorMessagesForKdSettle($kdSettleList);
+        
         foreach ($rawData as $row) {
             $kdSettle = $row['r_KD_SETTLE'] ?? '';
             
-            // Create parent row if not exists - HANYA r_KD_SETTLE dan r_NAMA_PRODUK (sesuai database)
+            // Create parent row if not exists
             if (!isset($grouped[$kdSettle])) {
                 $grouped[$kdSettle] = [
                     'r_KD_SETTLE' => $row['r_KD_SETTLE'] ?? '',
@@ -259,7 +208,7 @@ class JurnalEscrowBillerPlController extends BaseController
                 ];
             }
             
-            // Add child row data (d_ fields) - sesuai database, hanya jika ada d_NO_REF
+            // Add child row data (d_ fields)
             if (!empty($row['d_NO_REF'])) {
                 $childRow = [
                     'd_STATUS_KR_ESCROW' => $row['d_STATUS_KR_ESCROW'] ?? '',
@@ -272,53 +221,162 @@ class JurnalEscrowBillerPlController extends BaseController
                     'd_CODE_RES' => $row['d_CODE_RES'] ?? '',
                     'd_CORE_REF' => $row['d_CORE_REF'] ?? '',
                     'd_CORE_DATETIME' => $row['d_CORE_DATETIME'] ?? '',
+                    'd_ERROR_MESSAGE' => $errorMessages[$kdSettle] ?? '',
                 ];
                 
                 $grouped[$kdSettle]['child_rows'][] = $childRow;
             }
         }
         
-        // Convert to indexed array - TIDAK ADA KALKULASI TAMBAHAN
+        // Convert to indexed array
         return array_values($grouped);
     }
 
     /**
-     * Get status transaksi untuk monitoring
+     * Get error messages dari t_akselgate_transaction_log untuk kd_settle yang gagal
+     * Hanya ambil dari attempt terbaru (is_latest = 1)
+     * 
+     * @param array $kdSettleList Array of kd_settle
+     * @return array Map of kd_settle => error_message
      */
-    public function status()
+    private function getErrorMessagesForKdSettle(array $kdSettleList): array
+    {
+        if (empty($kdSettleList)) {
+            return [];
+        }
+        
+        try {
+            // Query menggunakan model CI4 - lebih clean dan best practice
+            $results = $this->akselgateLogModel->select('kd_settle, response_message, status_code_res, attempt_number')
+                ->whereIn('kd_settle', $kdSettleList)
+                ->where('transaction_type', AkselgateTransactionLog::TYPE_ESCROW_BILLER_PL)
+                ->where('is_latest', 1) // PENTING: Hanya ambil attempt terbaru
+                ->where('is_success', 0) // Hanya ambil yang gagal
+                ->findAll();
+            
+            // Map kd_settle => error_message
+            $errorMap = [];
+            foreach ($results as $result) {
+                $kdSettle = $result['kd_settle'];
+                $errorMap[$kdSettle] = $result['response_message'] ?? 'Error: ' . ($result['status_code_res'] ?? 'Unknown');
+            }
+            
+            return $errorMap;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error fetching error messages: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Proses jurnal Escrow to Biller PL menggunakan Akselgate batch processing
+     */
+    public function proses()
     {
         try {
-            $kdSettle = $this->request->getGet('kd_settle');
-            $noRef = $this->request->getGet('no_ref');
-
-            if (empty($kdSettle) || empty($noRef)) {
+            // Validasi CSRF token
+            if (!$this->validate(['csrf_test_name' => 'required'])) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Parameter tidak lengkap'
+                    'message' => 'Token CSRF tidak valid'
+                ])->setStatusCode(403);
+            }
+
+            // Ambil data dari request
+            $kdSettle = $this->request->getPost('kd_settle');
+            $tanggalData = $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
+
+            // Cek apakah kd_settle sudah pernah diproses (prevent duplicate)
+            $duplicateCheck = $this->akselgateService->checkDuplicateProcess($kdSettle, AkselgateTransactionLog::TYPE_ESCROW_BILLER_PL);
+            
+            if ($duplicateCheck['exists']) {
+                log_message('warning', "Duplicate process attempt for kd_settle: {$kdSettle}, previous request_id: {$duplicateCheck['request_id']}");
+                
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Kode settle ' . $kdSettle . ' sudah berhasil diproses sebelumnya pada attempt #' . $duplicateCheck['attempt_number'],
+                    'error_code' => 'DUPLICATE_PROCESS',
+                    'previous_data' => [
+                        'attempt_number' => $duplicateCheck['attempt_number'],
+                        'status_code_res' => $duplicateCheck['status_code_res'],
+                        'is_success' => $duplicateCheck['is_success'],
+                        'request_id' => $duplicateCheck['request_id'],
+                        'sent_by' => $duplicateCheck['sent_by'],
+                        'sent_at' => $duplicateCheck['sent_at']
+                    ],
+                    'csrf_token' => csrf_hash()
                 ]);
             }
 
-            // For now, return a basic status response
-            // This can be enhanced later when process functionality is implemented
-            return $this->response->setJSON([
-                'success' => true,
-                'data' => [
-                    'kd_settle' => $kdSettle,
-                    'no_ref' => $noRef,
-                    'status' => 'Monitoring ready',
-                    'message' => 'Status monitoring untuk Escrow to Biller PL'
-                ],
-                'csrf_token' => csrf_hash()
+            // Ambil data transaksi dari database
+            $transaksiData = $this->getTransaksiByKdSettle($kdSettle, $tanggalData);
+
+            // Process transaksi menggunakan service (validasi, format, send, dan logging semua di service)
+            $result = $this->akselgateService->processBatchTransaction(
+                $kdSettle, 
+                $transaksiData, 
+                AkselgateTransactionLog::TYPE_ESCROW_BILLER_PL
+            );
+            
+            // Handle result (logging sudah di-handle oleh service)
+            if (!$result['success']) {
+                log_message('error', 'Batch transaction failed for kd_settle: ' . $kdSettle . ', attempt: ' . ($result['attempt_number'] ?? 'N/A') . ', error: ' . $result['message']);
+                return $this->response->setJSON(array_merge($result, ['csrf_token' => csrf_hash()]));
+            }
+            
+            log_message('info', 'Batch transaction successful for kd_settle: ' . $kdSettle . ', attempt: ' . $result['attempt_number'] . ', request_id: ' . $result['request_id'] . ', total: ' . $result['total_transaksi']);
+            
+            return $this->response->setJSON(array_merge($result, ['csrf_token' => csrf_hash()]));
+            
+        } catch (\Exception $e) {
+            log_message('error', 'JurnalEscrowBillerPlController::proses() error: ' . $e->getMessage(), [
+                'kd_settle' => $this->request->getPost('kd_settle'),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
 
-        } catch (\Exception $e) {
-            log_message('error', 'JurnalEscrowBillerPlController::status() error: ' . $e->getMessage());
-            
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Gagal mengambil status transaksi',
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
                 'csrf_token' => csrf_hash()
-            ]);
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Ambil data transaksi berdasarkan kode settle
+     */
+    private function getTransaksiByKdSettle($kdSettle, $tanggalData)
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            // Query untuk ambil detail transaksi per kode settle
+            $query = "CALL p_get_jurnal_escrow_to_biller_pl(?)";
+            $result = $db->query($query, [$tanggalData]);
+            
+            if (!$result) {
+                throw new \Exception('Failed to get transaction data');
+            }
+            
+            $allData = $result->getResultArray();
+            
+            // Filter data hanya untuk kode settle yang diminta dan yang belum sukses
+            $filteredData = [];
+            foreach ($allData as $row) {
+                if ($row['r_KD_SETTLE'] === $kdSettle && 
+                    !empty($row['d_NO_REF']) && 
+                    (!isset($row['d_CODE_RES']) || !str_starts_with($row['d_CODE_RES'], '00'))) {
+                    $filteredData[] = $row;
+                }
+            }
+            
+            return $filteredData;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting transaction data: ' . $e->getMessage());
+            return [];
         }
     }
 }

@@ -27,7 +27,7 @@
                                 <th width="5%">Detail</th>
                                 <th width="40%">Kode Settle</th>
                                 <th width="50%">Nama Produk</th>
-                                <th width="5%">Action</th>
+                                <th width="5%" class="text-center">Summary</th>
                             </tr>
                         </thead>
                         <tbody>

@@ -17,6 +17,9 @@
 
     <!-- Data Table -->
     @include('settlement.jurnal_escrow_biller_pl._data_table')
+
+    <!-- Batch Progress Modal -->
+    @include('settlement.jurnal_escrow_biller_pl._batch_progress_modal')
 @endsection
 
 @push('scripts')
@@ -27,6 +30,8 @@
         csrfToken: "{{ csrf_token() }}"
     };
     </script>
-    <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/index.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/datatable.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/batch-process.js') }}"></script>
 @endpush
 
