@@ -64,8 +64,9 @@
                             $unit_kerja = in_array('view unit kerja', $permissions);
                             $permission = in_array('view permission', $permissions);
                             $role = in_array('view role', $permissions);
-                            $activity = in_array('view activity', $permissions);
-                            $error = in_array('view error', $permissions);
+                            $activity = in_array('view log activity', $permissions);
+                            $error = in_array('view log error', $permissions);
+                            $log_akselgate = in_array('view log akselgate', $permissions ?? []) ?? true;
 
                             // Persiapan permissions
                             $rekon_pilih_tanggal = in_array('view rekon pilih tanggal', $permissions ?? []) ?? true;
@@ -99,7 +100,9 @@
                             $show_settlement = $settlement_buat_jurnal || $settlement_approve_jurnal || $settlement_jurnal_ca_escrow || $settlement_jurnal_escrow_biller;
                             $show_rekon_bifast = $rekon_bifast_rekap || $rekon_bifast_dispute;
                             $show_user_management = $user || $unit_kerja || $permission || $role;
-                            $show_log = $activity || $error;
+                            
+                            // Log permissions
+                            $show_log = $activity || $error || $log_akselgate;
                         @endphp
                         <li class="@if ($route == 'dashboard') active open @endif">
                             <a href="{{ site_url('dashboard') }}">
@@ -329,7 +332,7 @@
                         @endif
 
                         @if ($show_log)
-                            <li class="@if ($route == 'log/activity' || $route == 'log/error') active open @endif">
+                            <li class="@if ($route == 'log/activity' || $route == 'log/error' || $route == 'log/akselgate') active open @endif">
                                 <a href="javascript:void(0);" title="Log" data-filter-tags="log">
                                     <i class="fal fa-shield-alt"></i>
                                     <span class="nav-link-text text-left">Log</span>
@@ -348,6 +351,13 @@
                                             <a href="{{ site_url('log/error') }}">
                                               
                                                 <span class="nav-link-text text-left">Error</span>
+                                            </a>
+                                        </li>
+                                    @endif
+                                    @if ($log_akselgate)
+                                        <li class="@if ($route == 'log/akselgate') active open @endif">
+                                            <a href="{{ site_url('log/akselgate') }}">
+                                                <span class="nav-link-text text-left">Akselgate</span>
                                             </a>
                                         </li>
                                     @endif

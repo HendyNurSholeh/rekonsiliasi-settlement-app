@@ -83,3 +83,12 @@ $routes->get('/log/activity', 'Log\LogActivityController::index', ['as' => 'log.
 // Log Activity API Routes
 $routes->get('/dataTables/logActivityAPI', 'Log\LogActivityController::dataTables');
 $routes->get('/show/logActivityAPI/(:num)', 'Log\LogActivityController::showLog/$1');
+
+// ============================================================================
+// AKSELGATE LOG VIEWER
+// ============================================================================
+// Routes untuk melihat log transaksi Akselgate API
+
+$routes->get('/log/akselgate', 'Log\AkselgateLogController::index', ['as' => 'log.akselgate']);
+$routes->post('/log/akselgate/datatable', 'Log\AkselgateLogController::datatable');
+$routes->get('/log/akselgate/detail/(:num)', 'Log\AkselgateLogController::detail/$1');
