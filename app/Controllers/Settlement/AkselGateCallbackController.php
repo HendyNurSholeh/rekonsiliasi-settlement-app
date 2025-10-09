@@ -4,30 +4,46 @@ namespace App\Controllers\Settlement;
 
 use App\Controllers\BaseController;
 use App\Models\Settlement\SettlementMessageModel;
+use App\Models\ApiGateway\AkselgateFwdCallbackLog;
 
 /**
  * AKSEL Gateway Callback Controller
  * 
- * Controller khusus untuk handle callback dari AKSEL Gateway
+ * Controller khusus untuk handle callback dari AKSEL FWD (Forward) Gateway
+ * 
+ * Flow Callback:
+ * 1. Aplikasi kirim batch transaksi ke Aksel Gateway
+ * 2. Aksel FWD proses transaksi satu-per-satu dengan delay
+ * 3. Setiap transaksi selesai diproses, Aksel FWD kirim callback ke endpoint ini
+ * 4. Callback disimpan ke t_akselgatefwd_callback_log (audit trail)
+ * 5. Data callback di-update ke t_settle_message (business data)
+ * 
  * Terpisah dari JurnalCaEscrowController untuk menjaga kode lebih clean dan modular
  */
 class AkselGateCallbackController extends BaseController
 {
     protected $settlementMessageModel;
+    protected $callbackLogModel;
 
     public function __construct()
     {
         $this->settlementMessageModel = new SettlementMessageModel();
+        $this->callbackLogModel = new AkselgateFwdCallbackLog();
     }
 
     /**
-     * Callback endpoint untuk menerima response dari API Gateway
+     * Callback endpoint untuk menerima response dari Aksel FWD Gateway
      * Endpoint ini di-exempt dari authentication dan CSRF (lihat Config\Filters.php)
      * 
      * GET Parameters:
-     * - ref: Reference Number transaksi
+     * - ref: Reference Number transaksi (REF_NUMBER dari t_settle_message)
      * - rescore: Response code dari core banking ('00' = success, lainnya = failed)
-     * - rescoreref: Core Reference Number
+     * - rescoreref: Core Reference Number (nomor referensi dari core banking)
+     * 
+     * Flow:
+     * 1. Terima callback dari Aksel FWD
+     * 2. Simpan ke t_akselgatefwd_callback_log (audit trail)
+     * 3. Update t_settle_message dengan hasil callback (business data)
      */
     public function index()
     {
@@ -37,12 +53,15 @@ class AkselGateCallbackController extends BaseController
             $rescore = $this->request->getGet('rescore') ?? null;
             $rescoreref = $this->request->getGet('rescoreref') ?? null;
             
-            log_message('info', 'Callback received from API Gateway', [
+            $ipAddress = $this->request->getIPAddress();
+            $timestamp = date('Y-m-d H:i:s');
+            
+            log_message('info', 'Callback received from Aksel FWD Gateway', [
                 'ref' => $ref,
                 'rescore' => $rescore,
                 'rescoreref' => $rescoreref,
-                'ip' => $this->request->getIPAddress(),
-                'timestamp' => date('Y-m-d H:i:s')
+                'ip' => $ipAddress,
+                'timestamp' => $timestamp
             ]);
             
             // Validasi parameter required
@@ -54,20 +73,42 @@ class AkselGateCallbackController extends BaseController
                 ]);
             }
             
-            // Simpan callback response ke t_settle_message
-            $result = $this->saveCallback($ref, $rescore, $rescoreref);
+            // Step 1: Simpan callback ke log table (audit trail)
+            $callbackLogId = $this->saveCallbackLog($ref, $rescore, $rescoreref, $ipAddress);
             
-            if ($result) {
+            if (!$callbackLogId) {
+                log_message('error', 'Failed to save callback log', ['ref' => $ref]);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to save callback log'
+                ]);
+            }
+            
+            // Step 2: Update t_settle_message dengan callback data
+            $result = $this->updateSettlementMessage($ref, $rescore, $rescoreref);
+            
+            // Step 3: Mark callback log as processed
+            if ($result['success']) {
+                $this->callbackLogModel->markAsProcessed($callbackLogId);
+                
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Callback processed successfully',
                     'ref' => $ref,
-                    'timestamp' => date('Y-m-d H:i:s')
+                    'status' => $result['status'],
+                    'timestamp' => $timestamp
                 ]);
             } else {
+                // Log error (tidak perlu simpan ke database, sudah ada di application log)
+                log_message('error', 'Failed to update t_settle_message from callback', [
+                    'ref' => $ref,
+                    'reason' => $result['message'],
+                    'callback_log_id' => $callbackLogId
+                ]);
+                
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Record not found or update failed',
+                    'message' => $result['message'],
                     'ref' => $ref
                 ]);
             }
@@ -87,15 +128,84 @@ class AkselGateCallbackController extends BaseController
     }
 
     /**
-     * Simpan callback response ke t_settle_message
+     * Simpan callback ke t_akselgatefwd_callback_log (audit trail)
+     * 
+     * @param string $ref - Reference Number (REF_NUMBER)
+     * @param string $rescore - Response code ('00' = success, lainnya = failed)
+     * @param string $rescoreref - Core Reference Number
+     * @param string $ipAddress - IP address pengirim
+     * @return int|false - ID dari record yang disimpan, atau false jika gagal
+     */
+    private function saveCallbackLog($ref, $rescore, $rescoreref, $ipAddress)
+    {
+        try {
+            // Get kd_settle from t_settle_message untuk kemudahan query
+            $settlement = $this->settlementMessageModel->where('REF_NUMBER', $ref)->first();
+            $kdSettle = $settlement ? $settlement['KD_SETTLE'] : null;
+            
+            // Tentukan status berdasarkan rescore
+            $status = ($rescore === '00') ? 'SUCCESS' : 'FAILED';
+            
+            // Prepare callback data sebagai JSON untuk audit
+            $callbackData = json_encode([
+                'ref' => $ref,
+                'rescore' => $rescore,
+                'rescoreref' => $rescoreref,
+                'received_at' => date('Y-m-d H:i:s'),
+                'ip_address' => $ipAddress
+            ]);
+            
+            // Insert ke callback log
+            $data = [
+                'ref_number' => $ref,
+                'kd_settle' => $kdSettle,
+                'res_code' => $rescore,
+                'res_coreref' => $rescoreref,
+                'status' => $status,
+                'callback_data' => $callbackData,
+                'ip_address' => $ipAddress,
+                'is_processed' => 0, // Belum diproses
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            
+            $inserted = $this->callbackLogModel->insert($data);
+            
+            if ($inserted) {
+                log_message('info', 'Callback saved to t_akselgatefwd_callback_log', [
+                    'id' => $inserted,
+                    'ref' => $ref,
+                    'status' => $status,
+                    'kd_settle' => $kdSettle
+                ]);
+                return $inserted;
+            } else {
+                log_message('error', 'Failed to insert callback log', [
+                    'ref' => $ref,
+                    'errors' => $this->callbackLogModel->errors()
+                ]);
+                return false;
+            }
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Error saving callback log: ' . $e->getMessage(), [
+                'ref' => $ref,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Update t_settle_message dengan callback data
      * Hanya UPDATE record yang sudah ada, tidak ada INSERT
      * 
      * @param string $ref - Reference Number (REF_NUMBER)
      * @param string $rescore - Response code ('00' = success, lainnya = failed)
      * @param string $rescoreref - Core Reference Number
-     * @return bool
+     * @return array - ['success' => bool, 'message' => string, 'status' => string]
      */
-    private function saveCallback($ref, $rescore, $rescoreref): bool
+    private function updateSettlementMessage($ref, $rescore, $rescoreref): array
     {
         try {
             // Cek apakah record dengan REF_NUMBER sudah ada
@@ -107,14 +217,15 @@ class AkselGateCallbackController extends BaseController
                     'rescore' => $rescore,
                     'rescoreref' => $rescoreref
                 ]);
-                return false;
+                return [
+                    'success' => false,
+                    'message' => 'REF_NUMBER not found in t_settle_message',
+                    'status' => 'NOT_FOUND'
+                ];
             }
             
             // Tentukan message berdasarkan rescore
-            $message = 'FAILED';
-            if ($rescore === '00') {
-                $message = 'SUCCESS';
-            }
+            $message = ($rescore === '00') ? 'SUCCESS' : 'FAILED';
             
             // Update existing record dengan callback data
             $updated = $this->settlementMessageModel->update($existing['ID'], [
@@ -129,27 +240,42 @@ class AkselGateCallbackController extends BaseController
                 log_message('info', 'Callback updated in t_settle_message', [
                     'id' => $existing['ID'],
                     'ref' => $ref,
+                    'kd_settle' => $existing['KD_SETTLE'],
                     'rescore' => $rescore,
                     'rescoreref' => $rescoreref,
                     'message' => $message,
                     'callback_time' => date('Y-m-d H:i:s')
                 ]);
-                return true;
+                return [
+                    'success' => true,
+                    'message' => 'Settlement message updated successfully',
+                    'status' => $message
+                ];
             } else {
                 log_message('error', 'Failed to update callback in t_settle_message', [
                     'ref' => $ref,
                     'id' => $existing['ID']
                 ]);
-                return false;
+                return [
+                    'success' => false,
+                    'message' => 'Failed to update t_settle_message',
+                    'status' => 'UPDATE_FAILED'
+                ];
             }
             
         } catch (\Exception $e) {
-            log_message('error', 'Error saving callback to t_settle_message: ' . $e->getMessage(), [
+            log_message('error', 'Error updating t_settle_message: ' . $e->getMessage(), [
                 'ref' => $ref,
                 'rescore' => $rescore,
-                'rescoreref' => $rescoreref
+                'rescoreref' => $rescoreref,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
-            throw $e;
+            return [
+                'success' => false,
+                'message' => 'Exception: ' . $e->getMessage(),
+                'status' => 'EXCEPTION'
+            ];
         }
     }
 }
