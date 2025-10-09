@@ -92,3 +92,12 @@ $routes->get('/show/logActivityAPI/(:num)', 'Log\LogActivityController::showLog/
 $routes->get('/log/akselgate', 'Log\AkselgateLogController::index', ['as' => 'log.akselgate']);
 $routes->post('/log/akselgate/datatable', 'Log\AkselgateLogController::datatable');
 $routes->get('/log/akselgate/detail/(:num)', 'Log\AkselgateLogController::detail/$1');
+
+// ============================================================================
+// AKSELGATE FWD CALLBACK LOG VIEWER
+// ============================================================================
+// Routes untuk melihat log callback dari Akselgate FWD Gateway
+
+$routes->get('/log/callback', 'Log\AkselgateFwdCallbackLogController::index', ['as' => 'log.callback']);
+$routes->post('/log/callback/datatable', 'Log\AkselgateFwdCallbackLogController::datatable');
+$routes->get('/log/callback/detail/(:num)', 'Log\AkselgateFwdCallbackLogController::detail/$1');
