@@ -347,7 +347,7 @@ function openDisputeModal(id) {
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
-                    showAlert('error', 'Session expired. Please try again.');
+                    // showAlert('error', 'Session expired. Please try again.');
                 } else {
                     showAlert('error', 'Terjadi kesalahan saat mengambil data');
                 }
@@ -408,7 +408,7 @@ function saveDispute() {
                 saveButton.prop('disabled', false).html(originalText);
                 
                 if (xhr.status === 403) {
-                    showAlert('error', 'Session expired. Please try again.');
+                    // showAlert('error', 'Session expired. Please try again.');
                 } else {
                     showAlert('error', 'Terjadi kesalahan saat menyimpan data');
                 }

@@ -282,7 +282,7 @@ function openApprovalModal(kdSettle, $btn) {
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
-                    toastr["error"]('Session expired. Please try again.');
+                    // toastr["error"]('Session expired. Please try again.');
                 } else {
                     toastr["error"]('Terjadi kesalahan saat mengambil detail jurnal');
                 }
@@ -343,7 +343,7 @@ function processApproval(action) {
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
-                    toastr["error"]('Session expired. Please try again.');
+                    // toastr["error"]('Session expired. Please try again.');
                 } else {
                     toastr["error"](`Terjadi kesalahan saat ${actionText} jurnal`);
                 }

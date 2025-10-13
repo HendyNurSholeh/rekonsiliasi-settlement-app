@@ -287,7 +287,7 @@ function openDisputeModal(id) {
             },
             error: function(xhr) {
                 if (xhr.status === 403) {
-                    showAlert('error', 'Session expired. Please try again.');
+                    // showAlert('error', 'Session expired. Please try again.');
                 } else {
                     showAlert('error', 'Terjadi kesalahan saat mengambil data');
                 }
@@ -354,7 +354,7 @@ function saveDispute() {
                          .removeClass('waves-effect waves-themed');
                 
                 if (xhr.status === 403) {
-                    showAlert('error', 'Session expired. Please try again.');
+                    // showAlert('error', 'Session expired. Please try again.');
                 } else {
                     showAlert('error', 'Terjadi kesalahan saat menyimpan data');
                 }
