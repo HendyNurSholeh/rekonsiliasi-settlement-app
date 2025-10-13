@@ -103,25 +103,29 @@ function processBatchJurnal(kdSettle) {
             }
             
             if (response.success) {
-                showAlert('success', 'Transaksi berhasil dikirim ke Akselgate!');
-                isSuccess = true;
+                // Tampilkan pesan sukses terlebih dahulu (500ms delay)
+                setTimeout(function() {
+                    showAlert('success', 'Transaksi berhasil dikirim ke Akselgate!');
+                }, 2000);
                 
-                // Update button menjadi "Sudah Diproses"
-                markButtonAsProcessed($batchBtn, kdSettle);
-                
-                console.log('Success: Button changed to "Sudah Diproses"');
+                // Ubah button menjadi "Sudah Diproses" setelah user sempat baca pesan (2.5 detik)
+                setTimeout(function() {
+                    markButtonAsProcessed($batchBtn, kdSettle);
+                    isSuccess = true;
+                }, 2500);
             } else {
-                // GAGAL: Ubah button jadi "Sudah Diproses"
-                showAlert('error', `Batch process gagal: ${response.message || 'Unknown error'}`);
-                isSuccess = true; // Tandai sebagai "processed" walaupun gagal
+                // Tampilkan pesan error terlebih dahulu (500ms delay)
+                setTimeout(function() {
+                    showAlert('error', `Batch process gagal: ${response.message || 'Unknown error'}`);
+                }, 2000);
                 
-                // Update button menjadi "Sudah Diproses"
-                markButtonAsProcessed($batchBtn, kdSettle);
-                
-                console.log('Failed: Button changed to "Sudah Diproses" - error will be shown in alert');
-                
-                // Reload datatable untuk menampilkan alert danger dengan error message
-                reloadDatatableForError();
+                // Ubah button menjadi "Sudah Diproses" setelah user sempat baca pesan (2.5 detik)
+                setTimeout(function() {
+                    markButtonAsProcessed($batchBtn, kdSettle);
+                    isSuccess = true;
+                    // Reload datatable untuk menampilkan alert danger dengan error message
+                    reloadDatatableForError();
+                }, 2500);
             }
         },
         error: function(xhr, status, error) {
@@ -192,11 +196,14 @@ function processBatchJurnal(kdSettle) {
             // Clear safety timeout
             clearTimeout(safetyTimeoutId);
             
-            // Hide modal and remove warning
-            hideBatchProgressModal();
-            setBeforeUnloadWarning(false);
-            
-            console.log('Batch process complete');
+            // Delay 3 detik sebelum hide modal agar user bisa lihat pesan
+            setTimeout(function() {
+                // Hide modal and remove warning
+                hideBatchProgressModal();
+                setBeforeUnloadWarning(false);
+                
+                console.log('Batch process complete (after 3s delay)');
+            }, 3000);
         }
     });
 }
