@@ -323,15 +323,13 @@ class AkselgateService
             }
             
             $transactionData = [
-                'core' => 'K',
-                'branchCode' => 'ID0010001',
-                'branchName' => 'KANTOR PUSAT',
+                'core' => trim($trx['d_CORE']),
+                'branchCode' => trim($trx['d_BRANCH_CODE']),
+                'branchName' => trim($trx['d_BRANCH_NAME']),
                 'debitAccount' => trim($trx['d_DEBIT_ACCOUNT']),
                 'creditAccount' => trim($trx['d_CREDIT_ACCOUNT']),
                 'amount' => $amount,
-                'description' => 'SETL ' . date('dmy') . '^' . 
-                               (trim($trx['d_DEBIT_NAME'] ?? 'SETTLEMENT') ?: 'SETTLEMENT') . '^' . 
-                               trim($trx['d_NO_REF']),
+                'description' => $trx['d_DESCRIPTION'],
                 'referenceNumber' => trim($trx['d_NO_REF']),
                 'callback_url' => base_url('aksel-gate/callback?ref=' . urlencode($trx['d_NO_REF']))
             ];
