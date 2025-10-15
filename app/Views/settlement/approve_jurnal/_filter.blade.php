@@ -18,9 +18,8 @@
                             <label for="filter_status_approve" class="form-label">Status Approval</label>
                             <select class="form-control" id="filter_status_approve" name="status_approve">
                                 <option value="">Semua Status</option>
-                                <option value="pending" @if($statusApprove === 'pending') selected @endif>Pending</option>
+                                <option value="0" @if($statusApprove === '0') selected @endif>Pending</option>
                                 <option value="1" @if($statusApprove === '1') selected @endif>Disetujui</option>
-                                <option value="9" @if($statusApprove === '9') selected @endif>Ditolak</option>
                                 <option value="-1" @if($statusApprove === '-1') selected @endif>Net Amount Beda</option>
                             </select>
                         </div>

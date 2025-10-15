@@ -98,12 +98,8 @@ class ApproveJurnalController extends BaseController
             $queryParams = [$tanggalRekon];
             
             if ($statusApprove !== '') {
-                if ($statusApprove === 'pending') {
-                    $baseQuery .= " AND (STAT_APPROVER IS NULL OR STAT_APPROVER = '')";
-                } else {
-                    $baseQuery .= " AND STAT_APPROVER = ?";
-                    $queryParams[] = $statusApprove;
-                }
+                $baseQuery .= " AND STAT_APPROVER = ?";
+                $queryParams[] = $statusApprove;
                 log_message('info', 'Adding status_approve filter: ' . $statusApprove);
             }
             
@@ -126,12 +122,8 @@ class ApproveJurnalController extends BaseController
             ";
             $totalParams = [$tanggalRekon];
             if ($statusApprove !== '') {
-                if ($statusApprove === 'pending') {
-                    $totalQuery .= " AND (STAT_APPROVER IS NULL OR STAT_APPROVER = '')";
-                } else {
-                    $totalQuery .= " AND STAT_APPROVER = ?";
-                    $totalParams[] = $statusApprove;
-                }
+                $totalQuery .= " AND STAT_APPROVER = ?";
+                $totalParams[] = $statusApprove;
             }
             
             $totalResult = $db->query($totalQuery, $totalParams);
