@@ -277,17 +277,15 @@ class AkselgateService
     /**
      * Format transaksi data untuk Akselgate
      * Return error jika ada transaksi yang tidak valid
+     * 
+     * @param string $kdSettle Kode settlement
+     * @param array $transactions Array transaksi
+     * @return array ['success' => bool, 'data' => array, 'valid_transactions' => array]
      */
     public function formatTransactionData(string $kdSettle, array $transactions): array
     {
-        $requestId = 'SETL_' . $kdSettle . '_' . date('YmdHis');
-        $apiData = [
-            'requestId' => $requestId,
-            'totalTx' => (string)count($transactions),
-            'data' => []
-        ];
-        
         $validationErrors = [];
+        $validTransactions = [];
 
         log_message('info', 'Akselgate: Formatting transaction data for kd_settle: ' . $kdSettle . ', transaction count: ' . count($transactions));
 
@@ -335,7 +333,7 @@ class AkselgateService
             ];
             
             log_message('info', 'Akselgate: Transaction ' . ($index + 1) . ' formatted: ' . json_encode($transactionData));
-            $apiData['data'][] = $transactionData;
+            $validTransactions[] = $transactionData;
         }
         
         // Jika ada validation errors, return error response
@@ -345,24 +343,29 @@ class AkselgateService
                 'success' => false,
                 'message' => 'Validasi data transaksi gagal',
                 'errors' => $validationErrors,
-                'total_errors' => count($validationErrors)
+                'total_errors' => count($validationErrors),
+                'valid_transactions' => []
             ];
         }
         
-        // Update totalTx setelah filtering
-        $apiData['totalTx'] = (string)count($apiData['data']);
-        
-        log_message('info', 'Akselgate: Final payload prepared with ' . count($apiData['data']) . ' valid transactions');
+        log_message('info', 'Akselgate: Validation successful with ' . count($validTransactions) . ' valid transactions');
         
         return [
             'success' => true,
-            'data' => $apiData
+            'message' => 'Validasi berhasil',
+            'valid_transactions' => $validTransactions,
+            'total_valid' => count($validTransactions)
         ];
     }
 
     /**
      * Process complete batch transaction workflow
-     * Menggabungkan format, validate, send, dan logging dalam satu method
+     * 
+     * Strategy:
+     * 1. Format & Validate dulu (sebelum insert log)
+     * 2. Insert log dengan data lengkap (dapat log ID)
+     * 3. Send ke Akselgate dengan request_id = log ID
+     * 4. Update log hanya field response saja
      * 
      * @param string $kdSettle Kode settlement
      * @param array $transactions Array data transaksi dari database
@@ -388,17 +391,18 @@ class AkselgateService
             ];
         }
 
-        // Step 1: Format dan validasi transaksi
-        $formatResult = $this->formatTransactionData($kdSettle, $transactions);
+        // Step 1: Prepare attempt number & mark previous attempts
+        $attemptNumber = $this->prepareAttemptNumber($kdSettle, $transactionType);
         
+        // Step 2: Format & validate transactions
+        $formatResult = $this->formatTransactionData($kdSettle, $transactions);
         if (!$formatResult['success']) {
-            return $formatResult; // Return validation errors
+            log_message('error', "Akselgate: Validation failed for kd_settle: {$kdSettle} - " . $formatResult['message']);
+            return $formatResult;
         }
         
-        $apiData = $formatResult['data'];
-        
-        // Step 2: Cek apakah ada transaksi valid
-        if (empty($apiData['data'])) {
+        $validTransactions = $formatResult['valid_transactions'];
+        if (empty($validTransactions)) {
             return [
                 'success' => false,
                 'message' => 'Tidak ada transaksi valid untuk diproses dari kode settle: ' . $kdSettle,
@@ -406,10 +410,45 @@ class AkselgateService
             ];
         }
         
-        // Step 3: Get next attempt number dan mark previous as not latest
+        log_message('info', "Akselgate: Validation successful - {$formatResult['total_valid']} valid transactions for kd_settle: {$kdSettle}");
+        
+        // Step 3: Create initial log record
+        $logId = $this->createInitialLog($kdSettle, $transactionType, $attemptNumber, $validTransactions);
+        if (!$logId) {
+            return [
+                'success' => false,
+                'message' => 'Gagal membuat log record',
+                'error_code' => 'LOG_CREATE_FAILED'
+            ];
+        }
+        
+        // Step 4: Build API payload & update log with request data
+        $requestId = (string)$logId;
+        $apiData = $this->buildApiPayload($requestId, $validTransactions);
+        $this->updateLogWithRequestData($logId, $requestId, $apiData);
+        
+        // Step 5: Send to Akselgate
+        log_message('info', "Akselgate: Sending {$apiData['totalTx']} transactions to Akselgate with request_id: {$requestId}");
+        $apiResult = $this->sendBatchTransactions($apiData);
+        
+        // Step 6: Update log with API response
+        $this->updateLogWithResponse($logId, $apiResult, $kdSettle, $transactionType, $attemptNumber, $requestId);
+        
+        // Step 7: Build and return result
+        return $this->buildProcessResult($apiResult, $requestId, $logId, $attemptNumber, $validTransactions);
+    }
+
+    /**
+     * Prepare attempt number dan mark previous attempts sebagai not latest
+     * 
+     * @param string $kdSettle
+     * @param string $transactionType
+     * @return int Attempt number
+     */
+    private function prepareAttemptNumber(string $kdSettle, string $transactionType): int
+    {
         $attemptNumber = $this->logModel->getNextAttemptNumber($kdSettle, $transactionType);
         
-        // Mark all previous attempts as not latest before inserting new one
         if ($attemptNumber > 1) {
             $this->logModel->markAsNotLatest($kdSettle, $transactionType);
             log_message('info', "Akselgate: Marked previous attempts as not latest for kd_settle: {$kdSettle}, type: {$transactionType}");
@@ -417,43 +456,148 @@ class AkselgateService
         
         log_message('info', "Akselgate: Processing attempt #{$attemptNumber} for kd_settle: {$kdSettle}, type: {$transactionType}");
         
-        // Step 4: Kirim ke Akselgate
-        $apiResult = $this->sendBatchTransactions($apiData);
-        
-        // Step 5: Save log dengan versioning
+        return $attemptNumber;
+    }
+
+    /**
+     * Create initial log record sebelum send ke Akselgate
+     * 
+     * @param string $kdSettle
+     * @param string $transactionType
+     * @param int $attemptNumber
+     * @param array $validTransactions
+     * @return int|null Log ID jika berhasil, null jika gagal
+     */
+    private function createInitialLog(string $kdSettle, string $transactionType, int $attemptNumber, array $validTransactions): ?int
+    {
         $logData = [
             'transaction_type' => $transactionType,
             'kd_settle' => $kdSettle,
-            'request_id' => $apiData['requestId'],
+            'request_id' => 'PENDING',
             'attempt_number' => $attemptNumber,
-            'total_transaksi' => count($apiData['data']),
-            'request_payload' => json_encode($apiData),
-            'status_code_res' => (string)($apiResult['status_code'] ?? 'unknown'),
-            'response_code' => $apiResult['response_code'] ?? null,
-            'response_message' => $apiResult['message'] ?? null,
-            'response_payload' => json_encode($apiResult['data'] ?? $apiResult),
-            'is_success' => $apiResult['success'] ? 1 : 0,
-            'is_latest' => 1, // This is the latest attempt
+            'total_transaksi' => count($validTransactions),
+            'request_payload' => null,
+            'status_code_res' => null,
+            'response_code' => null,
+            'response_message' => 'Sending to Akselgate...',
+            'response_payload' => null,
+            'is_success' => 0,
+            'is_latest' => 1,
             'sent_by' => session('username') ?? 'system',
             'sent_at' => date('Y-m-d H:i:s')
         ];
         
         try {
-            $this->logModel->createLog($logData);
-            log_message('info', "Akselgate: Log saved - kd_settle: {$kdSettle}, type: {$transactionType}, attempt: {$attemptNumber}, success: " . ($apiResult['success'] ? 'YES' : 'NO'));
+            $logId = $this->logModel->createLog($logData);
+            if (!$logId) {
+                throw new \Exception('Failed to create log record - insert returned false/0');
+            }
+            log_message('info', "Akselgate: Created log record with ID: {$logId} for kd_settle: {$kdSettle}");
+            return $logId;
         } catch (\Exception $e) {
-            log_message('error', "Akselgate: Failed to save log - " . $e->getMessage());
-            // Continue even if logging fails
+            log_message('error', "Akselgate: Failed to create log record - " . $e->getMessage());
+            return null;
         }
+    }
+
+    /**
+     * Build API payload structure untuk Akselgate
+     * 
+     * @param string $requestId
+     * @param array $validTransactions
+     * @return array API payload
+     */
+    private function buildApiPayload(string $requestId, array $validTransactions): array
+    {
+        return [
+            'requestId' => $requestId,
+            'totalTx' => (string)count($validTransactions),
+            'data' => $validTransactions
+        ];
+    }
+
+    /**
+     * Update log record dengan request_id dan request_payload
+     * 
+     * @param int $logId
+     * @param string $requestId
+     * @param array $apiData
+     * @return void
+     */
+    private function updateLogWithRequestData(int $logId, string $requestId, array $apiData): void
+    {
+        try {
+            $this->logModel->update($logId, [
+                'request_id' => $requestId,
+                'request_payload' => json_encode($apiData)
+            ]);
+            log_message('info', "Akselgate: Updated log ID {$logId} with request_id: {$requestId}");
+        } catch (\Exception $e) {
+            log_message('error', "Akselgate: Failed to update log ID {$logId} with request data - " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update log record dengan response dari Akselgate API
+     * 
+     * @param int $logId
+     * @param array $apiResult
+     * @param string $kdSettle
+     * @param string $transactionType
+     * @param int $attemptNumber
+     * @param string $requestId
+     * @return void
+     */
+    private function updateLogWithResponse(
+        int $logId, 
+        array $apiResult, 
+        string $kdSettle, 
+        string $transactionType, 
+        int $attemptNumber, 
+        string $requestId
+    ): void {
+        $updateLogData = [
+            'status_code_res' => (string)($apiResult['status_code'] ?? 'unknown'),
+            'response_code' => $apiResult['response_code'] ?? null,
+            'response_message' => $apiResult['message'] ?? null,
+            'response_payload' => json_encode($apiResult['data'] ?? $apiResult),
+            'is_success' => $apiResult['success'] ? 1 : 0,
+        ];
         
-        // Step 6: Return result dengan tambahan informasi
+        try {
+            $this->logModel->update($logId, $updateLogData);
+            log_message('info', "Akselgate: Log ID {$logId} updated successfully - kd_settle: {$kdSettle}, type: {$transactionType}, attempt: {$attemptNumber}, request_id: {$requestId}, success: " . ($apiResult['success'] ? 'YES' : 'NO'));
+        } catch (\Exception $e) {
+            log_message('error', "Akselgate: Failed to update log ID {$logId} with API result - " . $e->getMessage());
+            // Continue even if update fails - API sudah diproses
+        }
+    }
+
+    /**
+     * Build result response untuk return
+     * 
+     * @param array $apiResult
+     * @param string $requestId
+     * @param int $logId
+     * @param int $attemptNumber
+     * @param array $validTransactions
+     * @return array Response array
+     */
+    private function buildProcessResult(
+        array $apiResult, 
+        string $requestId, 
+        int $logId, 
+        int $attemptNumber, 
+        array $validTransactions
+    ): array {
         if ($apiResult['success']) {
             return [
                 'success' => true,
                 'message' => 'Transaksi berhasil dikirim ke Akselgate',
-                'request_id' => $apiData['requestId'],
+                'request_id' => $requestId,
+                'log_id' => $logId,
                 'attempt_number' => $attemptNumber,
-                'total_transaksi' => count($apiData['data']),
+                'total_transaksi' => count($validTransactions),
                 'status_code' => $apiResult['status_code'] ?? 'unknown',
                 'api_response' => $apiResult['data'] ?? null
             ];
@@ -462,6 +606,8 @@ class AkselgateService
                 'success' => false,
                 'message' => 'Gagal mengirim ke Akselgate: ' . $apiResult['message'],
                 'error_code' => 'AKSELGATE_ERROR',
+                'request_id' => $requestId,
+                'log_id' => $logId,
                 'attempt_number' => $attemptNumber,
                 'status_code' => $apiResult['status_code'] ?? null,
                 'response_code' => $apiResult['response_code'] ?? null
