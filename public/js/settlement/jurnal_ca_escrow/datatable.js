@@ -16,6 +16,10 @@ let expandedRows = new Set();
 function renderCountBadge(count, badgeClass) {
     const parsedCount = parseInt(count || 0);
     if (parsedCount > 0) {
+        // Jika warning, gunakan warna custom yang lebih gelap dengan text putih
+        if (badgeClass === 'warning') {
+            return `<span class="badge text-white" style="background-color: #e97f07ff;">${parsedCount}</span>`;
+        }
         return `<span class="badge badge-${badgeClass}">${parsedCount}</span>`;
     }
     return '<span class="badge badge-light">0</span>';
