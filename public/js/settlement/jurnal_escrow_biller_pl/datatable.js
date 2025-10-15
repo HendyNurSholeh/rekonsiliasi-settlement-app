@@ -38,12 +38,10 @@ function renderStatusEscrow(status) {
     const statusLower = status.toLowerCase();
     
     // Mapping status ke badge class
-    if (statusLower.includes('sukses') || statusLower.includes('success') || statusLower.includes('selesai')) {
+    if (statusLower === 'sukses') {
         return `<span class="badge badge-success small"><i class="fal fa-check-circle"></i> ${status}</span>`;
-    } else if (statusLower.includes('pending') || statusLower.includes('proses') || statusLower.includes('waiting')) {
+    } else if (statusLower === 'belum proses' || statusLower === 'sukses sebagian') {
         return `<span class="badge text-white small" style="background-color: #f39c12;"><i class="fal fa-clock"></i> ${status}</span>`;
-    } else if (statusLower.includes('gagal') || statusLower.includes('failed') || statusLower.includes('error')) {
-        return `<span class="badge badge-danger small"><i class="fal fa-times-circle"></i> ${status}</span>`;
     } else {
         return `<span class="badge badge-info small">${status}</span>`;
     }
@@ -417,7 +415,7 @@ function formatChildRows(childData, kdSettle) {
     // Cek apakah semua status escrow adalah "SUKSES"
     const hasNonSuccessStatus = childData.some(child => {
         const statusEscrow = (child.d_STATUS_KR_ESCROW || '').toLowerCase();
-        return !statusEscrow.includes('sukses') && !statusEscrow.includes('success') && !statusEscrow.includes('selesai');
+        return statusEscrow !== 'sukses';
     });
     
     // Build button HTML
