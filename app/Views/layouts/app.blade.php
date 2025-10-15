@@ -116,7 +116,7 @@
                         @if ($show_persiapan || $show_proses_rekonsiliasi || $show_settlement || $show_rekon_bifast)
                             @if ($show_persiapan)
                                 <li class="@if ($route == 'rekon') active open @endif">
-                                    <a href="javascript:void(0);" title="Persiapan Rekonsiliasi" data-filter-tags="persiapan rekonsiliasi">
+                                    <a href="javascript:void(0);" data-filter-tags="persiapan rekonsiliasi">
                                         <i class="fal fa-calendar-alt"></i>
                                         <span class="nav-link-text">Persiapan</span>
                                     </a>
@@ -142,7 +142,7 @@
                             {{-- TAHAP 3 - PROSES REKONSILIASI --}}
                             @if ($show_proses_rekonsiliasi)
                             <li class="@if (str_contains($route, 'rekon/process')) active open @endif">
-                                <a href="javascript:void(0);" title="Proses Rekonsiliasi" data-filter-tags="tahap 3 proses rekonsiliasi">
+                                <a href="javascript:void(0);" data-filter-tags="tahap 3 proses rekonsiliasi">
                                     <i class="fal fa-tasks"></i>
                                     <span class="nav-link-text">Proses Rekonsiliasi</span>
                                 </a>
@@ -170,7 +170,7 @@
                                     <!-- 3. Rekon Direct Jurnal -->
                                     @if ($rekon_direct_jurnal)
                                     <li class="@if (str_contains($route, 'rekon/process/direct-jurnal')) active open @endif">
-                                        <a href="javascript:void(0);" title="Rekon Direct Jurnal">
+                                        <a href="javascript:void(0);">
                                             <span class="nav-link-text text-left">Rekon Direct Jurnal</span>
                                         </a>
                                         <ul>
@@ -195,7 +195,7 @@
                                     <!-- 3. Rekon Indirect Jurnal -->
                                     @if ($rekon_indirect_jurnal)
                                     <li class="@if (str_contains($route, 'rekon/process/indirect-jurnal')) active open @endif">
-                                        <a href="javascript:void(0);" title="Rekon Indirect Jurnal">
+                                        <a href="javascript:void(0);">
                                             <span class="nav-link-text text-left">Rekon Indirect Jurnal</span>
                                         </a>
                                         <ul>
@@ -223,7 +223,7 @@
                             {{-- TAHAP 4 - SETTLEMENT--}}
                             @if ($show_settlement)
                             <li class="@if (str_contains($route, 'settlement')) active open @endif">
-                                <a href="javascript:void(0);" title="Settlement" data-filter-tags="settlement jurnal">
+                                <a href="javascript:void(0);" data-filter-tags="settlement jurnal">
                                     <i class="fal fa-file-invoice-dollar"></i>
                                     <span class="nav-link-text">Settlement</span>
                                 </a>
@@ -270,7 +270,7 @@
                             {{-- Rekon Bi-fast Menu --}}
                             @if ($show_rekon_bifast)
                             <li class="@if (str_contains($route, 'rekon-bifast')) active open @endif">
-                                <a href="javascript:void(0);" title="Rekon Bi-fast" data-filter-tags="rekon bifast">
+                                <a href="javascript:void(0);" data-filter-tags="rekon bifast">
                                     <i class="fal fa-exchange"></i>
                                     <span class="nav-link-text">Rekon Bi-fast</span>
                                 </a>
@@ -295,7 +295,7 @@
                         @endif
                         @if ($show_user_management)
                             <li class="@if ($route == 'user' || $route == 'unit-kerja' || $route == 'permission' || $route == 'role') active open @endif">
-                                <a href="javascript:void(0);" title="User Management" data-filter-tags="user management">
+                                <a href="javascript:void(0);" data-filter-tags="user management">
                                     <i class="fal fa-users-cog"></i>
                                     <span class="nav-link-text">User Management</span>
                                 </a>
@@ -334,7 +334,7 @@
 
                         @if ($show_log)
                             <li class="@if ($route == 'log/activity' || $route == 'log/error' || $route == 'log/akselgate' || $route == 'log/callback') active open @endif">
-                                <a href="javascript:void(0);" title="Log" data-filter-tags="log">
+                                <a href="javascript:void(0);" data-filter-tags="log">
                                     <i class="fal fa-shield-alt"></i>
                                     <span class="nav-link-text text-left">Log</span>
                                 </a>
