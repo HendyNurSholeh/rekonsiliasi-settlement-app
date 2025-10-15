@@ -12,14 +12,16 @@
                         <div class="col-md-3">
                             <label for="tanggal" class="form-label">Tanggal Settlement</label>
                             <input type="date" class="form-control" id="tanggal" name="tanggal" 
-                                   value="{{ $tanggalData }}" required>
+                                   value="{{ $tanggalRekon }}" required>
                         </div>
                         <div class="col-md-3">
                             <label for="filter_status_approve" class="form-label">Status Approval</label>
                             <select class="form-control" id="filter_status_approve" name="status_approve">
                                 <option value="">Semua Status</option>
-                                <option value="pending" @if(request()->getGet('status_approve') === 'pending') selected @endif>Pending</option>
-                                <option value="1" @if(request()->getGet('status_approve') == '1') selected @endif>Disetujui</option>
+                                <option value="pending" @if($statusApprove === 'pending') selected @endif>Pending</option>
+                                <option value="1" @if($statusApprove === '1') selected @endif>Disetujui</option>
+                                <option value="9" @if($statusApprove === '9') selected @endif>Ditolak</option>
+                                <option value="-1" @if($statusApprove === '-1') selected @endif>Net Amount Beda</option>
                             </select>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">

@@ -134,37 +134,70 @@ function initializeDataTable() {
                 }
             },
             {
+                data: 'AMOUNT_NET_DB_ECR',
+                name: 'AMOUNT_NET_DB_ECR',
+                render: function(data, type, row) {
+                    const formatted = formatCurrency(data);
+                    if (!row.NET_MATCH) {
+                        return '<span class="text-danger font-weight-bold">' + formatted + '</span>';
+                    }
+                    return '<span class="text-success font-weight-bold">' + formatted + '</span>';
+                }
+            },
+            {
+                data: 'AMOUNT_NET_KR_ECR',
+                name: 'AMOUNT_NET_KR_ECR',
+                render: function(data, type, row) {
+                    const formatted = formatCurrency(data);
+                    if (!row.NET_MATCH) {
+                        return '<span class="text-danger font-weight-bold">' + formatted + '</span>';
+                    }
+                    return '<span class="text-success font-weight-bold">' + formatted + '</span>';
+                }
+            },
+            {
                 data: 'STAT_APPROVER',
                 name: 'STAT_APPROVER',
                 render: function(data) {
-                    if (data === '1') {
+                    if (data === '-1') {
+                        return '<span class="badge badge-danger">Net Amount Beda</span>';
+                    } else if (data === '1') {
                         return '<span class="badge badge-success">Disetujui</span>';
+                    } else if (data === '9') {
+                        return '<span class="badge badge-warning">Ditolak</span>';
                     } else if (data === '0') {
-                        return '<span class="text-secondary">-</span>';
+                        return '<span class="badge text-white" style="background-color: #f9911b;">Pending</span>';
                     } else {
                         return '<span class="badge text-white" style="background-color: #f9911b;">Pending</span>';
                     }
                 }
             },
-            { data: 'USER_APPROVER', name: 'USER_APPROVER' },
-            {
-                data: 'TGL_APPROVER',
-                name: 'TGL_APPROVER',
+            { 
+                data: 'APPROVAL_INFO', 
+                name: 'APPROVAL_INFO',
                 render: function(data) {
-                    if (data) {
-                        return new Date(data).toLocaleDateString('id-ID') + ' ' + new Date(data).toLocaleTimeString('id-ID');
-                    }
-                    return '';
+                    return data || '-';
                 }
             },
             {
-                data: 'KD_SETTLE',
+                data: null,
                 name: 'action',
                 orderable: false,
                 searchable: false,
-                render: function(data) {
-                    return '<button type="button" class="btn btn-sm btn-primary btn-view-detail" ' +
-                           'data-kd-settle="' + (data || '') + '">' +
+                render: function(data, type, row) {
+                    // Disable button if net amount doesn't match OR already approved/rejected
+                    const isDisabled = !row.NET_MATCH || row.STAT_APPROVER === '1' || row.STAT_APPROVER === '9' || row.STAT_APPROVER === '-1';
+                    const btnClass = isDisabled ? 'btn-secondary' : 'btn-primary';
+                    const disabledAttr = isDisabled ? 'disabled' : '';
+                    const title = !row.NET_MATCH ? 'Tidak bisa approve: Net amount debet dan credit tidak sama' : 
+                                  row.STAT_APPROVER === '1' ? 'Sudah disetujui' :
+                                  row.STAT_APPROVER === '9' ? 'Sudah ditolak' : 
+                                  'Klik untuk approve';
+                    
+                    return '<button type="button" class="btn btn-sm ' + btnClass + ' btn-view-detail" ' +
+                           'data-kd-settle="' + (row.KD_SETTLE || '') + '" ' +
+                           'data-net-match="' + (row.NET_MATCH ? 'true' : 'false') + '" ' +
+                           disabledAttr + ' title="' + title + '">' +
                            '<i class="fal fa-check-circle"></i> Approve</button>';
                 }
             }
@@ -200,19 +233,37 @@ function initializeDataTable() {
             $('.btn-view-detail').off('click').on('click', function() {
                 const $btn = $(this);
                 const kdSettle = $btn.data('kd-settle');
+                const netMatch = $btn.data('net-match');
+                
+                // If button is disabled, don't proceed
+                if ($btn.prop('disabled')) {
+                    if (!netMatch) {
+                        toastr["error"]('Tidak bisa approve: Net amount debet dan credit tidak sama');
+                    }
+                    return;
+                }
+                
                 $btn.prop('disabled', true);
-                openApprovalModal(kdSettle, $btn);
+                openApprovalModal(kdSettle, $btn, netMatch);
             });
         }
     });
 }
 
-function openApprovalModal(kdSettle, $btn) {
+function openApprovalModal(kdSettle, $btn, netMatch) {
     if (!kdSettle) {
         toastr["error"]('Kode settle tidak ditemukan');
         if ($btn) $btn.prop('disabled', false);
         return;
     }
+    
+    // If net doesn't match, show error and don't open modal
+    if (netMatch === false || netMatch === 'false') {
+        toastr["error"]('Tidak bisa approve: Net amount debet dan credit tidak sama');
+        if ($btn) $btn.prop('disabled', false);
+        return;
+    }
+    
     refreshCSRFToken().then(function() {
         $.ajax({
             url: window.appConfig.baseUrl + 'settlement/approve-jurnal/detail',
@@ -234,6 +285,26 @@ function openApprovalModal(kdSettle, $btn) {
                     $('#modal_kd_settle').val(kdSettle);
                     $('#modal_nama_produk').val(settleInfo.NAMA_PRODUK);
                     $('#modal_total_amount').val(formatCurrency(settleInfo.TOT_JURNAL_KR_ECR));
+                    
+                    // Display net amounts
+                    $('#modal_net_debet').val(formatCurrency(settleInfo.AMOUNT_NET_DB_ECR || 0));
+                    $('#modal_net_credit').val(formatCurrency(settleInfo.AMOUNT_NET_KR_ECR || 0));
+                    
+                    // Show warning if net doesn't match
+                    if (!settleInfo.NET_MATCH) {
+                        const diff = Math.abs(settleInfo.NET_DIFF || 0);
+                        $('#netWarning').html(
+                            '<div class="alert alert-danger">' +
+                            '<i class="fas fa-exclamation-triangle"></i> ' +
+                            '<strong>Perhatian!</strong> Net amount debet dan credit tidak sama. ' +
+                            'Selisih: ' + formatCurrency(diff) + '. ' +
+                            'Approval tidak dapat dilakukan.' +
+                            '</div>'
+                        ).show();
+                    } else {
+                        $('#netWarning').hide();
+                    }
+                    
                     const detailBody = $('#detailJurnalBody');
                     detailBody.empty();
                     if (response.detail_data && response.detail_data.length > 0) {
@@ -268,11 +339,20 @@ function openApprovalModal(kdSettle, $btn) {
                             }
                         }
                     }
-                    if (currentRowData && (currentRowData.STAT_APPROVER === '1' || currentRowData.STAT_APPROVER === '0')) {
+                    
+                    // Hide approval buttons if:
+                    // 1. Net doesn't match
+                    // 2. Already approved (1) or rejected (9)
+                    // 3. Status is -1 (net beda)
+                    if (!settleInfo.NET_MATCH || 
+                        (currentRowData && (currentRowData.STAT_APPROVER === '1' || 
+                                           currentRowData.STAT_APPROVER === '9' || 
+                                           currentRowData.STAT_APPROVER === '-1'))) {
                         $('#approvalButtons').hide();
                     } else {
                         $('#approvalButtons').show();
                     }
+                    
                     $('#approvalModal').modal('show');
                     if ($btn) $btn.prop('disabled', false);
                 } else {

@@ -15,9 +15,10 @@
                                 <th>Tanggal Data</th>
                                 <th>Nama Produk</th>
                                 <th>Kode Settle</th>
+                                <th>Net Amount Debet</th>
+                                <th>Net Amount Credit</th>
                                 <th>Status Approval</th>
-                                <th>User Approver</th>
-                                <th>Tanggal Approve</th>
+                                <th>User Approve</th>
                                 <th>Action</th>
                             </tr>
                         </thead>

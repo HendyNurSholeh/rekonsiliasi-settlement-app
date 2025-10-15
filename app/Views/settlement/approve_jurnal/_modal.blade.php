@@ -17,23 +17,41 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Kode Settle</label>
                                     <input type="text" class="form-control" id="modal_kd_settle" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Nama Produk</label>
                                     <input type="text" class="form-control" id="modal_nama_produk" readonly>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label>Total Jurnal (KR)</label>
                                     <input type="text" class="form-control" id="modal_total_amount" readonly>
                                 </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Net Amount Debet</label>
+                                    <input type="text" class="form-control" id="modal_net_debet" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Net Amount Credit</label>
+                                    <input type="text" class="form-control" id="modal_net_credit" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Warning for net mismatch -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div id="netWarning" style="display: none;"></div>
                             </div>
                         </div>
                     </div>

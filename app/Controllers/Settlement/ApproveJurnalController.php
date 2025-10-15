@@ -76,10 +76,11 @@ class ApproveJurnalController extends BaseController
             1 => 'TGL_DATA',
             2 => 'NAMA_PRODUK',
             3 => 'KD_SETTLE',
-            4 => 'STAT_APPROVER',
-            5 => 'USER_APPROVER',
-            6 => 'TGL_APPROVER',
-            7 => 'id' // For action column
+            4 => 'AMOUNT_NET_DB_ECR',
+            5 => 'AMOUNT_NET_KR_ECR',
+            6 => 'STAT_APPROVER',
+            7 => 'USER_APPROVER',
+            8 => 'id' // For action column
         ];
 
         try {
@@ -87,6 +88,7 @@ class ApproveJurnalController extends BaseController
             
             $baseQuery = "
                 SELECT id, KD_SETTLE, NAMA_PRODUK, TGL_DATA, TOT_JURNAL_KR_ECR, 
+                       AMOUNT_NET_DB_ECR, AMOUNT_NET_KR_ECR,
                        STAT_APPROVER, USER_APPROVER, TGL_APPROVER
                 FROM t_settle_produk 
                 WHERE DATE(TGL_DATA) = ?
@@ -151,7 +153,7 @@ class ApproveJurnalController extends BaseController
             }
             
             // Add ordering with consistent sorting
-            if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 7) {
+            if (isset($columns[$orderColumn]) && $orderColumn > 0 && $orderColumn < 8) {
                 $orderColumnName = $columns[$orderColumn];
                 // Always add id as secondary sort for consistent pagination
                 $baseQuery .= " ORDER BY {$orderColumnName} {$orderDir}, id DESC";
@@ -185,15 +187,43 @@ class ApproveJurnalController extends BaseController
             // Format data for DataTables
             $formattedData = [];
             foreach ($data as $row) {
+                // Check if net amounts match
+                $netDebet = floatval($row['AMOUNT_NET_DB_ECR'] ?? 0);
+                $netCredit = floatval($row['AMOUNT_NET_KR_ECR'] ?? 0);
+                $netMatch = (abs($netDebet - $netCredit) < 0.01); // Allow small floating point difference
+                
+                // Determine status
+                // -1: tidak bisa approve (net beda), 0: belum approve, 1: sudah approve, 9: reject
+                $statApprover = $row['STAT_APPROVER'] ?? null;
+                
+                // If net doesn't match and not yet approved/rejected, set to -1
+                if (!$netMatch && ($statApprover === null || $statApprover === '' || $statApprover === '0')) {
+                    $effectiveStatus = '-1';
+                } else {
+                    $effectiveStatus = $statApprover;
+                }
+                
+                // Combine user and date for approval info
+                $userApprover = $row['USER_APPROVER'] ?? '';
+                $tglApprover = $row['TGL_APPROVER'] ?? '';
+                $approvalInfo = '';
+                if (!empty($userApprover) && !empty($tglApprover)) {
+                    $approvalInfo = $userApprover . ' (' . date('d/m/Y H:i', strtotime($tglApprover)) . ')';
+                } elseif (!empty($userApprover)) {
+                    $approvalInfo = $userApprover;
+                }
+                
                 $formattedData[] = [
                     'id' => $row['id'] ?? '',
                     'KD_SETTLE' => $row['KD_SETTLE'] ?? '',
                     'NAMA_PRODUK' => $row['NAMA_PRODUK'] ?? '',
                     'TGL_DATA' => $row['TGL_DATA'] ?? '',
                     'TOT_JURNAL_KR_ECR' => $row['TOT_JURNAL_KR_ECR'] ?? '0',
-                    'STAT_APPROVER' => $row['STAT_APPROVER'] ?? null,
-                    'USER_APPROVER' => $row['USER_APPROVER'] ?? '',
-                    'TGL_APPROVER' => $row['TGL_APPROVER'] ?? '',
+                    'AMOUNT_NET_DB_ECR' => $row['AMOUNT_NET_DB_ECR'] ?? '0',
+                    'AMOUNT_NET_KR_ECR' => $row['AMOUNT_NET_KR_ECR'] ?? '0',
+                    'NET_MATCH' => $netMatch,
+                    'STAT_APPROVER' => $effectiveStatus,
+                    'APPROVAL_INFO' => $approvalInfo,
                 ];
             }
             
@@ -238,7 +268,7 @@ class ApproveJurnalController extends BaseController
             
             // Get settlement product info
             $settleQuery = "
-                SELECT NAMA_PRODUK, TGL_DATA, TOT_JURNAL_KR_ECR
+                SELECT NAMA_PRODUK, TGL_DATA, TOT_JURNAL_KR_ECR, AMOUNT_NET_DB_ECR, AMOUNT_NET_KR_ECR
                 FROM t_settle_produk 
                 WHERE KD_SETTLE = ?
             ";
@@ -252,6 +282,14 @@ class ApproveJurnalController extends BaseController
                     'csrf_token' => csrf_hash()
                 ]);
             }
+            
+            // Check if net amounts match
+            $netDebet = floatval($settleInfo['AMOUNT_NET_DB_ECR'] ?? 0);
+            $netCredit = floatval($settleInfo['AMOUNT_NET_KR_ECR'] ?? 0);
+            $netMatch = (abs($netDebet - $netCredit) < 0.01);
+            
+            $settleInfo['NET_MATCH'] = $netMatch;
+            $settleInfo['NET_DIFF'] = $netDebet - $netCredit;
             
             // Get detail jurnal from tamp_settle_message
             $detailQuery = "
@@ -300,7 +338,7 @@ class ApproveJurnalController extends BaseController
             ]);
         }
 
-        $approvalStatus = ($action === 'approve') ? '1' : '0';
+        $approvalStatus = ($action === 'approve') ? '1' : '9';
         $actionText = ($action === 'approve') ? 'disetujui' : 'ditolak';
 
         try {
@@ -368,10 +406,10 @@ class ApproveJurnalController extends BaseController
             $summaryQuery = "
                 SELECT 
                     COUNT(*) as total_jurnal,
-                    SUM(CASE WHEN STAT_APPROVER = 1 THEN 1 ELSE 0 END) as approved,
-                    SUM(CASE WHEN STAT_APPROVER IS NULL THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN STAT_APPROVER = '1' THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN STAT_APPROVER = '0' OR STAT_APPROVER IS NULL OR STAT_APPROVER = '' THEN 1 ELSE 0 END) as pending,
                     SUM(TOT_JURNAL_KR_ECR) as total_amount,
-                    SUM(CASE WHEN STAT_APPROVER = 1 THEN TOT_JURNAL_KR_ECR ELSE 0 END) as approved_amount
+                    SUM(CASE WHEN STAT_APPROVER = '1' THEN TOT_JURNAL_KR_ECR ELSE 0 END) as approved_amount
                 FROM t_settle_produk 
                 WHERE DATE(TGL_DATA) = ?
             ";
