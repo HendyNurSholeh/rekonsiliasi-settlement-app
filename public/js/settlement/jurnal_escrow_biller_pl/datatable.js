@@ -16,6 +16,10 @@ let expandedRows = new Set();
 function renderCountBadge(count, badgeClass) {
     const parsedCount = parseInt(count || 0);
     if (parsedCount > 0) {
+        // Jika warning, gunakan warna custom yang lebih gelap dengan text putih
+        if (badgeClass === 'warning') {
+            return `<span class="badge text-white" style="background-color: #d97706;">${parsedCount}</span>`;
+        }
         return `<span class="badge badge-${badgeClass}">${parsedCount}</span>`;
     }
     return '<span class="badge badge-light">0</span>';
@@ -171,7 +175,7 @@ function initializeDataTable() {
             { 
                 data: 'r_KD_SETTLE', 
                 name: 'r_KD_SETTLE',
-                width: '40%',
+                width: '20%',
                 render: function(data, type, row) {
                     return '<strong><code>' + (data || '') + '</code></strong>';
                 }
@@ -179,10 +183,33 @@ function initializeDataTable() {
             { 
                 data: 'r_NAMA_PRODUK', 
                 name: 'r_NAMA_PRODUK',
-                width: '50%',
+                width: '25%',
                 render: function(data, type, row) {
                     return '<strong>' + (data || '') + '</strong>';
                 }
+            },
+            { 
+                data: 'r_TOTAL_JURNAL', 
+                name: 'r_TOTAL_JURNAL',
+                className: 'text-center',
+                width: '10%',
+                render: function(data, type, row) {
+                    return '<span class="badge" style="background-color: #6c5190; color: white;">' + (data || '0') + '</span>';
+                }
+            },
+            { 
+                data: 'r_JURNAL_PENDING', 
+                name: 'r_JURNAL_PENDING',
+                className: 'text-center',
+                width: '10%',
+                render: (data) => renderCountBadge(data, 'warning')
+            },
+            { 
+                data: 'r_JURNAL_SUKSES', 
+                name: 'r_JURNAL_SUKSES',
+                className: 'text-center',
+                width: '10%',
+                render: (data) => renderCountBadge(data, 'success')
             },
             { 
                 data: null,

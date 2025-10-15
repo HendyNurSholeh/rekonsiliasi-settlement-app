@@ -118,6 +118,9 @@ class JurnalEscrowBillerPlController extends BaseController
                 $formattedParent = [
                     'r_KD_SETTLE' => $parentRow['r_KD_SETTLE'] ?? '',
                     'r_NAMA_PRODUK' => $parentRow['r_NAMA_PRODUK'] ?? '',
+                    'r_TOTAL_JURNAL' => $parentRow['r_TOTAL_JURNAL'] ?? '0',
+                    'r_JURNAL_PENDING' => $parentRow['r_JURNAL_PENDING'] ?? '0',
+                    'r_JURNAL_SUKSES' => $parentRow['r_JURNAL_SUKSES'] ?? '0',
                     'child_count' => count($parentRow['child_rows']),
                     'is_parent' => true,
                     'has_children' => count($parentRow['child_rows']) > 0,
@@ -144,6 +147,9 @@ class JurnalEscrowBillerPlController extends BaseController
                     $formattedChild = [
                         'r_KD_SETTLE' => '',
                         'r_NAMA_PRODUK' => '',
+                        'r_TOTAL_JURNAL' => '',
+                        'r_JURNAL_PENDING' => '',
+                        'r_JURNAL_SUKSES' => '',
                         'child_count' => 0,
                         'is_parent' => false,
                         'has_children' => false,
@@ -199,8 +205,12 @@ class JurnalEscrowBillerPlController extends BaseController
         );
         
         // Define parent and child fields for Escrow Biller PL
-        // Parent hanya punya 2 fields (simplified dari CA Escrow)
-        $parentFields = [];
+        // Parent sekarang memiliki field untuk total, pending, dan sukses
+        $parentFields = [
+            'r_TOTAL_JURNAL',
+            'r_JURNAL_PENDING',
+            'r_JURNAL_SUKSES'
+        ];
         
         $childFields = [
             'd_STATUS_KR_ESCROW', // Unique field untuk Escrow Biller PL

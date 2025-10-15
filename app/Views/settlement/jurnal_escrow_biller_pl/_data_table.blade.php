@@ -25,8 +25,11 @@
                         <thead class="thead-light">
                             <tr>
                                 <th width="5%">Detail</th>
-                                <th width="40%">Kode Settle</th>
-                                <th width="50%">Nama Produk</th>
+                                <th width="20%">Kode Settle</th>
+                                <th width="25%">Nama Produk</th>
+                                <th width="10%" class="text-center">Total</th>
+                                <th width="10%" class="text-center">Pending</th>
+                                <th width="10%" class="text-center">Sukses</th>
                                 <th width="5%" class="text-center">Summary</th>
                             </tr>
                         </thead>
