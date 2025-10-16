@@ -104,6 +104,14 @@ $(document).ready(function() {
     $('#formProsesDispute').on('submit', function(e) {
         e.preventDefault();
         
+        const $form = $(this);
+        const $submitBtn = $form.find('button[type="submit"]');
+        
+        // Prevent double submit
+        if ($submitBtn.prop('disabled')) {
+            return;
+        }
+        
         const vId = $('#prosesVId').val();
         
         // Ambil data langsung dari form yang terselected, bukan dari FormData
@@ -157,6 +165,11 @@ $(document).ready(function() {
         $('input[name="status_core"]').closest('.form-group').removeClass('has-error');
         $('input[name="status_settlement"]').closest('.form-group').removeClass('has-error');
         
+        // Disable submit button dan ubah text
+        $submitBtn.prop('disabled', true);
+        const originalBtnHtml = $submitBtn.html();
+        $submitBtn.html('<i class="fal fa-spinner fa-spin"></i> Memproses...');
+        
         // Buat FormData dengan data yang sudah divalidasi
         const formData = new FormData();
         formData.append('v_id', vId);
@@ -187,16 +200,25 @@ $(document).ready(function() {
                         disputeTable.ajax.reload();
                     } else {
                         toastr["error"](response.message);
+                        // Re-enable button jika gagal
+                        $submitBtn.prop('disabled', false);
+                        $submitBtn.html(originalBtnHtml);
                     }
                 },
                 error: function(xhr) {
                     console.error('Proses error:', xhr.responseText);
                     toastr["error"]('Terjadi kesalahan saat memproses data dispute');
+                    // Re-enable button jika error
+                    $submitBtn.prop('disabled', false);
+                    $submitBtn.html(originalBtnHtml);
                 }
             });
         }).catch(function(error) {
             console.error('Failed to refresh CSRF before submit:', error);
             toastr["error"]('Gagal menyegarkan token keamanan. Silakan coba lagi.');
+            // Re-enable button jika error
+            $submitBtn.prop('disabled', false);
+            $submitBtn.html(originalBtnHtml);
         });
     });
     
@@ -217,9 +239,23 @@ $(document).ready(function() {
         $(this).closest('.form-group').removeClass('has-error');
     });
     
+    // Reset button state saat modal ditutup
+    $('#modalProsesDispute').on('hidden.bs.modal', function() {
+        const $submitBtn = $('#formProsesDispute').find('button[type="submit"]');
+        $submitBtn.prop('disabled', false);
+        $submitBtn.html('<i class="fal fa-save"></i> Simpan');
+    });
+    
     // Handle button clicks using event delegation for dynamically generated buttons
     $(document).on('click', '.btn-proses', function(e) {
         e.preventDefault();
+        
+        const $btn = $(this);
+        
+        // Prevent double click
+        if ($btn.prop('disabled')) {
+            return;
+        }
         
         const disputeId = $(this).data('id');
         if (!disputeId) {
@@ -227,7 +263,17 @@ $(document).ready(function() {
             return;
         }
         
-        showProsesDispute(disputeId);
+        // Disable button sementara
+        $btn.prop('disabled', true);
+        const originalHtml = $btn.html();
+        $btn.html('<i class="fal fa-spinner fa-spin"></i> Loading...');
+        
+        // Show modal, akan enable kembali di callback
+        showProsesDispute(disputeId, function() {
+            // Re-enable button setelah modal dimuat
+            $btn.prop('disabled', false);
+            $btn.html(originalHtml);
+        });
     });
 });
 
@@ -359,7 +405,7 @@ function initializeDataTable() {
     });
 }
 
-function showProsesDispute(vId) {
+function showProsesDispute(vId, callback) {
     console.log('Showing proses dispute form for v_ID:', vId);
     
     // Reset form dan clear validation errors
@@ -371,6 +417,11 @@ function showProsesDispute(vId) {
     $('input[name="status_biller"]').closest('.form-group').removeClass('has-error');
     $('input[name="status_core"]').closest('.form-group').removeClass('has-error');
     $('input[name="status_settlement"]').closest('.form-group').removeClass('has-error');
+    
+    // Reset submit button state
+    const $submitBtn = $('#formProsesDispute').find('button[type="submit"]');
+    $submitBtn.prop('disabled', false);
+    $submitBtn.html('<i class="fal fa-save"></i> Simpan');
     
     // Pre-refresh CSRF token sebelum load data
     refreshCSRFToken().then(function() {
@@ -421,17 +472,31 @@ function showProsesDispute(vId) {
                     // This is intentionally left empty as user needs to select the appropriate action
                     
                     $('#modalProsesDispute').modal('show');
+                    
+                    // Call callback to re-enable button
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
                 } else {
                     toastr["error"]('Data dispute tidak ditemukan');
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
                 }
             },
             error: function(xhr) {
                 console.error('Detail error for proses:', xhr.responseText);
                 toastr["error"]('Terjadi kesalahan saat memuat data dispute');
+                if (typeof callback === 'function') {
+                    callback();
+                }
             }
         });
     }).catch(function() {
         toastr["error"]('Gagal menyegarkan token keamanan. Silakan coba lagi.');
+        if (typeof callback === 'function') {
+            callback();
+        }
     });
 }
 
