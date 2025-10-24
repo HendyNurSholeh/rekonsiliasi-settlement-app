@@ -22,10 +22,19 @@
     font-weight: 500;
     border-left: 4px solid #6c5190;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .parent-row:hover {
     background-color: #ede8f2 !important;
+    box-shadow: 0 2px 4px rgba(108, 81, 144, 0.15);
+}
+
+/* Row hover effect - lebih prominent */
+.parent-row.row-hover {
+    background-color: #ede8f2 !important;
+    box-shadow: 0 2px 6px rgba(108, 81, 144, 0.2);
+    transform: translateX(2px);
 }
 
 .parent-row td {

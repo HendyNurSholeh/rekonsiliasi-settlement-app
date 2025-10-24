@@ -270,12 +270,25 @@ function initializeDataTable() {
         }
     });
     
-    // Add event listener for opening and closing details
-    $('#jurnalEscrowBillerPlTable tbody').on('click', 'td.details-control', function () {
-        const tr = $(this).closest('tr');
+    // Add event listener for opening and closing details - ENTIRE ROW is clickable
+    $('#jurnalEscrowBillerPlTable tbody').on('click', 'tr.parent-row', function (e) {
+        // Jangan trigger jika user klik button atau link di dalam row
+        if ($(e.target).closest('button, a').length > 0) {
+            return;
+        }
+        
+        const tr = $(this);
         const row = jurnalEscrowBillerPlTable.row(tr);
         const kdSettle = tr.attr('data-kd-settle');
-        const expandBtn = $(this).find('.expand-btn');
+        const expandBtn = tr.find('.expand-btn');
+        
+        // Jika tidak ada expand button, skip (bukan expandable row)
+        if (expandBtn.length === 0) {
+            return;
+        }
+        
+        // Add hover cursor style
+        tr.css('cursor', 'pointer');
         
         if (row.child.isShown()) {
             // Close row
@@ -312,6 +325,17 @@ function initializeDataTable() {
             $('.child-details-container').hide().fadeIn(300);
             initializeTooltips();
         }
+    });
+    
+    // Add hover effect to parent rows
+    $('#jurnalEscrowBillerPlTable tbody').on('mouseenter', 'tr.parent-row', function() {
+        const expandBtn = $(this).find('.expand-btn');
+        if (expandBtn.length > 0) {
+            $(this).css('cursor', 'pointer');
+            $(this).addClass('row-hover');
+        }
+    }).on('mouseleave', 'tr.parent-row', function() {
+        $(this).removeClass('row-hover');
     });
     
     initializeTooltips();
