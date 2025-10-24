@@ -18,6 +18,9 @@ class AkselgateService
     private $password;
     private $client;
     private $logModel;
+    private $cache;
+    private $tokenCacheKey = 'akselgate_auth_token';
+    private $tokenCacheDuration = 60; // 60 seconds = 1 minute
 
     public function __construct()
     {
@@ -26,6 +29,7 @@ class AkselgateService
         $this->password = env('AKSEL_GATE_PASSWORD', 'Bankkalsel1*');
         $this->client = \Config\Services::curlrequest();
         $this->logModel = new AkselgateTransactionLog();
+        $this->cache = \Config\Services::cache();
     }
 
     /**
@@ -109,9 +113,49 @@ class AkselgateService
     }
 
     /**
-     * Login ke Akselgate untuk mendapatkan token
+     * Get cached token atau login baru jika expired/tidak ada
+     * Token di-cache selama 1 menit untuk menghindari login berulang
+     * 
+     * @return array ['success' => bool, 'token' => string]
      */
-    public function login(): array
+    public function getAuthToken(): array
+    {
+        // Try get cached token
+        $cachedToken = $this->cache->get($this->tokenCacheKey);
+        
+        if ($cachedToken !== null) {
+            log_message('info', 'Akselgate: Using cached token (valid for ' . $this->tokenCacheDuration . 's)');
+            return [
+                'success' => true,
+                'token' => $cachedToken,
+                'from_cache' => true
+            ];
+        }
+        
+        // No cached token, perform login
+        log_message('info', 'Akselgate: No cached token found, performing fresh login');
+        $loginResult = $this->login();
+        
+        if ($loginResult['success']) {
+            // Save token to cache for 1 minute
+            $this->cache->save($this->tokenCacheKey, $loginResult['token'], $this->tokenCacheDuration);
+            log_message('info', 'Akselgate: New token cached for ' . $this->tokenCacheDuration . ' seconds');
+            
+            return [
+                'success' => true,
+                'token' => $loginResult['token'],
+                'from_cache' => false
+            ];
+        }
+        
+        return $loginResult;
+    }
+
+    /**
+     * Login ke Akselgate untuk mendapatkan token
+     * Method ini sekarang private, digunakan oleh getAuthToken()
+     */
+    private function login(): array
     {
         try {
             log_message('info', 'Akselgate: Attempting login to ' . $this->apiUrl . '/login with username: ' . $this->username);
@@ -175,24 +219,34 @@ class AkselgateService
     }
 
     /**
+     * Clear cached token (untuk force login ulang)
+     */
+    public function clearAuthToken(): void
+    {
+        $this->cache->delete($this->tokenCacheKey);
+        log_message('info', 'Akselgate: Cleared cached auth token');
+    }
+
+    /**
      * Kirim batch transaksi ke Akselgate
      */
     public function sendBatchTransactions(array $transactionData): array
     {
         try {
-            // Step 1: Login untuk mendapatkan token
-            $loginResult = $this->login();
+            // Step 1: Get cached token atau login jika expired
+            $tokenResult = $this->getAuthToken();
             
-            if (!$loginResult['success']) {
-                log_message('error', 'Akselgate: Login failed: ' . $loginResult['message']);
+            if (!$tokenResult['success']) {
+                log_message('error', 'Akselgate: Failed to get auth token: ' . $tokenResult['message']);
                 return [
                     'success' => false,
-                    'message' => 'Login ke Akselgate gagal: ' . $loginResult['message']
+                    'message' => 'Gagal mendapatkan token Akselgate: ' . $tokenResult['message']
                 ];
             }
             
-            $token = $loginResult['token'];
-            log_message('info', 'Akselgate: Login successful, token received: ' . substr($token, 0, 20) . '...');
+            $token = $tokenResult['token'];
+            $tokenSource = $tokenResult['from_cache'] ?? false ? 'cache' : 'fresh login';
+            log_message('info', 'Akselgate: Using token from ' . $tokenSource . ': ' . substr($token, 0, 20) . '...');
             
             // Step 2: Kirim transaksi massal
             $jsonPayload = json_encode($transactionData, JSON_PRETTY_PRINT);
@@ -616,26 +670,29 @@ class AkselgateService
     }
 
     /**
-     * Test connection ke Akselgate (hanya login)
+     * Test connection ke Akselgate (dengan token caching)
      */
     public function testConnection(): array
     {
         log_message('info', 'Akselgate: Testing connection - URL: ' . $this->apiUrl);
         
-        $loginResult = $this->login();
+        $tokenResult = $this->getAuthToken();
         
-        if ($loginResult['success']) {
+        if ($tokenResult['success']) {
+            $tokenSource = $tokenResult['from_cache'] ?? false ? 'cached' : 'fresh';
             return [
                 'success' => true,
                 'message' => 'Akselgate connection successful',
-                'token_preview' => substr($loginResult['token'], 0, 20) . '...',
+                'token_preview' => substr($tokenResult['token'], 0, 20) . '...',
+                'token_source' => $tokenSource,
+                'cache_duration' => $this->tokenCacheDuration . ' seconds',
                 'api_url' => $this->apiUrl,
                 'username' => $this->username
             ];
         } else {
             return [
                 'success' => false,
-                'message' => 'Akselgate connection failed: ' . $loginResult['message'],
+                'message' => 'Akselgate connection failed: ' . $tokenResult['message'],
                 'api_url' => $this->apiUrl,
                 'username' => $this->username
             ];
