@@ -143,6 +143,7 @@ function formatCurrency(amount) {
 function resetFilters() {
     const url = new URL(window.location);
     url.searchParams.delete('tanggal');
+    url.searchParams.delete('status');
     window.location.href = url.pathname + url.search;
 }
 
@@ -165,13 +166,19 @@ $(document).ready(function() {
     $('form').on('submit', function(e) {
         e.preventDefault();
         const tanggal = $('#tanggal').val();
+        const status = $('#status').val();
         
-        console.log('Form submit - Tanggal:', tanggal);
+        console.log('Form submit - Tanggal:', tanggal, 'Status:', status);
         
         if (tanggal && typeof jurnalEscrowBillerPlTable !== 'undefined') {
             // Update current URL parameters
             const url = new URL(window.location);
             url.searchParams.set('tanggal', tanggal);
+            if (status) {
+                url.searchParams.set('status', status);
+            } else {
+                url.searchParams.delete('status');
+            }
             window.history.pushState({}, '', url);
             
             console.log('Updated URL:', url.toString());

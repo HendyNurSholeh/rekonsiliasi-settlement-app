@@ -27,6 +27,7 @@
     window.appConfig = {
         baseUrl: "{{ base_url() }}",
         tanggalData: "{{ $tanggalData }}",
+        statusFilter: "{{ $statusFilter }}",
         csrfToken: "{{ csrf_token() }}"
     };
     </script>

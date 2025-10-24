@@ -38,10 +38,12 @@ class JurnalCaEscrowController extends BaseController
     public function index()
     {
         $tanggalData = $this->request->getGet('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $statusFilter = $this->request->getGet('status') ?? '';
 
         $data = [
             'title' => 'Jurnal CA to Escrow',
             'tanggalData' => $tanggalData,
+            'statusFilter' => $statusFilter,
             'route' => 'settlement/jurnal-ca-escrow'
         ];
 
@@ -62,9 +64,10 @@ class JurnalCaEscrowController extends BaseController
     {
         // Get tanggal parameter
         $tanggalData = $this->request->getGet('tanggal') ?? $this->request->getPost('tanggal') ?? $this->prosesModel->getDefaultDate();
+        $statusFilter = $this->request->getGet('status') ?? $this->request->getPost('status') ?? '';
         
         // Debug log
-        log_message('info', 'Jurnal CA to Escrow DataTable parameters - Tanggal: ' . $tanggalData);
+        log_message('info', 'Jurnal CA to Escrow DataTable parameters - Tanggal: ' . $tanggalData . ', Status: ' . $statusFilter);
 
         try {
             $db = \Config\Database::connect();
@@ -81,6 +84,11 @@ class JurnalCaEscrowController extends BaseController
             
             // Process and group data by r_KD_SETTLE to create parent-child structure
             $processedData = $this->processJurnalData($rawData);
+            
+            // Apply status filter if provided
+            if (!empty($statusFilter)) {
+                $processedData = $this->filterByStatus($processedData, $statusFilter);
+            }
             
             // Prepare DataTables request parameters
             $dtRequest = [
@@ -191,6 +199,44 @@ class JurnalCaEscrowController extends BaseController
                 'csrf_token' => csrf_hash()
             ]);
         }
+    }
+
+    /**
+     * Filter data berdasarkan status (pending/sukses)
+     * 
+     * @param array $processedData Data yang sudah di-group parent-child
+     * @param string $status Filter status ('pending' atau 'sukses')
+     * @return array Filtered data
+     */
+    private function filterByStatus(array $processedData, string $status): array
+    {
+        if (empty($status)) {
+            return $processedData;
+        }
+        
+        $filtered = [];
+        
+        foreach ($processedData as $parentRow) {
+            $pendingCount = intval($parentRow['r_JURNAL_PENDING'] ?? 0);
+            $suksesCount = intval($parentRow['r_JURNAL_SUKSES'] ?? 0);
+            
+            // Filter berdasarkan status
+            if ($status === 'pending') {
+                // Tampilkan hanya yang ada pending (pending > 0)
+                if ($pendingCount > 0) {
+                    $filtered[] = $parentRow;
+                }
+            } elseif ($status === 'sukses') {
+                // Tampilkan hanya yang semua sudah sukses (pending = 0 dan sukses > 0)
+                if ($pendingCount === 0 && $suksesCount > 0) {
+                    $filtered[] = $parentRow;
+                }
+            }
+        }
+        
+        log_message('info', "Filter status '{$status}' applied - Before: " . count($processedData) . " rows, After: " . count($filtered) . " rows");
+        
+        return $filtered;
     }
 
     /**

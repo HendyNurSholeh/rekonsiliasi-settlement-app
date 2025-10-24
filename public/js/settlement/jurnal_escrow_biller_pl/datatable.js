@@ -99,6 +99,7 @@ function initializeDataTable() {
             type: 'GET',
             data: function(d) {
                 d.tanggal = $('#tanggal').val() || window.appConfig.tanggalData;
+                d.status = $('#status').val() || '';
                 console.log('DataTable request data:', d);
                 return d;
             },
