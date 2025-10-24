@@ -245,6 +245,51 @@ code {
     border: 1px solid #e9ecef;
 }
 
+/* Reference number tooltip styling */
+.child-table code.ref-tooltip {
+    cursor: help;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.child-table code.ref-tooltip:hover {
+    background-color: #e9ecef;
+    border-color: #6c5190;
+    color: #6c5190;
+    transform: translateY(-1px);
+}
+
+/* Bootstrap tooltip customization */
+.tooltip {
+    font-size: 0.75rem;
+}
+
+.tooltip .tooltip-inner {
+    background-color: #6c5190;
+    color: white;
+    padding: 0.2rem 0.3rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    max-width: 300px;
+    font-size: 0.85rem;
+}
+
+.tooltip.bs-tooltip-top .arrow::before {
+    border-top-color: #6c5190;
+}
+
+.tooltip.bs-tooltip-bottom .arrow::before {
+    border-bottom-color: #6c5190;
+}
+
+.tooltip.bs-tooltip-left .arrow::before {
+    border-left-color: #6c5190;
+}
+
+.tooltip.bs-tooltip-right .arrow::before {
+    border-right-color: #6c5190;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .child-details-container {

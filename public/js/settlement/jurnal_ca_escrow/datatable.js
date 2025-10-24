@@ -456,8 +456,9 @@ function formatChildRows(childData, kdSettle) {
     
     // Build table rows
     const tableRows = childData.map(child => {
+        const noRef = child.d_NO_REF || '-';
         const rowData = [
-            `<code>${child.d_NO_REF || '-'}</code>`,
+            `<code class="ref-tooltip" data-toggle="tooltip" data-placement="top" title="${noRef}">${noRef}</code>`,
             `<code>${child.d_DEBIT_ACCOUNT || '-'}</code>`,
             `<small>${child.d_DEBIT_NAME || '-'}</small>`,
             `<code>${child.d_CREDIT_ACCOUNT || '-'}</code>`,
