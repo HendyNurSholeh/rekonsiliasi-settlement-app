@@ -16,6 +16,7 @@ class AkselgateService
     private $apiUrl;
     private $username;
     private $password;
+    private $callbackBaseUrl;
     private $client;
     private $logModel;
     private $cache;
@@ -27,6 +28,7 @@ class AkselgateService
         $this->apiUrl = env('AKSEL_GATE_URL', 'http://localhost:8080');
         $this->username = env('AKSEL_GATE_USERNAME', 'admin');
         $this->password = env('AKSEL_GATE_PASSWORD', 'Bankkalsel1*');
+        $this->callbackBaseUrl = env('AKSEL_GATE_CALLBACK_URL', base_url('aksel-gate/callback'));
         $this->client = \Config\Services::curlrequest();
         $this->logModel = new AkselgateTransactionLog();
         $this->cache = \Config\Services::cache();
@@ -383,7 +385,7 @@ class AkselgateService
                 'amount' => $amount,
                 'description' => $trx['d_DESCRIPTION'],
                 'referenceNumber' => trim($trx['d_NO_REF']),
-                'callback_url' => base_url('aksel-gate/callback?ref=' . urlencode($trx['d_NO_REF']))
+                'callback_url' => $this->callbackBaseUrl . '?ref=' . urlencode($trx['d_NO_REF'])
             ];
             
             log_message('info', 'Akselgate: Transaction ' . ($index + 1) . ' formatted: ' . json_encode($transactionData));
