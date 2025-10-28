@@ -393,4 +393,114 @@ class JurnalCaEscrowController extends BaseController
         }
     }
 
+    /**
+     * Get callback log detail by ID
+     */
+    public function getCallbackDetail($id = null)
+    {
+        try {
+            if (!$id) {
+                $id = $this->request->getGet('id');
+            }
+
+            if (!$id) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'ID callback log tidak ditemukan',
+                    'csrf_token' => csrf_hash()
+                ])->setStatusCode(400);
+            }
+
+            // Load callback log model
+            $callbackLogModel = new \App\Models\ApiGateway\AkselgateFwdCallbackLog();
+
+            // Get callback log detail
+            $log = $callbackLogModel->find($id);
+
+            if (!$log) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Callback log tidak ditemukan',
+                    'csrf_token' => csrf_hash()
+                ])->setStatusCode(404);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $log,
+                'csrf_token' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting callback detail: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil detail callback log: ' . $e->getMessage(),
+                'csrf_token' => csrf_hash()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Get callback log by request_id (latest)
+     */
+    public function getCallbackByRequestId($requestId = null)
+    {
+        log_message('info', 'getCallbackByRequestId called with param: ' . $requestId);
+        
+        try {
+            if (!$requestId) {
+                $requestId = $this->request->getGet('request_id');
+            }
+
+            if (!$requestId) {
+                log_message('warning', 'getCallbackByRequestId: Request ID not found');
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Request ID tidak ditemukan',
+                    'csrf_token' => csrf_hash()
+                ])->setStatusCode(400);
+            }
+
+            log_message('info', 'getCallbackByRequestId: Searching for request_id: ' . $requestId);
+
+            // Load callback log model
+            $callbackLogModel = new \App\Models\ApiGateway\AkselgateFwdCallbackLog();
+
+            // Get callback logs by ref_number (request_id), ordered by latest first
+            $logs = $callbackLogModel->getByRefNumber($requestId);
+
+            log_message('info', 'getCallbackByRequestId: Found ' . count($logs) . ' logs for request_id: ' . $requestId);
+
+            if (empty($logs)) {
+                log_message('info', 'getCallbackByRequestId: No callback logs found for request_id: ' . $requestId);
+                return $this->response->setJSON([
+                    'success' => true,
+                    'data' => null,
+                    'message' => 'Callback log tidak ditemukan untuk request ID: ' . $requestId,
+                    'csrf_token' => csrf_hash()
+                ]);
+            }
+
+            // Return the latest callback log (first in array since ordered DESC)
+            $latestLog = $logs[0];
+
+            log_message('info', 'getCallbackByRequestId: Returning latest log with ID: ' . $latestLog['id']);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $latestLog,
+                'csrf_token' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting callback by request ID: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil callback log: ' . $e->getMessage(),
+                'csrf_token' => csrf_hash()
+            ])->setStatusCode(500);
+        }
+    }
+
 }

@@ -20,6 +20,9 @@
 
     <!-- Batch Progress Modal -->
     @include('settlement.jurnal_ca_escrow._batch_progress_modal')
+
+    <!-- Callback Log Modal -->
+    @include('settlement.jurnal_ca_escrow._callback_log_modal')
 @endsection
 
 @push('scripts')
@@ -32,7 +35,9 @@
     };
     </script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/index.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_ca_escrow/helpers.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/datatable.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_ca_escrow/callback_log_modal.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/batch-process.js') }}"></script>
 @endpush
 
