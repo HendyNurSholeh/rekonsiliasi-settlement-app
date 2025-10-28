@@ -49,7 +49,7 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
     $routes->get('jurnal-ca-escrow', 'JurnalCaEscrowController::index', ['as' => 'settlement.jurnal-ca-escrow']);
     $routes->get('jurnal-ca-escrow/datatable', 'JurnalCaEscrowController::datatable', ['as' => 'settlement.jurnal-ca-escrow.datatable']);
     $routes->post('jurnal-ca-escrow/proses', 'JurnalCaEscrowController::proses', ['as' => 'settlement.jurnal-ca-escrow.proses']);
-    $routes->get('jurnal-ca-escrow/callback-logs/(:segment)', 'JurnalCaEscrowController::getCallbackLogs/$1', ['as' => 'settlement.jurnal-ca-escrow.callback-logs']);
+    $routes->get('jurnal-ca-escrow/akselgate-log/(:segment)', 'JurnalCaEscrowController::getAkselgateLog/$1', ['as' => 'settlement.jurnal-ca-escrow.akselgate-log']);
     $routes->get('jurnal-ca-escrow/callback-logs-by-ref/(:segment)', 'JurnalCaEscrowController::getCallbackLogsByRef/$1', ['as' => 'settlement.jurnal-ca-escrow.callback-logs-by-ref']);
     $routes->get('jurnal-ca-escrow/get-callback-by-request-id/(:segment)', 'JurnalCaEscrowController::getCallbackByRequestId/$1', ['as' => 'settlement.jurnal-ca-escrow.get-callback-by-request-id']);
     $routes->get('jurnal-ca-escrow/get-callback-detail/(:segment)', 'JurnalCaEscrowController::getCallbackDetail/$1', ['as' => 'settlement.jurnal-ca-escrow.get-callback-detail']);
@@ -62,6 +62,7 @@ $routes->group('settlement', ['namespace' => 'App\Controllers\Settlement'], func
     $routes->get('jurnal-escrow-biller-pl', 'JurnalEscrowBillerPlController::index', ['as' => 'settlement.jurnal-escrow-biller-pl']);
     $routes->get('jurnal-escrow-biller-pl/datatable', 'JurnalEscrowBillerPlController::datatable', ['as' => 'settlement.jurnal-escrow-biller-pl.datatable']);
     $routes->post('jurnal-escrow-biller-pl/proses', 'JurnalEscrowBillerPlController::proses', ['as' => 'settlement.jurnal-escrow-biller-pl.proses']);
+    $routes->get('jurnal-escrow-biller-pl/akselgate-log/(:segment)', 'JurnalEscrowBillerPlController::getAkselgateLog/$1', ['as' => 'settlement.jurnal-escrow-biller-pl.akselgate-log']);
     $routes->get('jurnal-escrow-biller-pl/get-callback-by-request-id/(:segment)', 'JurnalEscrowBillerPlController::getCallbackByRequestId/$1', ['as' => 'settlement.jurnal-escrow-biller-pl.get-callback-by-request-id']);
     $routes->get('jurnal-escrow-biller-pl/get-callback-detail/(:segment)', 'JurnalEscrowBillerPlController::getCallbackDetail/$1', ['as' => 'settlement.jurnal-escrow-biller-pl.get-callback-detail']);
 });

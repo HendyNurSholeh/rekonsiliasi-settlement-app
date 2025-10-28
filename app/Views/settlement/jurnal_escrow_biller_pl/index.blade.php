@@ -20,9 +20,12 @@
 
     <!-- Batch Progress Modal -->
     @include('settlement.jurnal_escrow_biller_pl._batch_progress_modal')
-
+    
     <!-- Callback Log Modal -->
     @include('settlement.jurnal_ca_escrow._callback_log_modal')
+
+    <!-- Akselgate Log Modal -->
+    @include('log.akselgate._detail_modal')
 @endsection
 
 @push('scripts')
@@ -38,6 +41,7 @@
     <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/index.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/datatable.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/callback_log_modal.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/akselgate_log_modal.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_escrow_biller_pl/batch-process.js') }}"></script>
 @endpush
 

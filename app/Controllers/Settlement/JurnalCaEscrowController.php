@@ -503,4 +503,43 @@ class JurnalCaEscrowController extends BaseController
         }
     }
 
+    /**
+     * Get callback log data by kd_settle untuk CA_ESCROW transaction type
+     */
+    public function getAkselgateLog($kdSettle = null)
+    {
+        try {
+            if (!$kdSettle) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Kode settle tidak ditemukan'
+                ])->setStatusCode(400);
+            }
+
+            // Get latest attempt log untuk kd_settle dan CA_ESCROW
+            $latestLog = $this->akselgateLogModel->getLatestAttempt($kdSettle, AkselgateTransactionLog::TYPE_CA_ESCROW);
+
+            if (!$latestLog) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Belum ada log callback untuk kode settle ini'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $latestLog,
+                'csrf_token' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting callback log: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil callback log: ' . $e->getMessage(),
+                'csrf_token' => csrf_hash()
+            ])->setStatusCode(500);
+        }
+    }
+
 }

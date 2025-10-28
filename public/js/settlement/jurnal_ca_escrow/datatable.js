@@ -298,6 +298,29 @@ function initializeDataTable() {
 		}
 	});
 
+	// Callback Log button click
+	$(document).on("click", ".btn-callback-log", function (e) {
+		e.preventDefault();
+		const kdSettle = $(this).data("kd-settle");
+		if (kdSettle && window.initCallbackLogModal) {
+			window.initCallbackLogModal(kdSettle);
+		} else {
+			showAlert("warning", "Callback log tidak tersedia untuk kode settle ini.");
+		}
+	});
+
+	// Callback Log button click
+	$(document).on("click", ".btn-akselgate-log", function (e) {
+		e.preventDefault();
+		const kdSettle = $(this).data("kd-settle");
+		if (kdSettle && window.initAkselgateLogModal) {
+			window.initAkselgateLogModal(kdSettle);
+			console.log("Opening Akselgate log modal for:", kdSettle);
+		} else {
+			showAlert("warning", "Akselgate log tidak tersedia untuk kode settle ini.");
+		}
+	});
+
 	// Keyboard shortcuts
 	$(document).keydown(function (e) {
 		if (e.ctrlKey && e.keyCode === 69) {
@@ -310,12 +333,6 @@ function initializeDataTable() {
 			e.preventDefault();
 			toggleAllRows(false);
 		}
-	});
-
-	// Event handler untuk button callback log di parent row
-	$(document).on("click", ".btn-callback-log", function() {
-		const kdSettle = $(this).data("kd-settle");
-		showCallbackLogModal(kdSettle);
 	});
 
 	// Event handler untuk button detail di callback log modal
@@ -505,10 +522,9 @@ function formatChildRows(childData, kdSettle) {
                 <div class="child-details-header d-flex justify-content-between align-items-center">
                     <div><i class="fal fa-list-alt"></i> Detail Transaksi (${childData.length} item)</div>
                     <div class="d-flex align-items-center">
-                        <button type="button" class="btn btn-info btn-sm btn-callback-log mr-2" 
-                                data-kd-settle="${kdSettle}" 
-                                title="Lihat callback log untuk ${kdSettle}">
-                            <i class="fal fa-server"></i> Callback Log
+                        <button type="button" class="btn btn-info btn-sm btn-akselgate-log mr-2" 
+                                data-kd-settle="${kdSettle}">
+                            <i class="fal fa-server"></i> Akselgate Log
                         </button>
                         ${buttonHtml}
                     </div>

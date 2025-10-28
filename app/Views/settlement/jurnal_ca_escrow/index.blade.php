@@ -23,6 +23,9 @@
 
     <!-- Callback Log Modal -->
     @include('settlement.jurnal_ca_escrow._callback_log_modal')
+
+    <!-- Akselgate Log Modal -->
+    @include('log.akselgate._detail_modal')
 @endsection
 
 @push('scripts')
@@ -36,6 +39,7 @@
     </script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/index.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/helpers.js') }}"></script>
+    <script src="{{ base_url('js/settlement/jurnal_ca_escrow/akselgate_log_modal.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/datatable.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/callback_log_modal.js') }}"></script>
     <script src="{{ base_url('js/settlement/jurnal_ca_escrow/batch-process.js') }}"></script>
