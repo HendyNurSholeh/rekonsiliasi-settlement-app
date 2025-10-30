@@ -38,7 +38,6 @@
                                 <option value="">Semua Status</option>
                                 <option value="0" @if(request()->getGet('settle_verifikasi') == '0') selected @endif>Belum Verif</option>
                                 <option value="1" @if(request()->getGet('settle_verifikasi') == '1') selected @endif>Dilimpahkan</option>
-                                <option value="8" @if(request()->getGet('settle_verifikasi') == '8') selected @endif>Pengembalian ke Nasabah</option>
                                 <option value="9" @if(request()->getGet('settle_verifikasi') == '9') selected @endif>Tidak Dilimpahkan</option>
                             </select>
                         </div>

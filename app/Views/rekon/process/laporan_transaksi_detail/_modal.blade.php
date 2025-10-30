@@ -181,10 +181,6 @@
                                                 <label class="form-check-label" for="settlement_dilimpahkan">Dilimpahkan</label>
                                             </div>
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="status_settlement" id="settlement_pengembalian" value="8">
-                                                <label class="form-check-label" for="settlement_pengembalian">Pengembalian ke Nasabah</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="settlement_tidak_dilimpahkan" value="9">
                                                 <label class="form-check-label" for="settlement_tidak_dilimpahkan">Tidak Dilimpahkan</label>
                                             </div>
