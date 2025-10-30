@@ -269,7 +269,7 @@
 
                             {{-- Rekon Bi-fast Menu --}}
                             @if ($show_rekon_bifast)
-                            <li class="@if (str_contains($route, 'rekon-bifast')) active open @endif">
+                            <!-- <li class="@if (str_contains($route, 'rekon-bifast')) active open @endif">
                                 <a href="javascript:void(0);" data-filter-tags="rekon bifast">
                                     <i class="fal fa-exchange"></i>
                                     <span class="nav-link-text">Rekon Bi-fast</span>
@@ -290,7 +290,7 @@
                                     </li>
                                     @endif
                                 </ul>
-                            </li>
+                            </li> -->
                             @endif
                         @endif
                         @if ($show_user_management)
