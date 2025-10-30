@@ -176,12 +176,8 @@
                                                 <label class="form-check-label" for="statusSettlement1">Dilimpahkan</label>
                                             </div>
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement8" value="8" required>
-                                                <label class="form-check-label" for="statusSettlement8">Transaksi di Revershal</label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="status_settlement" id="statusSettlement9" value="9" required>
-                                                <label class="form-check-label" for="statusSettlement9">Transaksi Gagal</label>
+                                                <label class="form-check-label" for="statusSettlement9">Tidak Dilimpahkan</label>
                                             </div>
                                         </div>
                                     </div>

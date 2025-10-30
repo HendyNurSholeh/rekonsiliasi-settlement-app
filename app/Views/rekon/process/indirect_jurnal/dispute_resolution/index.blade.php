@@ -38,5 +38,5 @@
         csrfToken: "{{ csrf_token() }}"
     };
     </script>
-    <script src="{{ base_url('js/rekon/process/indirect_jurnal/dispute_resolution.js') }}"></script>
+    <script src="{{ base_url('js/rekon/process/indirect_jurnal/dispute_resolution_1.js') }}"></script>
 @endpush

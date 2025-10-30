@@ -97,6 +97,26 @@ $(document).ready(function() {
             reloadDataTable(false);
         }
     });
+
+    // Handle status biller change to auto-select status settlement
+    $('input[name="status_biller"]').on('change', function() {
+        const statusBiller = $(this).val();
+
+        // Uncheck all settlement status first
+        $('input[name="status_settlement"]').prop('checked', false);
+
+        // Auto-select settlement status based on biller status
+        if (statusBiller === '1') {
+            // Sukses -> Dilimpahkan
+            $('#settlement_dilimpahkan').prop('checked', true);
+        } else if (statusBiller === '0') {
+            // Pending -> Clean (tidak ada yang terpilih)
+            // Do nothing, already unchecked
+        } else if (statusBiller === '2') {
+            // Gagal -> Tidak Dilimpahkan
+            $('#settlement_gagal').prop('checked', true);
+        }
+    });
 });
 
 function initializeDataTable() {
